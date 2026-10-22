@@ -654,8 +654,11 @@ def _here(folder: Path) -> None:
     one of them was approved."""
     places = (("your home folder", Path.home()), ("Steve's data", paths.data_dir()),
               ("Steve's code", paths.SOURCE))
-    # The whole folder: C:\Users\Ana is not inside C:\Users\Anabel.
-    found = [(name, re.compile(re.escape(_flat(str(place))) + r"(?![\w.-])"))
+    # The whole folder: C:\Users\Ana is not inside C:\Users\Anabel, nor
+    # C:\Users\Ana.old. A full stop that ends a sentence ends the path:
+    # excluded too until CI's first run (22 October 2026), "Run from
+    # D:\a\steve\steve." named nothing.
+    found = [(name, re.compile(re.escape(_flat(str(place))) + r"(?![\w-]|\.\w)"))
              for name, place in places]
     # The files admission copies (`_copy`): a draft's bytecode holds the
     # path it was compiled at, and is never kept.

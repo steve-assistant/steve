@@ -74,14 +74,32 @@ def test_asking_whether_docker_is_up_runs_no_plugins(monkeypatch):
 
     def docker(*args, timeout=None):
         asked.append(args)
-        return subprocess.CompletedProcess(args, 0, stdout="28.4.0", stderr="")
+        return subprocess.CompletedProcess(args, 0, stdout="28.4.0 linux\n", stderr="")
 
     monkeypatch.setattr(shutil, "which", lambda name: "docker")
     monkeypatch.setattr(code_exec, "_docker", docker)
     assert code_exec.available() and code_exec.status()["available"]
+    assert code_exec.status()["server_version"] == "28.4.0"
     assert sandbox.available(lambda args, timeout: docker(*args))
 
     assert asked and all(args[0] in ("version", "image") for args in asked), asked
+
+
+def test_an_engine_running_windows_containers_is_not_a_sandbox_and_says_why(monkeypatch):
+    """Steve's images are Linux's. On CI's runner (22 October 2026) Docker
+    answered, so the code sandbox said it was up, and each run then failed
+    with "read-only mode is not supported for Windows containers"."""
+    from core.browser import sandbox
+
+    def docker(*args, timeout=None):
+        return subprocess.CompletedProcess(args, 0, stdout="28.4.0 windows\n", stderr="")
+
+    monkeypatch.setattr(shutil, "which", lambda name: "docker")
+    monkeypatch.setattr(code_exec, "_docker", docker)
+    assert not code_exec.available()
+    assert not sandbox.available(lambda args, timeout: docker(*args))
+    said = code_exec.status()
+    assert not said["available"] and "Linux containers" in said["reason"], said
 
 
 def test_path_traversal_is_refused_before_a_container_is_made(monkeypatch):

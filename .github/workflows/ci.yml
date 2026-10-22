@@ -69,6 +69,24 @@ jobs:
       - name: The shell's tests
         run: cargo test --lib --manifest-path ui/src-tauri/Cargo.toml --features tauri/custom-protocol -j 3
 
+      # The app's webview. Windows 11 carries it; the runner's Windows
+      # Server image lists Edge alone, and every test that starts the app
+      # waited 60 s for a webview that never came (CI's first runs, 22
+      # October 2026). Microsoft's installer, run only if Microsoft signed it.
+      - name: Install the WebView2 Runtime
+        shell: pwsh
+        run: |
+          $setup = "$env:RUNNER_TEMP\MicrosoftEdgeWebview2Setup.exe"
+          Invoke-WebRequest "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile $setup
+          $signed = Get-AuthenticodeSignature $setup
+          if ($signed.Status -ne "Valid" -or $signed.SignerCertificate.Subject -notmatch "O=Microsoft Corporation") { throw "not signed by Microsoft: $($signed.Status) $($signed.SignerCertificate.Subject)" }
+          Start-Process $setup -ArgumentList "/silent", "/install" -Wait
+          (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
+
+      # Unbuilt, every test that runs a module in its container fails.
+      - name: Build the module runtime
+        run: uv run --no-sync python -m core.sandbox build
+
       # loadgroup keeps each xdist_group (the screens, the supervisors, the
       # end-to-end files) on one worker, as devtools.check does. The
       # end-to-end tier and the walks run each night instead.
@@ -171,6 +189,17 @@ jobs:
         run: |
           cd ui && npm ci && npm run build
           cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
+
+      # As in the check job above.
+      - name: Install the WebView2 Runtime
+        shell: pwsh
+        run: |
+          $setup = "$env:RUNNER_TEMP\MicrosoftEdgeWebview2Setup.exe"
+          Invoke-WebRequest "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile $setup
+          $signed = Get-AuthenticodeSignature $setup
+          if ($signed.Status -ne "Valid" -or $signed.SignerCertificate.Subject -notmatch "O=Microsoft Corporation") { throw "not signed by Microsoft: $($signed.Status) $($signed.SignerCertificate.Subject)" }
+          Start-Process $setup -ArgumentList "/silent", "/install" -Wait
+          (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
 
       # Unbuilt, the worker says modules cannot run here, and the extension's
       # end-to-end test waits for an answer that never comes.

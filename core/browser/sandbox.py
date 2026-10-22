@@ -135,14 +135,25 @@ def build(run: Runner | None = None, *, force: bool = False) -> list[str]:
     return built
 
 
+# How to ask whether the engine answers, and which containers it runs.
+# `version`, not `info`: the same answer without running every CLI plugin to
+# list them (tools/code_exec.py). Steve's images are Linux's, and an engine
+# running Windows containers answered and then refused every run: on CI's
+# runner (22 October 2026) the code sandbox said it was up, and each run
+# failed with "read-only mode is not supported for Windows containers".
+DAEMON = ("version", "--format", "{{.Server.Version}} {{.Server.Os}}")
+
+
+def runs_linux(probe: subprocess.CompletedProcess) -> bool:
+    """Whether a `DAEMON` probe found an engine running Linux containers."""
+    return probe.returncode == 0 and probe.stdout.split()[-1:] == ["linux"]
+
+
 def available(run: Runner | None = None) -> bool:
     if shutil.which("docker") is None:
         return False
     try:
-        # `version`, not `info`: the same answer without running every CLI
-        # plugin to list them (tools/code_exec.py DAEMON_VERSION).
-        return (run or _docker)(["version", "--format", "{{.Server.Version}}"],
-                                15).returncode == 0
+        return runs_linux((run or _docker)(list(DAEMON), 15))
     except (subprocess.TimeoutExpired, OSError):
         return False
 

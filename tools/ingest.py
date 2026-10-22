@@ -25,6 +25,7 @@ import sqlite3
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
+from core import clock
 from tools import people
 
 if TYPE_CHECKING:
@@ -59,17 +60,23 @@ def _occurred(message: dict) -> str:
     choosing -- and `last_seen` is compared with `>=` and `MAX()`, which on a
     text column means an unparsed header sorts alphabetically. "Fri" before
     "Mon" is not a chronology.
+
+    In the user's zone as `core.clock` names it, the one place it is asked.
+    Asked of the machine here instead, a test that pinned the zone found a
+    thread's age a day out on CI's runner, which is on UTC (22 October 2026).
     """
+    zone = clock.local_zone()
     epoch_ms = message.get("internal_date")
     if epoch_ms:
-        return datetime.fromtimestamp(int(epoch_ms) / 1000).isoformat(timespec="seconds")
+        moment = datetime.fromtimestamp(int(epoch_ms) / 1000, zone).replace(tzinfo=None)
+        return moment.isoformat(timespec="seconds")
 
     raw = message.get("date")
     if raw:
         from email.utils import parsedate_to_datetime
 
         try:
-            return parsedate_to_datetime(raw).astimezone().isoformat(timespec="seconds")
+            return parsedate_to_datetime(raw).astimezone(zone).isoformat(timespec="seconds")
         except (TypeError, ValueError):
             pass
     return datetime.now().isoformat(timespec="seconds")

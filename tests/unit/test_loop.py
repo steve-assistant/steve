@@ -555,11 +555,10 @@ def test_a_message_carries_a_readable_local_time():
     """
     import datetime as dt
 
-    from tzlocal import get_localzone
-
     from agent.toolset.mail import localise as _localise
+    from core import clock
 
-    zone = get_localzone()
+    zone = clock.local_zone()
     moment = dt.datetime(2026, 9, 21, 14, 5, tzinfo=zone)
     [message] = _localise([{"internal_date": int(moment.timestamp() * 1000)}])
 

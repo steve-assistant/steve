@@ -120,20 +120,20 @@ def _tar_bytes(source: Path) -> bytes:
     return buffer.getvalue()
 
 
-# How to ask whether the daemon answers. Not `docker info`, which asked the
-# same question and also ran every CLI plugin Docker Desktop installs to
-# list them -- thirteen processes and 1.3 s of CPU a time, against 0.06 s
-# for this (measured 5 October 2026), and the status page asked once a
-# minute all day.
-DAEMON_VERSION = ("version", "--format", "{{.Server.Version}}")
+# How to ask whether the daemon answers, and runs Linux containers
+# (`sandbox.DAEMON`). Not `docker info`, which asked the same question and
+# also ran every CLI plugin Docker Desktop installs to list them -- thirteen
+# processes and 1.3 s of CPU a time, against 0.06 s for this (measured 5
+# October 2026), and the status page asked once a minute all day.
+DAEMON_VERSION = sandbox.DAEMON
 
 
 def available() -> bool:
-    """Is the Docker daemon reachable right now?"""
+    """Is the Docker daemon reachable right now, running Linux containers?"""
     if shutil.which("docker") is None:
         return False
     try:
-        return _docker(*DAEMON_VERSION, timeout=15).returncode == 0
+        return sandbox.runs_linux(_docker(*DAEMON_VERSION, timeout=15))
     except (subprocess.TimeoutExpired, OSError):
         return False
 
@@ -149,9 +149,14 @@ def status() -> dict:
             "reason": "docker daemon not running (start Docker Desktop)",
             "detail": probe.stderr.strip()[:200],
         }
+    if not sandbox.runs_linux(probe):
+        return {
+            "available": False,
+            "reason": "Docker runs Windows containers; switch Docker Desktop to Linux containers",
+        }
     return {
         "available": True,
-        "server_version": probe.stdout.strip(),
+        "server_version": probe.stdout.split()[0],
         "analysis_image_built": _analysis_image_id() is not None,
     }
 

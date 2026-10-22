@@ -68,14 +68,28 @@ def test_the_app_is_built_before_the_tests_that_start_it():
         assert built < next(i for i, run in enumerate(runs) if "pytest" in run), job
 
 
-def test_the_module_runtime_is_built_before_the_tier_that_runs_modules():
-    """Unbuilt, the worker says modules cannot run here, and the extension's
-    end-to-end test failed waiting for an answer: CI's first nightly run, 22
-    October 2026. The tier ran only on the maintainer's laptop, where the
-    runtime had been built long before."""
-    runs = _runs("nightly")
-    built = next(i for i, run in enumerate(runs) if "python -m core.sandbox build" in run)
-    assert built < next(i for i, run in enumerate(runs) if "pytest" in run)
+def test_the_module_runtime_is_built_before_the_tests_that_run_modules():
+    """Unbuilt, every test that runs a module in its container failed, and
+    the extension's end-to-end test waited for an answer that never came:
+    CI's first runs, 22 October 2026. The suite had run only on the
+    maintainer's laptop, where the runtime had been built long before."""
+    for job in ("check", "nightly"):
+        runs = _runs(job)
+        built = next(i for i, run in enumerate(runs) if "python -m core.sandbox build" in run)
+        assert built < next(i for i, run in enumerate(runs) if "pytest" in run), job
+
+
+def test_the_webview2_runtime_is_installed_before_the_tests_that_start_the_app():
+    """The runner's Windows Server image has Edge and no WebView2 Runtime,
+    which Windows 11 carries: each test that started the app waited for a
+    webview that never came (CI's first runs, 22 October 2026). Microsoft's
+    installer runs only once Windows has found it signed by Microsoft."""
+    for job in ("check", "nightly"):
+        runs = _runs(job)
+        [installed] = [i for i, run in enumerate(runs) if "MicrosoftEdgeWebview2Setup" in run]
+        assert "Get-AuthenticodeSignature" in runs[installed], job
+        assert runs[installed].index("throw") < runs[installed].index("Start-Process"), job
+        assert installed < next(i for i, run in enumerate(runs) if "pytest" in run), job
 
 
 def test_each_push_runs_the_shells_rust_tests_as_the_check_does():

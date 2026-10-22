@@ -211,6 +211,13 @@ def live_services(monkeypatch, scratch: Path, who: str, where: str, *,
 
     monkeypatch.setattr("core.language._ask_windows", lambda: language.FALLBACK)
     uncache(language, "windows")
+    # And the laptop's time zone, the one place it is asked (core/clock.py).
+    # CI's runner is on UTC: four tests that pinned the clock and not the
+    # zone read 10:05 as 14:05 there (CI's first run, 22 October 2026). A
+    # test that is about another zone pins its own, over this.
+    from zoneinfo import ZoneInfo
+
+    monkeypatch.setattr("core.clock.local_zone", lambda: ZoneInfo("America/New_York"))
 
     # Their keychain. Tests that build a model client -- never used, the
     # client fence below refuses its requests -- still read an API key to

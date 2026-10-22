@@ -624,11 +624,17 @@ def test_steves_own_folders_are_this_computers_and_a_folder_beside_them_is_not(
     monkeypatch.setattr(paths, "data_dir", lambda: Path("D:/Steve data"))
     folder = _write(tmp_path / "webby", reads=())
     readme = folder / "README.md"
-    readme.write_text(f"Kept in {Path.home()}bel\\notes, D:\\Steve data-old and state/.\n",
-                      encoding="utf-8", newline="\n")
+    readme.write_text(f"Kept in {Path.home()}bel\\notes, D:\\Steve data-old, "
+                      "D:\\Steve data.old and state/.\n", encoding="utf-8", newline="\n")
     assert lifecycle.screened(folder) is None
 
     readme.write_text("Kept in D:\\Steve data\\cache.\n", encoding="utf-8", newline="\n")
+    assert "README.md names Steve's data" in lifecycle.screened(folder)
+    # A sentence's full stop ends the path. On CI's runner the checkout is
+    # outside the home folder, and "Run from D:\a\steve\steve." below named
+    # nothing (22 October 2026); on the laptop the home folder was found in
+    # it instead, and the test passed.
+    readme.write_text("Kept in D:\\Steve data.\n", encoding="utf-8", newline="\n")
     assert "README.md names Steve's data" in lifecycle.screened(folder)
     readme.write_text(f"Run from {paths.SOURCE}.\n", encoding="utf-8", newline="\n")
     assert "README.md names" in lifecycle.screened(folder)

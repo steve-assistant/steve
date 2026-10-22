@@ -456,12 +456,19 @@ def test_the_live_browser_closes_a_minute_after_a_save_and_not_before(view, clea
 
 
 async def test_a_click_after_a_save_keeps_the_live_browser_open(clean_live):
+    """The click marks the real clock, so the sweep is asked a second after
+    it. Asked at a made-up 5,001 s, it found the click more than `IDLE_S`
+    old on any computer up for less than 73 minutes, and closed the browser:
+    CI's runner (22 October 2026)."""
+    import time
+
+    base = time.monotonic()
     live._live[:] = [_Sandbox()]
-    live._close_at[:] = [5_000.0]
+    live._close_at[:] = [base + 30]
 
     await live._session(create=False)
 
-    assert live._close_at == [] and await live.sweep(now=5_001.0) is False
+    assert live._close_at == [] and await live.sweep(now=base + 31) is False
 
 
 async def test_a_frame_poll_does_not_keep_the_live_browser_alive_but_their_hands_do(clean_live):
