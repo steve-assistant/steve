@@ -24,6 +24,9 @@ on:
     branches: [main]
   pull_request:
   # Nightly, the tiers that start the whole backend or the app's window.
+  # A private repository's runner minutes are counted against a monthly
+  # allowance, and a night's run takes 16 of them, so there the schedule
+  # runs nothing (the nightly and reflection jobs check); dispatch by hand.
   schedule:
     - cron: "17 6 * * *"
   workflow_dispatch:
@@ -186,7 +189,7 @@ jobs:
   # The base install deliberately omits the large reflection/redaction
   # model. A separate job exercises it without enlarging every environment.
   reflection:
-    if: ${{ !inputs.tests }}
+    if: ${{ !inputs.tests && !(github.event_name == 'schedule' && github.event.repository.private) }}
     runs-on: windows-latest
     timeout-minutes: 20
     env:
@@ -248,7 +251,7 @@ jobs:
   # the app's walks through its window: fakes only, never a real service
   # (tests/gate/fences.py).
   nightly:
-    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && !inputs.tests
+    if: ((github.event_name == 'schedule' && !github.event.repository.private) || github.event_name == 'workflow_dispatch') && !inputs.tests
     runs-on: windows-latest
     timeout-minutes: 60
     env:

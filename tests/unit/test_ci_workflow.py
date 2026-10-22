@@ -216,7 +216,8 @@ def test_pushes_run_the_suite_nights_run_the_rest_and_the_rest_runs_by_hand():
     """A dispatch with tests named runs those alone (the focus job), so a
     fix's loop on CI takes minutes, not a whole run's half hour. Only
     main's pushes run the suite, so a fix tried on a branch of its own
-    neither runs every job nor cancels main's run."""
+    neither runs every job nor cancels main's run. A private repository's
+    schedule runs nothing: its minutes are counted, 16 a night."""
     on = DOC.get("on", DOC.get(True))  # PyYAML reads the bare `on` as true
     assert set(on) == {"push", "pull_request", "schedule", "workflow_dispatch"}
     assert on["push"] == {"branches": ["main"]}
@@ -224,11 +225,13 @@ def test_pushes_run_the_suite_nights_run_the_rest_and_the_rest_runs_by_hand():
     for job in PUSHED + ("ui",):
         assert JOBS[job]["if"] == pushes, job
     unnamed = "!inputs.tests"
-    assert JOBS["nightly"]["if"] == ("(github.event_name == 'schedule'"
+    private = "github.event.repository.private"
+    assert JOBS["nightly"]["if"] == (f"((github.event_name == 'schedule' && !{private})"
                                      " || github.event_name == 'workflow_dispatch')"
                                      f" && {unnamed}")
     assert JOBS["installer"]["if"] == f"github.event_name == 'workflow_dispatch' && {unnamed}"
-    assert JOBS["reflection"]["if"] == f"${{{{ {unnamed} }}}}"
+    assert JOBS["reflection"]["if"] == (f"${{{{ {unnamed} && !(github.event_name == 'schedule'"
+                                        f" && {private}) }}}}")
     assert JOBS["focus"]["if"] == "github.event_name == 'workflow_dispatch' && inputs.tests != ''"
 
 

@@ -681,7 +681,8 @@ with read access to the repository and no secrets.
   and the app's walks are left out. The `ui` job type-checks and lints the
   app.
 - **Each night, or by hand:** the end-to-end tier and the walks, on fakes
-  only.
+  only. A private repository's schedule runs nothing, since its runner
+  minutes are counted; there these run by hand.
 - **By hand:** the installer's run of `devtools/sandbox_check.py` on the
   runner itself, a clean Windows thrown away after the job. The job makes an
   update key for its run (`build --pubkey`), so the release key never leaves

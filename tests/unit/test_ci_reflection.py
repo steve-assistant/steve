@@ -37,9 +37,10 @@ def _commands():
 def test_reflection_has_its_own_locked_environment_on_every_run_but_a_focused_one():
     """Installing the extra in this job keeps the default install small. It
     runs on every trigger but a dispatch that names its tests, which runs
-    those alone (the focus job)."""
+    those alone (the focus job), and a private repository's schedule."""
     job = _job()
-    assert job["if"] == "${{ !inputs.tests }}"
+    assert job["if"] == ("${{ !inputs.tests && !(github.event_name == 'schedule'"
+                         " && github.event.repository.private) }}")
     assert job["runs-on"] == "windows-latest"
     [sync] = [shlex.split(run) for run in _commands() if run.startswith("uv sync")]
     assert "--locked" in sync
