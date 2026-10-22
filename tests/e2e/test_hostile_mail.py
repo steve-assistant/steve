@@ -12,7 +12,10 @@ answered as before.
 
 from __future__ import annotations
 
+import contextlib
 import json
+from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -66,14 +69,33 @@ RULES = (
 REFUSED = "554 5.7.1 Message rejected as spam"
 
 
-@pytest.fixture(scope="module")
-def steve(fenced):
+@contextlib.contextmanager
+def _started(folder: Path) -> Iterator[Backend]:
+    """A backend on `folder`, with the rota and the choir in its mailbox."""
     jev = FakeJev(otherwise=0.1, handling="as_is")
-    with (world(fenced / "world", openai=FakeOpenAI(RULES), jev=jev, mail=True) as made,
-          running(made, fenced / "data") as backend):
+    with (world(folder / "world", openai=FakeOpenAI(RULES), jev=jev, mail=True) as made,
+          running(made, folder / "data") as backend):
         made.mail.seed("mail", [ROTA, CHOIR])
         added = backend.post("/control/accounts", made.mailbox()).json()
         assert added.get("ok") and added["test"]["ok"], (added, backend.logs())
+        yield backend
+
+
+@pytest.fixture(scope="module")
+def steve(fenced):
+    with _started(fenced) as backend:
+        yield backend
+
+
+@pytest.fixture
+def own_steve(tmp_path):
+    """A backend for one test alone, on the test's own fenced folder. Jev's
+    breaker is the worker's (`core/decide.py`): after three failed asks it
+    asks no more for 30 s. Where the screen's local models are missing, as
+    on CI, the down case failed enough asks to open it, and the slow case
+    after it, on the same backend, never asked Jev at all (CI's first
+    nightly run, 22 October 2026)."""
+    with _started(tmp_path / "fenced") as backend:
         yield backend
 
 
@@ -144,12 +166,14 @@ async def test_a_password_changed_on_the_server_is_named_as_the_thing_to_fix(ste
 
 
 @pytest.mark.parametrize("trouble", ["down", "slow"])
-async def test_the_screen_down_or_slow_still_lets_an_email_be_read(steve, trouble):
+async def test_the_screen_down_or_slow_still_lets_an_email_be_read(own_steve, trouble):
     """Jev screens what an email says before the model reads it. Down, or
     slower than its time limit, it falls back to the screen on this
     computer, then to an extract; the email is read either way, and the
-    turn is not held up. Each case reads an email never read before: a
-    verdict kept from an earlier read would not ask Jev at all."""
+    turn is not held up. Each case has its own backend, whose Jev has not
+    failed yet, and reads an email never read before: a verdict kept from
+    an earlier read would not ask Jev at all."""
+    steve = own_steve
     made, jev = steve.world, steve.world.jev
     note = NOTES[trouble]
     made.mail.seed("mail", [note])

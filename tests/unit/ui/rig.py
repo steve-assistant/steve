@@ -495,10 +495,18 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
                    ["--remote-debugging-port=0", *LOOPBACK_ONLY, *ON_SCREEN]))
     forget_port(webview)
     began = time.monotonic()
-    with contained([str(exe)], env=env, cwd=folder, stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL) as process:
-        browser = playwright.chromium.connect_over_cdp(
-            f"http://127.0.0.1:{devtools_port(webview, STARTS_WITHIN_S)}")
+    printed = folder / "app.out"
+    with (printed.open("wb") as out,
+          contained([str(exe)], env=env, cwd=folder, stdout=out,
+                    stderr=subprocess.STDOUT) as process):
+        try:
+            port = devtools_port(webview, STARTS_WITHIN_S)
+        except TimeoutError as late:
+            # On CI's first nightly run (22 October 2026) five walks said
+            # only that no port came: not whether the app had ended, nor
+            # what it said as it did, with its output thrown away.
+            raise TimeoutError(f"{late}\n{_unstarted(process, printed, data)}") from late
+        browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")
         app = Desktop(process, browser, data, webview)
 
         def noted(what: str, page) -> None:
@@ -525,6 +533,19 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
             browser.close()
     left = left_behind(data, webview)
     assert not left, f"secrets the app left on disk: {left}"
+
+
+def _unstarted(process: subprocess.Popen, printed: Path, data: Path) -> str:
+    """What an app whose webview never came up left to go on: whether it is
+    still running, what it printed, and the end of each log it wrote."""
+    code = process.poll()
+    lines = ["the app is " + ("running" if code is None else f"gone, exit code {code}")]
+    logs = [printed, *sorted((data / "logs").glob("*.log"))]
+    for log in logs:
+        with contextlib.suppress(OSError):
+            tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-25:]
+            lines.append(f"--- {log.name}\n" + "\n".join(tail))
+    return "\n".join(lines)
 
 
 # The key the backend is given in a test: the child fence's stand-in

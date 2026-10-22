@@ -91,7 +91,11 @@ async def test_with_openais_balance_spent_the_reply_says_to_top_up_and_nothing_r
     assert said["type"] == "error" and caps.NO_CREDIT in said["error"], said
     asked = chats(steve)
     # OpenAI's SDK tries a 429 twice more on its own; nothing past that.
-    assert 1 <= asked <= 3
+    # Five came on CI's first nightly run (22 October 2026), and the
+    # assertion said nothing of which: the SDK numbers its own tries.
+    assert 1 <= asked <= 3, ([(kept.path, kept.headers.get("x-stainless-retry-count"))
+                              for kept in steve.world.openai.requests
+                              if ASKED in json.dumps(kept.body)], steve.logs())
     time.sleep(5)
     assert chats(steve) == asked
     notes = [n for n in steve.get("/control/needs").json()["needs"] if n["kind"] == "stopped"]

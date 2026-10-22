@@ -172,6 +172,11 @@ jobs:
           cd ui && npm ci && npm run build
           cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
 
+      # Unbuilt, the worker says modules cannot run here, and the extension's
+      # end-to-end test waits for an answer that never comes.
+      - name: Build the module runtime
+        run: uv run --no-sync python -m core.sandbox build
+
       - name: The end-to-end tier and the walks
         run: uv run --no-sync pytest tests/e2e tests/unit/ui/test_app_walks.py tests/unit/ui/test_exit_walk.py -q -n 3 --dist loadgroup -p no:cacheprovider
 

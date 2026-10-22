@@ -68,6 +68,16 @@ def test_the_app_is_built_before_the_tests_that_start_it():
         assert built < next(i for i, run in enumerate(runs) if "pytest" in run), job
 
 
+def test_the_module_runtime_is_built_before_the_tier_that_runs_modules():
+    """Unbuilt, the worker says modules cannot run here, and the extension's
+    end-to-end test failed waiting for an answer: CI's first nightly run, 22
+    October 2026. The tier ran only on the maintainer's laptop, where the
+    runtime had been built long before."""
+    runs = _runs("nightly")
+    built = next(i for i, run in enumerate(runs) if "python -m core.sandbox build" in run)
+    assert built < next(i for i, run in enumerate(runs) if "pytest" in run)
+
+
 def test_each_push_runs_the_shells_rust_tests_as_the_check_does():
     """The shell's tests ran nowhere until 19 October 2026. CI runs the
     check's own command, after the build whose crates it reuses."""
