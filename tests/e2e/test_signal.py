@@ -80,7 +80,10 @@ def status(steve: Backend, title: str) -> str | None:
 def test_a_card_arrives_as_a_note_to_self_and_yes_with_its_word_runs_it(steve):
     asked = signal_cli.says(steve.world.signal, ASK_WEEK)
     word = heard(steve, r"Reply YES (\S+) to go ahead", after=asked)[1]
-    assert told(steve, re.escape(SET), after=asked)
+    # Waited for too: the card goes out as the tool makes it, the reply only
+    # once the model has answered after it. Taken as already there, it was
+    # missing on CI's slower runner (22 October 2026).
+    heard(steve, re.escape(SET), after=asked)
 
     yes = signal_cli.says(steve.world.signal, f"YES {word}")
 

@@ -13,10 +13,13 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
+from core import paths
 from core.sandbox import grants, profiles, testrun
 
 pytestmark = [pytest.mark.processes, pytest.mark.appcontainer]
@@ -98,6 +101,29 @@ def test_a_test_that_ends_the_run_itself_is_not_a_pass(tmp_path, trials):
     passed = testrun.run("walls", _module(tmp_path / "passes", test_tool=PASSES))
     # The seal's line is taken out: what is shown ends as pytest ended it.
     assert passed.ok and re.fullmatch(r"1 passed in [0-9.]+s", passed.said.splitlines()[-1])
+
+
+def test_a_modules_tests_run_where_the_container_may_not_open_nul(tmp_path):
+    """pytest's usual capture opens NUL for stdin, and a less-privileged
+    container on Windows Server may not: CI's runner refused it, and every
+    module's tests failed before the first one ran (22 October 2026). The
+    laptop's Windows allows it, so the refusal is made here: the run's own
+    code, outside a container, with NUL's name pointing at a folder, which
+    Windows refuses to open as a file just as the runner refused NUL."""
+    folder = _module(tmp_path / "walls", test_tool=PASSES)
+    refused = tmp_path / "refused"
+    refused.mkdir()
+    with pytest.raises(PermissionError):
+        refused.open(encoding="utf-8")
+    start = ("import os, sys; os.devnull = sys.argv.pop(1); "
+             "exec(compile(sys.argv.pop(1), '<child>', 'exec'))")
+    done = subprocess.run(
+        [sys.executable, "-c", start, str(refused), testrun.CHILD,
+         "walls", str(folder), str(tmp_path / "testing"), "-q", str(folder / "tests")],
+        input="the-seal\n", capture_output=True, encoding="utf-8", errors="replace",
+        timeout=60, cwd=paths.SOURCE)
+    said = done.stdout.rstrip().splitlines()
+    assert said and said[-1] == "the-seal 0", done.stdout + done.stderr
 
 
 def test_a_test_that_never_ends_is_stopped(tmp_path, trials):

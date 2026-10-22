@@ -475,36 +475,47 @@ async def test_a_frame_poll_does_not_keep_the_live_browser_alive_but_their_hands
     """The page asks for a picture every 350 ms for as long as it is open, and
     each ask reset the idle clock: a sandbox the user had left stayed for as long as
     a tab did."""
+    then = _a_second_ago()
     box = _Sandbox()
     live._live[:] = [box]
-    live._used[:] = [1_000.0]
+    live._used[:] = [then]
 
     await live._session(create=False, touch=False)
 
-    assert live._used == [1_000.0]
+    assert live._used == [then]
     assert live.IDLE_S <= 15 * 60, "an abandoned live view is gone within a quarter hour"
-    assert await live.sweep(now=1_000.0 + live.IDLE_S + 1) is True and box.closed
+    assert await live.sweep(now=then + live.IDLE_S + 1) is True and box.closed
 
     live._live[:] = [_Sandbox()]
-    live._used[:] = [1_000.0]
+    live._used[:] = [then]
     await live._session(create=False)
-    assert live._used[0] > 1_000.0
+    assert live._used[0] > then
+
+
+def _a_second_ago() -> float:
+    """A last use on the real clock. A made-up 1,000 s was later than a
+    hand's touch on any computer up for less than 17 minutes, so the touch
+    looked like no touch: CI's runner (22 October 2026)."""
+    import time
+
+    return time.monotonic() - 1.0
 
 
 def test_the_apps_picture_poll_is_not_use_but_their_click_is_through_the_real_routes(clean_live):
     """The route the app calls every 350 ms, not only the helper under it."""
+    then = _a_second_ago()
     box = _Sandbox()
     live._live[:] = [box]
-    live._used[:] = [1_000.0]
+    live._used[:] = [then]
     app = Starlette(middleware=[Middleware(localonly.LocalOnly)], routes=live.ROUTES)
     client = _client(app)
 
     for _ in range(3):
         assert client.get("/browser/live/frame").json()["ok"] is True
-    assert live._used == [1_000.0]
+    assert live._used == [then]
 
     assert client.post("/browser/live/act", json={"kind": "key", "key": "Enter"}).json()["ok"]
-    assert live._used[0] > 1_000.0
+    assert live._used[0] > then
 
 
 async def test_two_opens_at_once_start_one_sandbox(clean_live, monkeypatch):

@@ -67,9 +67,16 @@ function Pythons {
     Where-Object { $_.Path -and $_.Path.StartsWith($Dir, [StringComparison]::OrdinalIgnoreCase) })
 }
 
-# Steve's processes now, by id: the app and the Pythons under the install.
+# Steve's processes now, by id: the app and the backend's Pythons. Not the
+# module runtime's, which come and go as Steve runs: the sandbox's check at
+# each start runs one for a moment. Counted, it ended on its own during the
+# first CI run (22 October 2026), and a refused installer was blamed for
+# closing it.
 function Running {
-  @(@(Get-Process -Name Steve -ErrorAction SilentlyContinue) + (Pythons) | ForEach-Object { $_.Id })
+  $backend = Join-Path $Dir 'backend'
+  @(@(Get-Process -Name Steve -ErrorAction SilentlyContinue) +
+    @(Pythons | Where-Object { $_.Path.StartsWith($backend, [StringComparison]::OrdinalIgnoreCase) }) |
+    ForEach-Object { $_.Id })
 }
 
 # Which of these processes still run.
@@ -174,16 +181,26 @@ function WebView2 {
 
 # An NSIS uninstaller copies itself to the temporary folder and runs from
 # there, so the process started returns at once: wait for the copy too.
+# The uninstaller runs from a copy of itself in %TEMP%\~nsu*.tmp, and the
+# one started here ends at once. Its last act is removing the entry in
+# Windows' list of programs. Until the first CI run (22 October 2026) this
+# waited only for processes by name and for Steve.exe, the first file it
+# deletes: it returned with the uninstall half done, and the next install
+# raced the uninstaller still deleting, which left a backend without its
+# `Lib`.
 function Wait-Uninstalled([int]$Seconds) {
   $deadline = (Get-Date).AddSeconds($Seconds)
+  $seen = @{}
   Start-Sleep -Seconds 2
   while ((Get-Date) -lt $deadline) {
-    $running = @(Get-Process -ErrorAction SilentlyContinue |
-      Where-Object { $_.Name -like 'Un_*' -or $_.Name -eq 'uninstall' })
-    if ($running.Count -eq 0 -and -not (Test-Path (Join-Path $Dir 'Steve.exe'))) { return }
+    $running = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+        $_.Name -like 'Un_*' -or $_.Name -eq 'uninstall' -or ($_.Path -and $_.Path -like '*\~nsu*') })
+    $running | ForEach-Object { $seen["$($_.Name) ($($_.Path))"] = $true }
+    if ($running.Count -eq 0 -and -not (Test-Path $Entry) -and
+        -not (Test-Path (Join-Path $Dir 'Steve.exe'))) { return }
     Start-Sleep -Milliseconds 500
   }
-  throw "the uninstaller had not finished after $Seconds s"
+  throw "the uninstaller had not finished after $Seconds s; seen running: $(@($seen.Keys) -join ', ')"
 }
 
 function Credentials {
@@ -345,25 +362,23 @@ try {
     }
   }
 
-  Step 'a changed module stops the backend it started' {
-    # A module is checked in the pass after the start (ui/src-tauri/src/
-    # integrity.rs), not before: Python starts, and is stopped for good.
+  Step 'a changed module is refused, and Python never starts' {
+    # Checked before the start, as a DLL is (ui/src-tauri/src/integrity.rs
+    # `before_start`). Until step 11's audit (F3) a module was checked in a
+    # pass after the start, and a changed one ran once, as Steve.
     Stop-Steve
     $module = Join-Path $Dir 'backend\app\core\identity.py'
     $saved = [IO.File]::ReadAllBytes($module)
     try {
       Add-Content -Path $module -Value '# changed' -Encoding ASCII
       Start-Steve
-      $clock = [Diagnostics.Stopwatch]::StartNew()
-      $started = $false
-      while ($clock.Elapsed.TotalSeconds -lt 300) {
-        $running = (Pythons).Count -gt 0
-        if ($running) { $started = $true } elseif ($started) { break }
-        Start-Sleep -Milliseconds 500
+      $deadline = (Get-Date).AddSeconds(30)
+      while ((Get-Date) -lt $deadline) {
+        if ((Pythons).Count -gt 0) { throw 'Python started with a changed core\identity.py' }
+        Start-Sleep -Milliseconds 250
       }
-      if (-not $started) { throw 'Python never started: the change was refused before the start' }
-      if ((Pythons).Count -gt 0) { throw 'the backend still runs 300 s after it started on a changed module' }
-      "stopped $([math]::Round($clock.Elapsed.TotalSeconds)) s after the start"
+      if (Healthy) { throw 'the backend answered with a changed core\identity.py' }
+      'refused for core\identity.py'
     } finally {
       Stop-Steve
       [IO.File]::WriteAllBytes($module, $saved)

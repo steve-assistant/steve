@@ -59,6 +59,13 @@ MAX_DRAFT_SAID = 200_000  # what the pipeline reads failures from; its tools cut
 # that ended the process itself (`os._exit(0)`) exited 0 as a pass does,
 # and passed (step 11's audit, B5). Code that dug the seal out of the
 # interpreter's frames could still forge it, and is not code a review passes.
+#
+# Nothing here opens NUL, which a less-privileged container on Windows
+# Server may not: CI's runner refused it, and every module's tests failed
+# before the first one ran (22 October 2026). pytest opens it twice, for
+# its descriptor capture's stdin and as its logging plugin's file, so
+# output is captured at sys.stdout and sys.stderr, and the logging plugin,
+# with its `caplog`, is off.
 CHILD = """
 import sys
 from pathlib import Path
@@ -69,7 +76,8 @@ from steve_sdk.mount import mount
 mount(name, Path(folder))
 import pytest
 tests = str(Path(folder) / "tests")
-code = int(pytest.main(["-p", "no:cacheprovider", "--import-mode=importlib",
+code = int(pytest.main(["-p", "no:cacheprovider", "-p", "no:logging", "--capture=sys",
+                        "--import-mode=importlib",
                         "--rootdir", folder, "-c", str(Path(folder) / "manifest.toml"),
                         "--confcutdir", tests, *sys.argv[4:]]))
 print()
