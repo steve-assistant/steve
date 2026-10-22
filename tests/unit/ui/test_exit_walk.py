@@ -45,15 +45,14 @@ def _on(page, question: str, within_ms: int = WAIT_MS) -> None:
     and what it says is wrong, not only that a heading never came."""
     try:
         page.get_by_role("heading", name=question).wait_for(timeout=within_ms)
-    except PlaywrightTimeout:
+    except PlaywrightTimeout as timed_out:
         shown = page.locator("h1, h2, [role=alert]").all_inner_texts()
-        # On CI (22 October 2026) the heading waited for was on the page
-        # when the wait gave up: what the wait could not see, it says.
+        # On CI (22 October 2026) the heading waited for was on the page,
+        # matched and visible, when the wait gave up: what the wait did
+        # instead is in Playwright's own log of the call.
         named = page.get_by_role("heading", name=question).count()
-        first = page.locator("h1").first
-        box = first.bounding_box(timeout=2_000) if first.count() else "no h1"
         raise AssertionError(f"not on {question!r}; the page shows {shown}; headings so"
-                             f" named now: {named}; the first h1's box {box}") from None
+                             f" named now: {named}\n{timed_out.message}") from None
 
 
 def _past_hello(page) -> None:

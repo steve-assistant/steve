@@ -193,17 +193,23 @@ def _end(held, process: subprocess.Popen, folder: Path | None, within: float = 3
 
 def _end_naming(folder: Path, within: float = 10.0) -> list[str]:
     """Ends each process but this one that names `folder` on its command
-    line, until none does or `within` seconds pass; says those left."""
+    line, until none does or `within` seconds pass; says those left, and
+    why the last try to end each failed. On CI (22 October 2026) three
+    WebView2 renderers outlived 10 s of tries, and nothing said why."""
     import psutil
 
     deadline = time.monotonic() + within
+    refused: dict[int, str] = {}
     while True:
         named = [pid for pid in _naming(folder) if pid != os.getpid()]
         if not named or time.monotonic() > deadline:
-            return [_described(pid) for pid in named]
+            return [f"{_described(pid)}, {refused.get(pid, 'ended without an error')}"
+                    for pid in named]
         for pid in named:
-            with contextlib.suppress(psutil.Error):
+            try:
                 psutil.Process(pid).kill()
+            except psutil.Error as error:
+                refused[pid] = f"not ended: {type(error).__name__}"
         time.sleep(0.2)
 
 
@@ -645,9 +651,23 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
         def noted(what: str, page) -> None:
             app.seen.append(f"{time.monotonic() - began:6.1f} s  {what}: {page.url}")
 
+        def navigation(request, how: str) -> None:
+            # Playwright's waits and clicks first wait out a navigation the
+            # main frame has begun and not ended. On CI (22 October 2026)
+            # the stranger's walk waited 90 s for a heading that was on the
+            # page and visible, which reads that way: say each navigation.
+            if request.is_navigation_request():
+                app.seen.append(f"{time.monotonic() - began:6.1f} s  navigation {how}: "
+                                f"{request.url[:120]}")
+
         def watch(page) -> None:
             page.on("close", lambda p: noted("closed", p))
             page.on("crash", lambda p: noted("crashed", p))
+            page.on("framenavigated", lambda frame: frame == page.main_frame and noted(
+                "committed", page))
+            page.on("request", lambda r: navigation(r, "asked"))
+            page.on("requestfinished", lambda r: navigation(r, "finished"))
+            page.on("requestfailed", lambda r: navigation(r, f"failed ({r.failure})"))
 
         for context in browser.contexts:
             context.on("page", lambda p: (noted("opened", p), watch(p)))
