@@ -133,6 +133,27 @@ that changed. Updates are signed with the same key.
    python -m devtools.package scan ui\src-tauri\target\release\Steve.exe
    ```
 
+7. Write the updater's file, `latest.json`, beside the installer. Every
+   install reads it to find a newer version. The command first checks the
+   installer's signature as the app will: made by the key the app trusts,
+   over the installer's bytes, and naming this version. If any of these
+   fails, every install would refuse the update without telling anyone.
+   The notes are a text file you write.
+
+   ```powershell
+   python -m devtools.package latest ui\src-tauri\target\release\bundle\nsis\Steve_0.1.0_x64-setup.exe --notes notes.md
+   ```
+
+8. Publish the release on GitHub, tagged `v` and the version, at the
+   commit the installer was built from. Attach the installer, its `.sig`
+   and `latest.json`. The app looks for `latest.json` in the latest
+   release, which is never a draft or a pre-release, so publishing is what
+   offers it to every install.
+
+   ```powershell
+   gh release create v0.1.0 --target COMMIT --title "Steve 0.1.0" --notes-file notes.md ui\src-tauri\target\release\bundle\nsis\Steve_0.1.0_x64-setup.exe ui\src-tauri\target\release\bundle\nsis\Steve_0.1.0_x64-setup.exe.sig ui\src-tauri\target\release\bundle\nsis\latest.json
+   ```
+
 ## Check a change
 
 Run these from the repository root with the environment activated:

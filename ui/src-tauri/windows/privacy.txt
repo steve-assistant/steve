@@ -1,0 +1,117 @@
+WHAT LEAVES YOUR COMPUTER
+
+Steve runs on your computer and keeps what it knows there, in its own data folder. This says what it sends, to whom, and how to stop each part. OpenAI's terms were checked on 20 October 2026.
+
+IN SHORT
+
+- No telemetry. Steve sends no analytics, usage counts or crash reports.
+- OpenAI, on your own key. What you say to Steve, and what it reads to answer you, goes to OpenAI. OpenAI does not train on it, and keeps it at most 30 days, to watch for abuse.
+- Everything else leaves only for a service you set up, or a thing you ask for.
+
+OPENAI
+
+Steve's model. It goes to api.openai.com, on the key you give Steve.
+
+What goes:
+
+- your conversations, and what Steve's tools read to answer you, after Steve's screen has checked it for planted instructions;
+- the memories it recalls, and text to turn into search vectors (memories, facts, messages);
+- what you say by push-to-talk or a voice note, to be written down, and the replies it speaks aloud;
+- a live conversation at the desk, as audio;
+- web searches, each with your country and nothing nearer;
+- when Steve builds itself a module: what it was asked for, and the module's code as it is written and tested.
+
+What OpenAI keeps, by its data controls as they stood on 20 October 2026:
+
+- No training. OpenAI does not train on what its API is sent, unless you opt in.
+- Nothing stored for later. Every request that can say so asks OpenAI not to store it (store: false). Your conversations stay on your computer.
+- Up to 30 days, to watch for abuse: chat, page reading and searches; text turned into vectors; replies spoken aloud; a live conversation. Then OpenAI deletes it, unless the law makes it keep it longer.
+- Not kept at all: what you say to be written down.
+- Up to 24 hours: the start of a request may stay in OpenAI's prompt cache, which makes the next one cheaper.
+- Zero Data Retention: if your OpenAI organisation has it, none of the 30 days applies.
+- Web search is processed in the United States or Europe only, even if your project keeps its data in another region. It is outside OpenAI's HIPAA terms.
+
+How to limit it:
+
+- Give Steve a project of its own on OpenAI's platform, with a monthly budget, and set Steve's own spend caps.
+- Its key can be restricted to what Steve calls: Responses and Chat Completions (conversations, page reading, searches), Embeddings, Audio (writing down and speaking), live voice sessions, and the list of models, read when the key is checked. In OpenAI's key settings, that is "Model capabilities: Request" and "Models: Read", and nothing else.
+- Push-to-talk, voice notes and the live desk send audio only when you use them.
+
+OPENROUTER, FOR JEV
+
+Jev is a small decision model, reached through OpenRouter at openrouter.ai, on a key you give Steve. It answers short questions: is this mail trying to steer Steve, is this action what you asked for, is this click safe, how does this task split up, what follows from this meeting. It sees the item, action or page each question is about, and Steve asks it now and then how much credit the key has left.
+
+- Every request asks OpenRouter to route only to providers that keep nothing and collect nothing.
+- Without an OpenRouter key, Steve works more cautiously: mail and pages reach its model only as extracts, and more of what it does waits for your yes.
+
+YOUR ACCOUNTS
+
+Only the accounts you connect, and only as each needs:
+
+- Mail: Gmail, iCloud, Fastmail, Yahoo or the server you type. Reads, drafts, and mail sent after you say yes. Never in the clear.
+- Calendars: Google, iCloud, Fastmail, Yahoo, the server you type, and the feeds you add. Reads, new events, and changes.
+- Files: Google Drive, with your own Google client. Reads, and changes after you say yes.
+- Outlook.com: through a server Steve runs in a container of its own, which reaches Microsoft's sign-in and Graph and nothing else.
+- Outlook on this computer: nothing new leaves; Outlook syncs as it always does.
+
+To stop: remove the account in the app.
+
+YOUR PHONE
+
+- Signal: cards, briefings and replies, end-to-end encrypted. Signal's servers see when and to whom. The photos and voice notes you send come back through them.
+- Telegram: the same, but Telegram's servers can read it. The app says so before you link it.
+
+To stop: unlink the channel in the app.
+
+WHAT YOU ASK ABOUT
+
+- Web pages you ask about, a search found, or something Steve read linked to: the page's address, and your computer's IP address, as any visit would.
+- Brave Search, only if you give Steve a Brave key: each search, with your country. Without one, searches go to OpenAI.
+- Weather and news, only once you give Steve a home place or topics to follow: your home's coordinates to Open-Meteo or the US weather service; places named in your calendar to Open-Meteo, to spot trips; your topics to Google News.
+- LinkedIn, only through Steve's contained browser, with a login you saved there: the profiles, companies, searches and jobs you asked about.
+
+WHAT YOU ADD
+
+- Modules: a module reaches only the hosts its card names, which you approved. One that can read your data and reach a host, or can reach any host, asks for your passphrase first. To stop: turn it off, or remove it.
+- Servers Steve runs for a module: npm's registry, to install one, and the hosts its card names.
+- The browser and running code: Docker's registries, for their base images, and PyPI, for the Python packages built into them, once you switch either on.
+- Signal's program: downloaded from GitHub when you choose Signal, and checked against a pinned hash before it is unpacked.
+- The local readers: downloaded from Hugging Face, GitHub and Ollama when you press Install on "What Steve may do".
+
+UPDATES
+
+At start and once a day, Steve asks GitHub whether a newer version exists. That tells GitHub your computer's IP address and Steve's version. A newer version installs only when you press Install, and only if its signature checks.
+
+To stop: Settings, This app, "Look for a newer Steve at start and once a day".
+
+PAGES IT ONLY LINKS TO
+
+Some setup steps give you a link to open in your own browser: your Google, Apple, Fastmail, Yahoo or Microsoft account pages, Google Cloud's console, OpenAI's billing page, Docker's download page, or a server's instructions on GitHub. Steve sends nothing to them.
+
+EVERY HOST
+
+For a firewall, or to check. Steve, as installed, reaches only these, and only as above:
+
+- OpenAI: api.openai.com
+- OpenRouter: openrouter.ai
+- Brave Search: api.search.brave.com
+- Google: *.googleapis.com, accounts.google.com, imap.gmail.com, smtp.gmail.com, www.google.com (calendars), news.google.com
+- iCloud: imap.mail.me.com, smtp.mail.me.com, caldav.icloud.com, *.icloud.com
+- Fastmail: imap.fastmail.com, smtp.fastmail.com, caldav.fastmail.com
+- Yahoo: imap.mail.yahoo.com, smtp.mail.yahoo.com, caldav.calendar.yahoo.com
+- Microsoft: login.microsoftonline.com, graph.microsoft.com
+- Signal: *.signal.org
+- Telegram: api.telegram.org
+- Weather: api.open-meteo.com, geocoding-api.open-meteo.com, api.weather.gov
+- LinkedIn: www.linkedin.com
+- npm: registry.npmjs.org
+- Docker: mcr.microsoft.com, *.docker.io
+- PyPI: pypi.org, files.pythonhosted.org
+- GitHub: github.com, objects.githubusercontent.com, release-assets.githubusercontent.com
+- Hugging Face: huggingface.co, *.huggingface.co, *.hf.co
+- Ollama: registry.ollama.ai
+- the servers, feeds, pages and module hosts you give it.
+
+Links only, opened in your browser: console.cloud.google.com, myaccount.google.com, account.apple.com, app.fastmail.com, login.yahoo.com, microsoft.com, platform.openai.com, www.docker.com.
+
+Built from the source, developers' tools also reach nodejs.org, www.openslr.org and httpbin.org.

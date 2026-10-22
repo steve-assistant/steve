@@ -14,6 +14,7 @@ import {
 } from "./control";
 import { openLink } from "./desktop";
 import { Check } from "./Form";
+import { Keys } from "./Keys";
 import { Loading } from "./Loading";
 import { type Say } from "./pages";
 
@@ -101,6 +102,7 @@ export function Accounts({ toast, onScreen }: Props) {
       </section>
 
       {mailbox && <OwnAddress mailbox={mailbox} toast={toast} onChanged={changed} />}
+      <Keys onScreen={onScreen} />
     </div>
   );
 }

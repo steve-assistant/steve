@@ -52,8 +52,8 @@ def test_with_only_jevs_key_a_turn_names_the_openai_key_and_does_not_go_elsewher
 
 def test_a_key_set_after_a_client_was_built_without_it_is_used_without_a_restart(
         monkeypatch):
-    """The client built without the key holds a stand-in; once a turn finds
-    the key missing it is dropped, and the next one builds with the key."""
+    """The client built without the key holds a stand-in; once the key is
+    kept, the next call builds with it."""
     monkeypatch.setattr(provider.secrets, "get", _only())
     stale = provider.model_for(Role.CONVERSE)
     assert provider.key_missing() == "OPENAI_API_KEY"
@@ -63,6 +63,37 @@ def test_a_key_set_after_a_client_was_built_without_it_is_used_without_a_restart
     fresh = provider.model_for(Role.CONVERSE)
     assert fresh is not stale
     assert provider._openai_provider().client.api_key == "sk-OPENAI_API_KEY"
+
+
+def test_a_key_kept_after_a_client_was_built_is_the_next_calls_with_no_turn_between(
+        monkeypatch):
+    """The first install's first answer (22 October 2026) was refused with
+    a 401, "Incorrect API key provided: missing-OPENAI_API_KEY": a client
+    was built before setup kept the key, and clients were dropped only when
+    a turn found the key missing, which none did in between."""
+    monkeypatch.setattr(provider.secrets, "get", _only())
+    provider.model_for(Role.CONVERSE)
+    provider.client_for(MODELS[Role.CONVERSE])
+
+    monkeypatch.setattr(provider.secrets, "get", _only("OPENAI_API_KEY"))
+    assert provider.model_for(Role.CONVERSE).wrapped.client.api_key == "sk-OPENAI_API_KEY"
+    assert provider.client_for(MODELS[Role.CONVERSE]).wrapped.client.api_key == (
+        "sk-OPENAI_API_KEY")
+
+
+def test_a_key_changed_while_steve_runs_is_the_next_calls(monkeypatch):
+    """A key replaced from a terminal (`core.secrets set`, as the user guide
+    says) reaches the running worker's next call, not its next restart; an
+    unchanged key keeps the same client, and its connections."""
+    monkeypatch.setattr(provider.secrets, "get",
+                        lambda key, default=None: "sk-old" if key == provider.KEY else default)
+    old = provider.model_for(Role.CONVERSE)
+    assert provider.model_for(Role.CONVERSE) is old
+
+    monkeypatch.setattr(provider.secrets, "get",
+                        lambda key, default=None: "sk-new" if key == provider.KEY else default)
+    now = provider.model_for(Role.CONVERSE).wrapped.client.api_key
+    assert now == "sk-new"  # pragma: allowlist secret
 
 
 def test_a_client_is_built_without_keys_and_says_which_is_missing(monkeypatch, caplog):

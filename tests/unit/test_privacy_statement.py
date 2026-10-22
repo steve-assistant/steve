@@ -13,7 +13,10 @@ from __future__ import annotations
 import json
 import re
 
+import pytest
+
 from core import paths
+from devtools import package
 from tests.gate.test_hosts_named import MODEL, listed_in
 
 STATEMENT = paths.SOURCE / "PRIVACY.md"
@@ -39,11 +42,32 @@ def test_setup_shows_the_privacy_statement_itself():
 
 def test_the_installer_shows_the_same_privacy_statement_as_setup():
     """A separate installer summary could omit a new destination or its
-    off switch. Tauri's license page reads the statement itself, before
-    installing, so there is only one text to keep current."""
+    off switch. Tauri's license page shows, before installing, the
+    statement's own text made plain, and only as PRIVACY.md now says it."""
     tauri = paths.SOURCE / "ui" / "src-tauri"
     config = json.loads((tauri / "tauri.conf.json").read_text(encoding="utf-8"))
     named = config["bundle"].get("licenseFile")
     assert named, "the installer must show PRIVACY.md before installing"
-    assert (tauri / named).resolve() == STATEMENT.resolve()
-    assert STATEMENT.is_file()
+    assert (tauri / named).resolve() == package.PRIVACY_PAGE.resolve()
+    assert package.PRIVACY == STATEMENT
+    shown = package.PRIVACY_PAGE.read_text(encoding="utf-8")
+    assert shown == package.privacy_page(STATEMENT.read_text(encoding="utf-8")), (
+        "PRIVACY.md changed: run python -m devtools.package privacy")
+
+
+def test_the_installers_privacy_page_shows_no_markdown():
+    """NSIS's page shows a file as it is. The first build showed PRIVACY.md
+    itself, with every # and ** (22 October 2026)."""
+    shown = package.privacy_page(STATEMENT.read_text(encoding="utf-8"))
+    assert "WHAT LEAVES YOUR COMPUTER" in shown.splitlines()
+    assert not re.search(r"^#|\*\*|`", shown, re.MULTILINE)
+    assert "- OpenAI: api.openai.com" in shown.splitlines()
+
+
+def test_markdown_the_page_cannot_show_is_refused_not_shown_with_its_marks():
+    """A link or a table added to the statement would reach every
+    installer as raw markup; the page is refused instead, naming the line."""
+    for line in ("See [the terms](https://example.com/terms).", "| host | why |",
+                 "> quoted", "```", "<b>bold</b>"):
+        with pytest.raises(package.BuildError, match="line 3"):
+            package.privacy_page(f"# Title\n\n{line}\n")

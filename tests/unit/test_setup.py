@@ -120,6 +120,21 @@ def test_a_key_that_works_is_kept_and_its_page_is_done(client, keychain, openai)
     assert keychain.held["OPENROUTER_API_KEY"] == jev.GOOD and _done(client)["jev"]
 
 
+def test_which_keys_are_kept_is_said_and_a_key_given_again_replaces_the_one_kept(
+        client, keychain, openai):
+    """Setup was the only place to give a key: one skipped there, or one to
+    change, took a PowerShell command, and the first install found nowhere
+    in the app to see or change one (22 October 2026). Settings: Accounts
+    reads which are kept here, and keeps a new one as setup does."""
+    keychain.held["OPENAI_API_KEY"] = "sk-old"  # pragma: allowlist secret
+    assert client.get("/setup/keys")["keys"] == {"openai": True, "openrouter": False}
+
+    said = client.post("/setup/key", json={"service": "openai", "key": GOOD}).json()
+    assert said["ok"] and keychain.held["OPENAI_API_KEY"] == GOOD
+    assert client.post("/setup/key", json={"service": "openrouter", "key": jev.GOOD}).json()["ok"]
+    assert client.get("/setup/keys")["keys"] == {"openai": True, "openrouter": True}
+
+
 def test_a_refused_key_says_why_and_is_not_kept(client, keychain, openai, monkeypatch):
     """Kept, a wrong key would be found out at the first answer, which says
     only that something failed."""

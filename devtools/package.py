@@ -5,6 +5,8 @@
     python -m devtools.package compare FOLDER FOLDER
     python -m devtools.package manifest --key KEY [--out build]
     python -m devtools.package scan APP [APP ...]
+    python -m devtools.package latest INSTALLER [--notes FILE] [--out FILE] [--pubkey FILE]
+    python -m devtools.package privacy
 
 `build` writes `<out>/staging/`: `backend/`, a Python with the locked
 dependencies and Steve's code in `backend/app/`, and `runtime/`, the module
@@ -43,6 +45,18 @@ What it prevents:
   too, unless the build remaps the profile's folder (README, "Building the
   installer"). `scan` fails on an app that names the builder's profile or
   this checkout.
+- **An update every install quietly refuses.** The updater takes a release
+  only if its installer's signature verifies under the key built into the
+  app and names the version announced (`ui/src-tauri/src/update.rs`). A
+  `latest.json` failing either is no error anyone sees: each install
+  checks, refuses, and stays on the old version. `latest` checks the same
+  things, the signature by Ed25519 as minisign makes it, before it writes
+  the file.
+- **A privacy page of markdown.** The installer shows the privacy statement
+  before it installs, and NSIS's page shows a file as it is: PRIVACY.md
+  came out with its `#` and `**`. `privacy` writes the statement as plain
+  text to `ui/src-tauri/windows/privacy.txt`, the page the installer shows,
+  and a test fails when that falls behind PRIVACY.md.
 
 `smoke` moves the built tree to a folder whose name has a space and an
 accent, and runs it with an environment holding only what Windows gives
@@ -65,7 +79,11 @@ import sys
 import time
 import tomllib
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from core import addons, identity, paths
 from core.sandbox import runtime
@@ -521,6 +539,76 @@ def sign(manifest: Path, key: Path, *, checkout: Path | None = None, trusted: st
     return signature
 
 
+def _minisign(stored: str) -> list[str]:
+    """The lines of a minisign key or signature, as Tauri stores either:
+    base64 of minisign's text."""
+    return base64.b64decode(stored).decode("utf-8").splitlines()
+
+
+def check_release(installer: Path, signature: str, trusted: str, version: str) -> None:
+    """Refuse an installer the updater would refuse: one whose signature is
+    not by the `trusted` key, does not verify over the installer's bytes, or
+    names a version other than `version`.
+
+    Minisign signs the file (its BLAKE2b-512 hash, for the prehashed "ED"
+    signatures Tauri's signer makes), then signs that signature with the
+    trusted comment, which is where Tauri records the version."""
+    lines = _minisign(signature)
+    if len(lines) < 4 or not lines[2].startswith("trusted comment: "):
+        raise BuildError(f"{installer.name}'s signature is not minisign's")
+    raw = base64.b64decode(lines[1])
+    algorithm, key_id, signed = raw[:2], raw[2:10], raw[10:]
+    public = base64.b64decode(_minisign(trusted)[1])
+    if key_id != public[2:10]:
+        raise BuildError(f"{installer.name} is signed by a key the app does not trust:"
+                         " every install would refuse it")
+    if algorithm == b"ED":
+        digest = hashlib.blake2b()
+        with installer.open("rb") as f:
+            for block in iter(lambda: f.read(1 << 20), b""):
+                digest.update(block)
+        message = digest.digest()
+    else:
+        message = installer.read_bytes()
+    comment = lines[2].removeprefix("trusted comment: ")
+    key = Ed25519PublicKey.from_public_bytes(public[10:42])
+    try:
+        key.verify(signed, message)
+        key.verify(base64.b64decode(lines[3]), signed + comment.encode("utf-8"))
+    except InvalidSignature:
+        raise BuildError(f"{installer.name}'s signature does not verify: the installer"
+                         " changed after it was signed, or the signature is another's") from None
+    fields = dict(part.split(":", 1) for part in comment.split("\t") if ":" in part)
+    if fields.get("version") != version:
+        signed_version = fields.get("version", "no version")
+        raise BuildError(f"{installer.name} is signed as {signed_version}, not {version}:"
+                         " the updater requires the version signed to be the one announced")
+
+
+def write_latest(installer: Path, notes: str, *, out: Path | None = None,
+                 trusted: str | None = None, version: str | None = None,
+                 now: datetime | None = None) -> Path:
+    """The updater's `latest.json` for `installer`, beside it unless `out`
+    says where: the version, the notes, and the installer's signature and
+    address in the release tagged `v<version>`, which is where the app's
+    endpoint looks (`plugins.updater.endpoints`)."""
+    version = version or identity.VERSION
+    if not identity.PROJECT_URL:
+        raise BuildError("core/identity.py names no PROJECT_URL: no release to point to")
+    sig = installer.with_name(installer.name + ".sig")
+    if not sig.is_file():
+        raise BuildError(f"no {sig.name} beside the installer: build it with the update key")
+    signature = sig.read_text(encoding="ascii").strip()
+    check_release(installer, signature, trusted or trusted_key(paths.SOURCE), version)
+    when = (now or datetime.now(UTC)).astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    url = f"{identity.PROJECT_URL}/releases/download/v{version}/{installer.name}"
+    latest = {"version": version, "notes": notes, "pub_date": when,
+              "platforms": {"windows-x86_64": {"signature": signature, "url": url}}}
+    path = out or installer.with_name("latest.json")
+    path.write_text(json.dumps(latest, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return path
+
+
 def builders_folders(checkout: Path = paths.SOURCE) -> list[str]:
     """The folders of this computer that a release must not name: the
     checkout it is built from, and the profile, which names the account."""
@@ -548,6 +636,27 @@ def scan(app: Path, folders: list[str]) -> list[str]:
     return named
 
 
+PRIVACY = paths.SOURCE / "PRIVACY.md"
+PRIVACY_PAGE = paths.SOURCE / "ui" / "src-tauri" / "windows" / "privacy.txt"
+# Markdown that plain text cannot show: a link, a table, a quote, a code
+# block or HTML. Refused, rather than shown to every installer with its marks.
+_UNSHOWN = re.compile(r"\]\(|^\s*[|>]|^\s*```|<[A-Za-z/]")
+
+
+def privacy_page(markdown: str) -> str:
+    """The privacy statement as the installer's page shows it: headings in
+    capitals, and the bold and code marks gone."""
+    lines = []
+    for number, line in enumerate(markdown.splitlines(), 1):
+        if _UNSHOWN.search(line):
+            raise BuildError(f"PRIVACY.md line {number} has markdown the installer's page"
+                             f" cannot show: {line.strip()}")
+        if heading := re.match(r"#{1,6} (.+)", line):
+            line = heading[1].upper()
+        lines.append(line.replace("**", "").replace("`", ""))
+    return "\n".join(lines) + "\n"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m devtools.package")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -566,6 +675,13 @@ def main(argv: list[str] | None = None) -> int:
                        help="the public half the app is built to trust, if not tauri.conf.json's")
     scans = sub.add_parser("scan")
     scans.add_argument("app", type=Path, nargs="+")
+    announces = sub.add_parser("latest")
+    announces.add_argument("installer", type=Path)
+    announces.add_argument("--notes", type=Path, help="a text file of the release's notes")
+    announces.add_argument("--out", type=Path, help="where to write it, if not by the installer")
+    announces.add_argument("--pubkey", type=Path,
+                           help="the public half the app trusts, if not tauri.conf.json's")
+    sub.add_parser("privacy", help="write the installer's privacy page from PRIVACY.md")
     args = parser.parse_args(argv)
     try:
         if args.command == "build":
@@ -583,6 +699,16 @@ def main(argv: list[str] | None = None) -> int:
             if named:
                 return 1
             print(f"{len(args.app)} file(s) name neither this checkout nor your profile")
+        elif args.command == "latest":
+            notes = (args.notes.read_text(encoding="utf-8").strip() if args.notes
+                     else f"Steve {identity.VERSION}")
+            trusted = args.pubkey.read_text(encoding="ascii").strip() if args.pubkey else None
+            written = write_latest(args.installer.resolve(), notes, out=args.out, trusted=trusted)
+            print(f"wrote {written}")
+        elif args.command == "privacy":
+            PRIVACY_PAGE.write_text(privacy_page(PRIVACY.read_text(encoding="utf-8")),
+                                    encoding="utf-8", newline="\n")
+            print(f"wrote {PRIVACY_PAGE}")
         else:
             differ = compare(args.a, args.b)
             for name in differ:

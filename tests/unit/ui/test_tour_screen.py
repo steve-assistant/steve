@@ -9,12 +9,20 @@ against the day page's backend, with the app's settings the worker's own.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 from agent import appsettings
 from tests.unit.ui.test_day_screen import Backend, _open, _until
 
 pytestmark = [pytest.mark.processes, pytest.mark.xdist_group("ui")]
+
+# The desk card's window, square from the screen's corner as it first shows.
+DESK_CARD = next(w["width"] for w in json.loads(
+    (Path(__file__).parents[3] / "ui/src-tauri/tauri.conf.json").read_text(encoding="utf-8")
+)["app"]["windows"] if w["label"] == "deskcard")
 
 PLACES = {"ok": True, "coming": 1, "calls": 0,
           "extensions": {"installed": 1, "building": 0, "can_build": True}}
@@ -66,7 +74,8 @@ def test_a_tour_due_shows_six_notes_each_beside_what_it_explains_and_then_is_not
             box, view = note.bounding_box(), page.viewport_size
             assert page.locator(".tour-ring").count() == 0
             assert box["x"] + box["width"] > view["width"] - 60, "the corner the card is in"
-            assert box["y"] + box["height"] > view["height"] - 60
+            assert view["height"] - DESK_CARD - 60 < box["y"] + box["height"] <= (
+                view["height"] - DESK_CARD), "above the card, which covered its Next"
         else:
             _until(lambda target=target: _encloses(_box(page, ".tour-ring"), _box(page, target)))
             assert _apart(note.bounding_box(), _box(page, target)), f"stop {n} covers its thing"
@@ -83,6 +92,28 @@ def test_a_tour_due_shows_six_notes_each_beside_what_it_explains_and_then_is_not
 def _places_loaded(page) -> bool:
     return page.locator(".places .place").count() >= 2
 
+
+def test_going_to_the_page_a_note_points_at_keeps_the_tour_at_that_note(screen):
+    """The fifth note rings Extensions in the sidebar, and on the first
+    install (22 October 2026) going there ended the tour on the page, and
+    coming back began it again at the first note."""
+    appsettings.write({"tour": "due"})
+    page = _open(screen, _backend())
+    page.set_viewport_size({"width": 1280, "height": 800})
+    _until(lambda: _places_loaded(page))
+    for n in range(1, 5):
+        _until(lambda n=n: page.locator(f".tour[data-stop='{n}']").count() == 1)
+        page.get_by_role("button", name="Next").click()
+    _until(lambda: page.locator(".tour[data-stop='5']").count() == 1)
+
+    place = page.locator(".places .place").nth(1)
+    place.click()
+    _until(lambda: place.get_attribute("aria-current") == "page")
+    page.wait_for_timeout(500)
+    assert page.locator(".tour[data-stop='5']").count() == 1
+    page.get_by_role("button", name="Next").click()
+    _until(lambda: page.locator(".tour[data-stop='6']").count() == 1)
+    assert appsettings.current()["tour"] == "due"
 
 def test_the_tour_is_skipped_by_its_button_or_esc_and_shown_again_from_the_names_menu(screen):
     """Under two minutes is still too long for someone who knows the app:

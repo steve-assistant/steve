@@ -16,6 +16,7 @@ import re
 import subprocess
 import sys
 import tomllib
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -474,3 +475,112 @@ def test_a_signer_that_fails_says_why(tmp_path):
 
     with pytest.raises(package.BuildError, match="incorrect password"):
         _signed(tmp_path, signer, (FIXTURES / "fixture.pub").read_text(encoding="ascii"))
+
+
+UPDATER = paths.SOURCE / "ui" / "src-tauri" / "fixtures" / "updater"
+RELEASE_PUB = (UPDATER / "release.pub").read_text(encoding="ascii").strip()
+WHEN = datetime(2026, 10, 22, 19, 30, tzinfo=UTC)
+
+
+def _release(tmp_path, fixture: str, sig: str | None = None,
+             name: str = "Steve_0.1.1_x64-setup.exe") -> Path:
+    """A fixture installer and its signature, under an installer's name: the
+    signature covers the bytes, not the name."""
+    installer = tmp_path / name
+    installer.write_bytes((UPDATER / fixture).read_bytes())
+    signature = (UPDATER / (sig or f"{fixture}.sig")).read_text(encoding="ascii")
+    installer.with_name(name + ".sig").write_text(signature, encoding="ascii")
+    return installer
+
+
+def test_the_updaters_file_announces_the_version_with_its_signature_and_release_address(tmp_path):
+    """The app's endpoint is the latest release's latest.json; the address in
+    it must be the installer's in the release tagged v<version>, and the
+    signature the one the build wrote, or every install's update fails."""
+    installer = _release(tmp_path, "installer-0.1.1")
+
+    written = package.write_latest(installer, "Fixes.", trusted=RELEASE_PUB, version="0.1.1",
+                                   now=WHEN)
+
+    assert written == tmp_path / "latest.json"
+    signature = (UPDATER / "installer-0.1.1.sig").read_text(encoding="ascii").strip()
+    assert json.loads(written.read_text(encoding="utf-8")) == {
+        "version": "0.1.1", "notes": "Fixes.", "pub_date": "2026-10-22T19:30:00Z",
+        "platforms": {"windows-x86_64": {
+            "signature": signature,
+            "url": f"{identity.PROJECT_URL}/releases/download/v0.1.1/Steve_0.1.1_x64-setup.exe"}}}
+
+
+def test_an_installer_changed_after_it_was_signed_is_refused_and_nothing_is_written(tmp_path):
+    """Its signature names the right key and version, so only checking the
+    signature itself catches it; shipped, every install would refuse it."""
+    installer = _release(tmp_path, "installer-0.1.1")
+    installer.write_bytes(installer.read_bytes() + b"!")
+
+    with pytest.raises(package.BuildError, match="does not verify"):
+        package.write_latest(installer, "", trusted=RELEASE_PUB, version="0.1.1", now=WHEN)
+
+    assert not (tmp_path / "latest.json").exists()
+
+
+def test_an_installer_signed_by_a_key_the_app_does_not_trust_is_refused(tmp_path):
+    """Every install checks against the key built into it, and would refuse
+    this one without a word to anyone."""
+    installer = _release(tmp_path, "installer-0.1.1", "installer-0.1.1.other-key.sig")
+
+    with pytest.raises(package.BuildError, match="does not trust"):
+        package.write_latest(installer, "", trusted=RELEASE_PUB, version="0.1.1", now=WHEN)
+
+
+def test_an_installer_signed_as_another_version_or_none_is_refused(tmp_path):
+    """The updater requires the version signed to be the version announced,
+    so a validly signed old installer cannot pass as new."""
+    old = _release(tmp_path, "installer-0.0.9")
+    with pytest.raises(package.BuildError, match="signed as 0.0.9, not 0.1.1"):
+        package.write_latest(old, "", trusted=RELEASE_PUB, version="0.1.1", now=WHEN)
+
+    unversioned = _release(tmp_path, "installer-0.0.9", "installer-0.0.9.unversioned.sig",
+                           name="Steve_0.0.9_x64-setup.exe")
+    with pytest.raises(package.BuildError, match="signed as no version"):
+        package.write_latest(unversioned, "", trusted=RELEASE_PUB, version="0.0.9", now=WHEN)
+
+
+def test_an_installer_without_its_signature_is_refused(tmp_path):
+    """A build without the update key writes no signature, and the updater
+    has nothing to check an installer against."""
+    installer = tmp_path / "Steve_0.1.1_x64-setup.exe"
+    installer.write_bytes(b"x")
+
+    with pytest.raises(package.BuildError, match="no Steve_0.1.1_x64-setup.exe.sig"):
+        package.write_latest(installer, "", trusted=RELEASE_PUB, version="0.1.1")
+
+
+def test_the_latest_command_takes_the_notes_file_and_the_public_key_it_is_given(
+        tmp_path, monkeypatch):
+    """The release's notes come from a file, and a fork's build trusts a key
+    of its own, as `manifest --pubkey` does."""
+    monkeypatch.setattr(identity, "VERSION", "0.1.1")
+    installer = _release(tmp_path, "installer-0.1.1")
+    notes = tmp_path / "notes.md"
+    notes.write_text("The first release.\n", encoding="utf-8")
+    pub = tmp_path / "release.pub"
+    pub.write_text(RELEASE_PUB + "\n", encoding="ascii")
+
+    assert package.main(["latest", str(installer), "--notes", str(notes),
+                         "--pubkey", str(pub)]) == 0
+
+    latest = json.loads((tmp_path / "latest.json").read_text(encoding="utf-8"))
+    assert (latest["version"], latest["notes"]) == ("0.1.1", "The first release.")
+
+
+def test_the_latest_command_checks_against_the_key_the_app_is_built_to_trust(
+        tmp_path, monkeypatch, capsys):
+    """Without --pubkey it is tauri.conf.json's, the release key, so a
+    fixture signed by a disposable key is refused."""
+    monkeypatch.setattr(identity, "VERSION", "0.1.1")
+    installer = _release(tmp_path, "installer-0.1.1")
+
+    assert package.main(["latest", str(installer)]) == 1
+
+    assert "does not trust" in capsys.readouterr().err
+    assert not (tmp_path / "latest.json").exists()

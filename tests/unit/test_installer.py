@@ -51,6 +51,22 @@ def test_the_installer_installs_for_the_user_alone_and_asks_for_no_administrator
     assert config["bundle"]["windows"]["nsis"]["installMode"] == "currentUser"
 
 
+def test_the_installer_wears_steves_icon_and_a_sidebar_of_nsiss_own_size():
+    """Without them the installer shows NSIS's own icon, with "NSIS" in it,
+    in its title bar and on every page's header: the first thing a stranger
+    sees of Steve (22 October 2026). NSIS stretches a sidebar of another
+    size, and shows only an uncompressed bitmap."""
+    nsis = json.loads((TAURI / "tauri.conf.json").read_text(encoding="utf-8"))["bundle"][
+        "windows"]["nsis"]
+    for icon in ("installerIcon", "uninstallerIcon"):
+        assert (TAURI / nsis[icon]).resolve() == (TAURI / "icons" / "icon.ico").resolve()
+    sidebar = (TAURI / nsis["sidebarImage"]).read_bytes()
+    assert sidebar[:2] == b"BM"
+    width, height, depth = (int.from_bytes(sidebar[start:end], "little")
+                            for start, end in ((18, 22), (22, 26), (28, 30)))
+    assert (width, height, depth) == (164, 314, 24)
+
+
 def test_before_it_copies_the_installer_deletes_only_the_old_backend_and_runtime():
     """Not the install folder, not the app, never the data, which is elsewhere."""
     lines = _macro("NSIS_HOOK_PREINSTALL")

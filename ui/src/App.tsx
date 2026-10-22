@@ -849,10 +849,13 @@ export default function App() {
   const [dayInView, setDayInView] = useState<string | null>(null);
   // The tour: due once setup ends, or asked for from the name's menu. Ended
   // by Done, "Skip the tour" or Esc, and then not due again.
+  // Its stop is kept here, for every page (Tour.tsx).
   const [touring, setTouring] = useState(false);
+  const [tourAt, setTourAt] = useState(0);
   const tourDue = app?.tour === "due";
   const endTour = useCallback(() => {
     setTouring(false);
+    setTourAt(0);
     if (tourDue) void changeApp({ tour: "off" });
   }, [tourDue, changeApp]);
 
@@ -1058,6 +1061,7 @@ export default function App() {
            onQuit={() => void quit()}
            onTour={() => {
              setView("home");
+             setTourAt(0);
              setTouring(true);
            }}
            switches={(
@@ -1183,7 +1187,9 @@ export default function App() {
           addOn={desk?.tap?.add_on !== false}
         />
       )}
-      {view === "home" && (touring || tourDue) && <Tour hotkey={hotkey} onEnd={endTour} />}
+      {(touring || tourDue) && (
+        <Tour hotkey={hotkey} at={tourAt} onAt={setTourAt} onEnd={endTour} />
+      )}
     </Shell>
   );
 }

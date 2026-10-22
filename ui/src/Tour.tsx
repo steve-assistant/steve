@@ -31,6 +31,9 @@ export interface Stop {
 
 const GAP = 14;
 const EDGE = 12;
+/** The desk card's window, square from the screen's corner, as it first
+ *  shows (`deskcard` in ui/src-tauri/tauri.conf.json). */
+export const DESK_CARD = 88;
 
 function last(selector: string): Element | null {
   const all = document.querySelectorAll(selector);
@@ -109,8 +112,11 @@ export function place(target: DOMRect | null, note: { width: number; height: num
   const clampY = (y: number) => Math.max(EDGE, Math.min(win.height - note.height - EDGE, y));
   if (!target) {
     if (corner === "bottom-right") {
-      return { left: win.width - note.width - EDGE * 2, top: win.height - note.height - EDGE * 2,
-               ring: null };
+      // Above the card, not in the corner itself: the card is a window of
+      // its own, over this one when this one fills the screen, and on the
+      // first install (22 October 2026) it covered the note's Next.
+      return { left: win.width - note.width - EDGE * 2,
+               top: Math.max(EDGE, win.height - note.height - DESK_CARD - EDGE), ring: null };
     }
     return { left: clampX((win.width - note.width) / 2), top: clampY((win.height - note.height) / 2),
              ring: null };
@@ -131,9 +137,15 @@ export function place(target: DOMRect | null, note: { width: number; height: num
   return { left: clampX(target.left - GAP - note.width), top: clampY(target.top + 24), ring: target };
 }
 
-export function Tour({ hotkey, onEnd }: { hotkey: string | null; onEnd: () => void }) {
-  const [at, setAt] = useState(0);
+/** The stop the tour is at is the app's (`at`), not the tour's: a stop
+ *  points at a page's place in the sidebar, the user goes there, and the
+ *  tour shown only on the home page vanished, then began again at its first
+ *  stop on the way back (the first install, 22 October 2026). */
+export function Tour({ hotkey, at: asked, onAt, onEnd }: {
+  hotkey: string | null; at: number; onAt: (at: number) => void; onEnd: () => void;
+}) {
   const all = useMemo(() => stops(hotkey), [hotkey]);
+  const at = Math.min(asked, all.length - 1);
   const stop = all[at];
   const note = useRef<HTMLDivElement>(null);
   const next = useRef<HTMLButtonElement>(null);
@@ -198,7 +210,7 @@ export function Tour({ hotkey, onEnd }: { hotkey: string | null; onEnd: () => vo
             <button type="button" className="tour-skip t-small" onClick={onEnd}>Skip the tour</button>
           )}
           <button ref={next} type="button" className="tour-next t-small"
-                  onClick={() => (lastStop ? onEnd() : setAt(at + 1))}>
+                  onClick={() => (lastStop ? onEnd() : onAt(at + 1))}>
             {lastStop ? "Done" : "Next"}
           </button>
         </div>

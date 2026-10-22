@@ -25,8 +25,8 @@ from starlette.routing import Route, WebSocketRoute
 
 from agent import accounts, appsettings, features, wake
 from agent.attention import settings
-from agent.worker import approvers, background, control, desk, readers
-from core import call_policy, db, decider, detector, knobs, localapi, modules
+from agent.worker import approvers, background, control, desk, readers, setup
+from core import call_policy, db, decider, detector, knobs, localapi, modules, secrets
 
 pytestmark = [pytest.mark.processes, pytest.mark.xdist_group("ui")]
 
@@ -510,6 +510,52 @@ def test_a_secrets_field_says_where_to_revoke_it_from_its_module_or_its_provider
         link = card.get_by_role("button", name="Where to revoke it")
         link.wait_for(timeout=10_000)
         assert link.get_attribute("title") == page_url
+
+
+def test_accounts_says_which_keys_are_kept_and_takes_a_new_one_once_it_is_checked(
+        screen, monkeypatch):
+    """The first install found nowhere in the app to see or change a key
+    (22 October 2026): one skipped in setup, or one to change, took a
+    PowerShell command. A key is kept only once its service accepts it."""
+    held = {"OPENAI_API_KEY": "sk-kept"}  # pragma: allowlist secret
+    monkeypatch.setattr(secrets.keyring, "get_password", lambda service, key: held.get(key))
+    monkeypatch.setattr(secrets.keyring, "set_password",
+                        lambda service, key, value: held.__setitem__(key, value))
+
+    async def checked(service: str, key: str) -> dict:
+        if key == "sk-or-wrong":  # pragma: allowlist secret
+            return {"ok": False, "why": "wrong-key",
+                    "error": "OpenRouter did not accept this key."}
+        return {"ok": True, "credit": 7.5}
+
+    monkeypatch.setattr(setup, "check_key", checked)
+    app = Backend().app()
+    app.router.routes[0:0] = [r for r in setup.ROUTES if r.path in ("/setup/keys", "/setup/key")]
+    page = screen(app)
+    page.set_viewport_size({"width": 1300, "height": 860})
+    page.locator("nav.sidebar").wait_for(timeout=15_000)
+    _go(page, "Accounts")
+
+    openai = page.locator(".key-row[data-key='openai']")
+    jev = page.locator(".key-row[data-key='openrouter']")
+    openai.wait_for(timeout=10_000)
+    assert "· kept" in openai.inner_text()
+    assert openai.get_by_role("button", name="Replace").count() == 1
+    assert "· not given" in jev.inner_text()
+
+    jev.get_by_role("button", name="Add").click()
+    field = jev.get_by_label("The new OpenRouter key, for Jev")
+    field.fill("sk-or-wrong")
+    jev.get_by_role("button", name="Check and keep").click()
+    jev.get_by_role("alert").wait_for(timeout=10_000)
+    assert "did not accept" in jev.get_by_role("alert").inner_text()
+    assert "OPENROUTER_API_KEY" not in held
+
+    field.fill("sk-or-right")
+    jev.get_by_role("button", name="Check and keep").click()
+    _until(lambda: held.get("OPENROUTER_API_KEY") == "sk-or-right")
+    _until(lambda: "· kept" in jev.inner_text())
+    assert "$7.50 of credit left" in jev.get_by_role("status").inner_text()
 
 
 def test_linkedins_step_waits_for_the_browser_and_for_the_risk_to_be_accepted(screen):

@@ -38,15 +38,8 @@ KEY = "OPENAI_API_KEY"
 
 
 def key_missing() -> str | None:
-    """The models' key, if it is not set; None if it is.
-
-    Clients built while it was missing hold a stand-in (`_key`), so they
-    are dropped: once the user sets it, the next turn builds them again,
-    with no restart."""
-    if secrets.get(KEY):
-        return None
-    reset_clients()
-    return KEY
+    """The models' key, if it is not set; None if it is."""
+    return None if secrets.get(KEY) else KEY
 
 
 def needs_responses_api(spec: ModelSpec) -> bool:
@@ -90,27 +83,40 @@ def _key(name: str) -> str:
     a gate test builds the lecture summary's agent with its model call
     replaced, and the client underneath it asked for a key. Nothing can go
     out without a key either way; the log says which one is missing before
-    the request is refused."""
-    value = secrets.get(name)
-    if value:
-        return value
-    log.warning("%s is not set: requests through it will be refused "
-                "(python -m core.secrets set %s)", name, name)
-    return f"missing-{name}"
+    the request is refused (`_openai_provider`)."""
+    return secrets.get(name) or f"missing-{name}"
 
 
 @lru_cache(maxsize=1)
 def _openai_provider() -> OpenAIProvider:
-    """One provider, and therefore one connection pool, per process.
+    """One provider, and therefore one connection pool, per process and key.
 
     OpenAI reports failures with honest HTTP status codes, which the SDK
     maps to typed exceptions (`agent.llm.is_retryable` reads them).
     """
-    return OpenAIProvider(
-        base_url=endpoints.openai(),
-        api_key=_key(KEY),
-        http_client=plain_http_client(),
-    )
+    key = _key(KEY)
+    if key == f"missing-{KEY}":
+        log.warning("%s is not set: requests through it will be refused "
+                    "(python -m core.secrets set %s)", KEY, KEY)
+    return OpenAIProvider(base_url=endpoints.openai(), api_key=key,
+                          http_client=plain_http_client())
+
+
+def _current() -> OpenAIProvider:
+    """The provider, built again if the key is no longer the one it holds.
+
+    A client keeps the key it was built with. The first install's first
+    answer (22 October 2026) went out with the stand-in, refused with a
+    401: something built a client before setup kept the key, and the
+    clients were dropped only when a turn found the key missing, which no
+    turn did in between. A key changed from a terminal while Steve ran was
+    never picked up either. Each call now compares the two, so a key kept
+    any way is the next request's."""
+    built = _openai_provider()
+    if built.client.api_key != _key(KEY):
+        reset_clients()
+        built = _openai_provider()
+    return built
 
 
 def settings_for(spec: ModelSpec, *, cache_key: str | None = None):
@@ -145,19 +151,28 @@ def settings_for(spec: ModelSpec, *, cache_key: str | None = None):
     return OpenAIChatModelSettings(**kwargs)
 
 
-@lru_cache(maxsize=len(Role))
 def model_for(role: Role) -> spend.Guarded:
-    """The model client for a role. Cached: construction opens a client."""
-    return client_for(MODELS[role])
+    """The model client for a role, on the current key (`_current`)."""
+    return _role_client(role, _current())
+
+
+@lru_cache(maxsize=len(Role))
+def _role_client(role: Role, provider: OpenAIProvider) -> spend.Guarded:
+    """Cached, since construction opens a client; per provider, so a new
+    key's provider gets new clients."""
+    return _client(MODELS[role], provider)
 
 
 def client_for(spec: ModelSpec) -> spend.Guarded:
     """A model client for any spec, the role's or not -- the model scout's
     candidates and judges (agent/models_eval.py). Uncached; the provider
     underneath is shared."""
+    return _client(spec, _current())
+
+
+def _client(spec: ModelSpec, provider: OpenAIProvider) -> spend.Guarded:
     kind = OpenAIResponsesModel if needs_responses_api(spec) else OpenAIChatModel
-    return guard(kind(spec.model_id, provider=_openai_provider(),
-                      settings=settings_for(spec)), spec)
+    return guard(kind(spec.model_id, provider=provider, settings=settings_for(spec)), spec)
 
 
 def guard(model, spec: ModelSpec) -> spend.Guarded:
@@ -254,6 +269,6 @@ def describe(role: Role) -> dict:
 
 
 def reset_clients() -> None:
-    """Drop cached clients. Used by tests and after a credential change."""
-    model_for.cache_clear()
+    """Drop cached clients: when the key changes (`_current`), and for tests."""
+    _role_client.cache_clear()
     _openai_provider.cache_clear()

@@ -420,10 +420,26 @@ async def get_docker(_: Request) -> JSONResponse:
     return JSONResponse({"ok": True, **await asyncio.to_thread(docker)})
 
 
+def keys_kept() -> dict[str, bool]:
+    """Which of the models' keys the Credential Manager holds.
+
+    Setup was the only place to give one, so a key skipped there, or one to
+    change, took a PowerShell command, and the first install found nowhere
+    in the app to see or change a key (22 October 2026). Settings: Accounts
+    shows these, and keeps a new key through `set_key`, checked as setup
+    checks it (ui/src/Keys.tsx)."""
+    return {service: bool(secrets.get(name)) for service, (_, name) in KEYS.items()}
+
+
+async def get_keys(_: Request) -> JSONResponse:
+    return JSONResponse({"ok": True, "keys": await asyncio.to_thread(keys_kept)})
+
+
 ROUTES = [
     Route("/setup/state", get_state),
     Route("/setup/answer", answer, methods=["POST"]),
     Route("/setup/key", set_key, methods=["POST"]),
+    Route("/setup/keys", get_keys),
     Route("/setup/preset", set_preset, methods=["POST"]),
     Route("/setup/drive", get_drive),
     Route("/setup/docker", get_docker),

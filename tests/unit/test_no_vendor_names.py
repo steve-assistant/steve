@@ -51,11 +51,12 @@ ADDRESS = re.compile(r"(?i:openrouter\.ai)|endpoints\.openrouter\(")
 # place its address is written (core/endpoints.py). And the security model,
 # which must name every host shipped code reaches
 # (tests/gate/test_hosts_named.py), and the privacy statement, which must
-# name every host the security model does (test_privacy_statement.py): a
-# reader is told the address, nothing calls it from there.
+# name every host the security model does (test_privacy_statement.py), with
+# its plain copy the installer shows: a reader is told the address, nothing
+# calls it from there.
 JEVS = ("core/decide.py", "tests/gate/fixtures/decisions/captured.json",
         "agent/attention/sources/health.py", "core/endpoints.py", "docs/security-model.md",
-        "PRIVACY.md")
+        "PRIVACY.md", "ui/src-tauri/windows/privacy.txt")
 
 
 def _found(rel: str, pattern: re.Pattern) -> list[str]:

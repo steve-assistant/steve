@@ -64,9 +64,11 @@ The [module guide](modules.md) describes the sandbox and the grants. The
 ## Your keys
 
 Setup puts your keys in the Windows Credential Manager, under the service
-`steve`, and never in a file. To change one later, or to set them without
-the app, use a terminal. Each `set` asks for the value without echoing it.
-From this repository:
+`steve`, and never in a file. **Accounts**, under **Your keys**, says which
+are kept, and gives or replaces one: a new key is checked with its service
+before it is kept, and Steve's next request uses it. Without the app, use a
+terminal. Each `set` asks for the value without echoing it. From this
+repository:
 
 ```powershell
 python -m core.secrets set OPENAI_API_KEY
@@ -85,10 +87,24 @@ Installed, Steve's own Python does the same, from any terminal:
 
 OpenAI's key is for the models, web search and memory. OpenRouter's is for
 Jev alone, the decision model that screens what Steve reads and checks what
-it does on its own. Without it Steve still runs, more cautiously: mail and
-pages reach the model only as extracts (unless the optional local readers
-are installed), what it would do on its own waits for your yes, and
-meetings get no follow-up question.
+it does on its own. Setup lets you skip it, and Steve still runs, but much
+of it works only in part:
+
+- Mail, pages and other outside text reach the model only as extracts,
+  unless the optional **Local readers** are installed, from **What Steve
+  may do**. Steve makes the extracts on your OpenAI key, so it spends a
+  little more there.
+- A new extension, a tool Steve builds among them, cannot be installed
+  unless the local readers are: no one can screen its own words.
+- What Steve would do on its own waits for your yes, and so do clicks on
+  sites it is logged in to.
+- On a mailbox or calendar that cannot make a change conditional on what
+  Steve read, every change asks you first, even to Steve's own drafts.
+- Background tasks are not split into parts.
+- Meetings get no follow-up question, unless you ask for one after every
+  meeting.
+
+Steve says once a day that Jev has no key.
 
 An optional key:
 
@@ -190,9 +206,9 @@ there, on this computer. An install keeps the program apart from it, in
 
 ## Updates
 
-The app has an updater. It installs a release only if it is signed with
-the update key built into the app, and your data stays as it was. No
-release is published yet, so it has nowhere to look. Until then, run a
+The app has an updater. It looks for a newer release in this project's
+GitHub releases and installs it only if it is signed with the update
+key built into the app; your data stays as it was. You can also run a
 newer installer over the old one. An older installer does not install over
 a newer one: run silently it stops, and in its window it offers only to
 remove the newer version first.

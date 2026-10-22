@@ -63,14 +63,17 @@
   },
   "bundle": {
     "active": true,
-    "licenseFile": "../../PRIVACY.md",
+    "licenseFile": "windows/privacy.txt",
     "targets": ["nsis"],
     "createUpdaterArtifacts": true,
     "windows": {
       "allowDowngrades": false,
       "nsis": {
         "installMode": "currentUser",
-        "installerHooks": "./windows/hooks.nsh"
+        "installerHooks": "./windows/hooks.nsh",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "sidebarImage": "windows/sidebar.bmp"
       }
     },
     "icon": [
