@@ -275,6 +275,29 @@ def test_the_report_names_each_failure_and_what_an_uninstall_left():
     assert text.endswith("1 steps passed, 1 failed.\n")
 
 
+def test_a_failed_run_prints_its_report_where_ci_keeps_it(tmp_path, monkeypatch, capsys):
+    """CI's runner goes with its job, and the report file with it: the
+    installer job's first failure (22 October 2026) left "wrote report.md"
+    in its log, and nothing that said which step broke the install."""
+    monkeypatch.setattr(sandbox_check, "base", lambda checkout=None: tmp_path)
+    (tmp_path / "installers").mkdir()
+    (tmp_path / "installers" / "versions.json").write_text(json.dumps(
+        {"old": "0.1.0", "new": "0.1.1", "execution_level": "asInvoker"}), encoding="utf-8")
+    (tmp_path / "results").mkdir()
+    results = tmp_path / "results" / "results.json"
+
+    results.write_text(json.dumps({"done": True, "steps": [
+        {"name": "uninstall", "ok": False, "seconds": 3, "detail": "no profile"}]}),
+        encoding="utf-8")
+    assert sandbox_check.main(["report"]) == 1
+    assert "| uninstall | **failed** | 3 | no profile |" in capsys.readouterr().out
+
+    results.write_text(json.dumps({"done": True, "steps": [
+        {"name": "uninstall", "ok": True, "seconds": 3, "detail": "gone"}]}), encoding="utf-8")
+    assert sandbox_check.main(["report"]) == 0
+    assert "| uninstall |" not in capsys.readouterr().out
+
+
 def _ps(name: str) -> str:
     found = re.search(rf"^\${name} = '([^']*)'", INSIDE, re.M)
     assert found, f"the rig sets no ${name}"

@@ -347,10 +347,17 @@ def main(argv: list[str] | None = None) -> int:
     data = run_sandbox(timeout=args.timeout, webview2=args.webview2) if args.command == "run" else (
         read_results(base() / "results" / "results.json") or {"steps": [], "done": False})
     plan = json.loads((base() / "installers" / "versions.json").read_text(encoding="utf-8"))
+    text = report(data, plan)
     report_path().parent.mkdir(parents=True, exist_ok=True)
-    report_path().write_text(report(data, plan), encoding="utf-8", newline="\n")
+    report_path().write_text(text, encoding="utf-8", newline="\n")
     print(f"wrote {report_path()}")
-    return 0 if data.get("done") and all(step.get("ok") for step in data.get("steps", [])) else 1
+    passed = data.get("done") and all(step.get("ok") for step in data.get("steps", []))
+    if not passed:
+        # Into the log too: CI's runner goes with its job, and the file with
+        # it. The installer job's first failure (22 October 2026) left only
+        # the line above, and which step had broken the install went too.
+        print(text)
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":
