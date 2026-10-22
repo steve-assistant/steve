@@ -186,6 +186,8 @@ def test_a_webview_file_still_held_names_each_process_holding_it_and_its_parent(
     assert any(line.startswith("holds a file: python.exe ") for line in said), said
     assert any(f" {child.pid} (no --type), " in line and f"from python.exe {os.getpid()}" in line
                for line in said), said
+    # Why it could not be read, as Windows said it: a locked range.
+    assert said[-1] == "LOCK now: PermissionError errno 13 Permission denied; 1 bytes", said
 
 
 def test_a_webview_process_left_holding_its_folder_is_ended_and_the_scan_made_again(tmp_path):
@@ -205,25 +207,48 @@ def test_a_contained_process_is_in_its_job_before_it_runs_and_runs_once_it_is(mo
     """Started running and put in its job after, the app could start a
     WebView2 browser in between that no job held: on CI's busy runner
     browsers and their helpers outlived the app's job, holding its webview
-    folder. Suspended until the job holds it, it starts nothing outside."""
+    folder. Suspended until the job holds it, it starts nothing outside.
+
+    Each thread's suspend count is read as Windows keeps it: psutil's
+    status said "running" on CI for a process this test read as "stopped"
+    here (22 October 2026)."""
     import ctypes
     from ctypes import wintypes
 
     from core.sandbox import job
 
-    process_id = ctypes.WinDLL("kernel32").GetProcessId
-    process_id.argtypes, process_id.restype = [wintypes.HANDLE], wintypes.DWORD
-    states, contain = [], job.contain
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.GetProcessId.argtypes = [wintypes.HANDLE]
+    kernel32.GetProcessId.restype = wintypes.DWORD
+    kernel32.OpenThread.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.OpenThread.restype = wintypes.HANDLE
+    for name in ("SuspendThread", "ResumeThread"):
+        getattr(kernel32, name).argtypes = [wintypes.HANDLE]
+        getattr(kernel32, name).restype = wintypes.DWORD
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+
+    def suspends(pid: int) -> list[int]:
+        """Each thread's suspend count: suspended once more and back."""
+        counts = []
+        for thread in psutil.Process(pid).threads():
+            handle = kernel32.OpenThread(0x0002, False, thread.id)  # THREAD_SUSPEND_RESUME
+            counts.append(kernel32.SuspendThread(handle))
+            kernel32.ResumeThread(handle)
+            kernel32.CloseHandle(handle)
+        return counts
+
+    seen, contain = [], job.contain
 
     def watched(handle: int, *limits):
-        states.append(psutil.Process(process_id(handle)).status())
+        seen.append(suspends(kernel32.GetProcessId(handle)))
         return contain(handle, *limits)
 
     monkeypatch.setattr(job, "contain", watched)
     with rig.contained([sys.executable, "-c", "print('ran')"], stdout=subprocess.PIPE) as child:
         said = child.stdout.readline()
         child.stdout.close()
-    assert states == [psutil.STATUS_STOPPED]
+    [counts] = seen
+    assert counts and min(counts) >= 1, f"its threads' suspend counts as it joined: {counts}"
     assert said.strip() == b"ran"
 
 

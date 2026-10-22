@@ -31,6 +31,7 @@ sources: a stale build would test code that no longer exists.
 from __future__ import annotations
 
 import contextlib
+import ctypes
 import json
 import os
 import shutil
@@ -133,9 +134,12 @@ def contained(command: list[str], **popen) -> Iterator[subprocess.Popen]:
 
     It starts suspended, and runs only once it is in the job. Started
     running and put in the job after `Popen` returned, as it was until 22
-    October 2026, it could start a process in between that stayed outside:
-    on CI's busy runner WebView2 browsers and their helpers outlived the
-    job that ended their app, and held its webview folder."""
+    October 2026, it could start a process in between that stayed outside.
+
+    The block's end waits for the job to hold no process, not only for
+    the first: on CI's busy runner WebView2 browsers and their helpers
+    were still running seconds after their app's job was ended, holding
+    its webview folder through the scan that came next (`_end`)."""
     import psutil
 
     from core.sandbox import job, win32
@@ -159,8 +163,68 @@ def contained(command: list[str], **popen) -> Iterator[subprocess.Popen]:
     try:
         yield process
     finally:
-        held.end()
-        process.wait(10)
+        _end(held, process)
+
+
+def _end(held, process: subprocess.Popen, within: float = 30.0) -> None:
+    """Ends the job and waits, up to `within` seconds, until it holds no
+    process. A warning says how long that took if it was over 2 s, what
+    was still in the job after `within`, and any process the app started
+    that was never in it, so CI's summary says which it was."""
+    import psutil
+
+    members = set(_job_members(held.handle))
+    outside = []
+    with contextlib.suppress(psutil.Error):
+        outside = [_described(child.pid)
+                   for child in psutil.Process(process.pid).children(recursive=True)
+                   if child.pid not in members]
+    began = time.monotonic()
+    held.terminate(1)
+    while _job_active(held.handle) and time.monotonic() - began < within:
+        time.sleep(0.1)
+    took = time.monotonic() - began
+    left = [_described(pid) for pid in _job_members(held.handle)]
+    held.close()
+    process.wait(10)
+    if took > 2 or left or outside:
+        warnings.warn(f"the app's job took {took:.1f} s to end; still in it {left}; "
+                      f"started outside it {outside}", stacklevel=3)
+
+
+class _Accounting(ctypes.Structure):
+    # JOBOBJECT_BASIC_ACCOUNTING_INFORMATION
+    _fields_ = [("TotalUserTime", ctypes.c_int64), ("TotalKernelTime", ctypes.c_int64),
+                ("ThisPeriodTotalUserTime", ctypes.c_int64),
+                ("ThisPeriodTotalKernelTime", ctypes.c_int64),
+                ("TotalPageFaultCount", ctypes.c_uint32), ("TotalProcesses", ctypes.c_uint32),
+                ("ActiveProcesses", ctypes.c_uint32), ("TotalTerminatedProcesses", ctypes.c_uint32)]
+
+
+class _Members(ctypes.Structure):
+    # JOBOBJECT_BASIC_PROCESS_ID_LIST, with room for 256
+    _fields_ = [("Assigned", ctypes.c_uint32), ("Listed", ctypes.c_uint32),
+                ("Ids", ctypes.c_size_t * 256)]
+
+
+def _job_active(handle: int) -> int:
+    from core.sandbox import win32
+
+    info = _Accounting()
+    win32.check(win32.kernel32().QueryInformationJobObject(
+        handle, 1, ctypes.byref(info), ctypes.sizeof(info), None),
+        "QueryInformationJobObject(accounting)")
+    return info.ActiveProcesses
+
+
+def _job_members(handle: int) -> list[int]:
+    from core.sandbox import win32
+
+    info = _Members()
+    win32.check(win32.kernel32().QueryInformationJobObject(
+        handle, 3, ctypes.byref(info), ctypes.sizeof(info), None),
+        "QueryInformationJobObject(process ids)")
+    return list(info.Ids[:info.Listed])
 
 
 @contextlib.contextmanager
@@ -693,9 +757,36 @@ def _ended(folder: Path, held: list[Path], stray: str) -> list[str]:
 def _holding(folder: Path, held: list[Path]) -> list[str]:
     """Each process that holds one of `held` open or names `folder` on its
     command line, as WebView2's name their user data folder: who kept the
-    files the scan could not read, which a failure said nothing of."""
+    files the scan could not read, which a failure said nothing of. Then
+    why the first few cannot be read now (`_unread`)."""
     said = [f"{how}: {_described(pid)}" for pid, how in _holders(folder, held).items()]
-    return said or ["no process holds a file there or names the folder"]
+    return [*(said or ["no process holds a file there or names the folder"]),
+            *map(_unread, held[:3])]
+
+
+def _unread(path: Path) -> str:
+    """Why a file cannot be read now. Opening it, Windows says why: 32,
+    another process has it open and shares no reading; 5, access denied,
+    by its permissions or as it is being deleted. Reading it once open,
+    errno 13 alone: part of it is locked. On CI (22 October 2026) the scan
+    twice found files it could not read that no process held by the time
+    it asked, and the error that would have said why had been swallowed."""
+    try:
+        path.read_bytes()
+    except OSError as error:
+        why = f"{type(error).__name__} {_code(error)} {error.strerror}"
+    else:
+        return f"{path.name} now: readable"
+    try:
+        size = f"{os.stat(path).st_size} bytes"
+    except OSError as error:
+        size = f"no size ({_code(error)})"
+    return f"{path.name} now: {why}; {size}"
+
+
+def _code(error: OSError) -> str:
+    winerror = getattr(error, "winerror", None)
+    return f"winerror {winerror}" if winerror else f"errno {error.errno}"
 
 
 def _holders(folder: Path, held: list[Path]) -> dict[int, str]:
