@@ -170,6 +170,8 @@ ROUTES = {
     "worker GET /setup/state": ("controls",),
     "worker POST /setup/answer": ("controls",),
     "worker POST /setup/key": ("controls", "secrets", "cap"),
+    # Which keys the Credential Manager holds, never their values.
+    "worker GET /setup/keys": ("controls", "secrets"),
     "worker POST /setup/preset": ("controls",),
     "worker GET /setup/drive": (),
     "worker GET /setup/docker": (),
