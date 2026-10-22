@@ -466,7 +466,11 @@ function Name({ go }: { go: Go }) {
       const known = { ...NO_PROFILE, ...Object.fromEntries(
         Object.entries(now?.profile ?? {}).filter(([k]) => k in NO_PROFILE)) };
       setKept(known);
-      setForm(known);
+      // Into the fields still empty: put over the form whole, it wiped a
+      // name typed before the profile came (CI's slow backend, 22 October
+      // 2026), and Continue then waited on a name the user had given.
+      setForm((typed) => Object.fromEntries(Object.entries(typed).map(
+        ([k, v]) => [k, v || known[k as keyof typeof known]])) as typeof NO_PROFILE);
     }).catch(() => undefined);
   }, []);
 

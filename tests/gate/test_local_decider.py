@@ -425,6 +425,31 @@ def test_ending_the_server_ends_everything_it_started():
             process.kill()
 
 
+def test_the_server_starts_suspended_and_runs_once_its_job_holds_it(monkeypatch, tmp_path):
+    """Put in its job only once it had begun, as until 22 October 2026, a
+    server could start a process in between that stayed outside, and
+    nothing would end it."""
+    from core.sandbox import win32
+
+    started = _starting(monkeypatch, tmp_path)
+    _SPAWN(54321)
+    assert started["creationflags"] & win32.CREATE_SUSPENDED
+
+    ran = tmp_path / "ran"
+    with subprocess.Popen([sys._base_executable, "-I", "-c", f"open({str(ran)!r}, 'w').close()"],
+                          creationflags=subprocess.CREATE_NO_WINDOW | win32.CREATE_SUSPENDED,
+                          ) as process:
+        try:
+            time.sleep(0.5)
+            assert not ran.exists(), "it ran before its job held it"
+            end = decider._contain(process)
+            assert process.wait(timeout=20) == 0, "let run once its job held it"
+            assert ran.exists()
+            end()
+        finally:
+            process.kill()
+
+
 def test_a_worker_that_exits_takes_its_server_with_it():
     """However the worker ends -- swapped out, crashed, killed -- its handle
     to the job closes with it, and the job ends the server: one left behind

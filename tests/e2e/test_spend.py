@@ -47,6 +47,15 @@ def chats(steve: Backend, words: str = ASKED) -> int:
                and words in json.dumps(kept.body) for kept in steve.world.openai.requests)
 
 
+def tried_again(steve: Backend) -> list[str]:
+    """The turn's own retries of a 429, as agent/llm.run_agent says each in
+    the worker's log. With a spent balance the only 429 there is, every
+    one is the balance tried again."""
+    return [line for path in sorted((steve.data / "logs").glob("*.log"))
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines()
+            if "call failed after" in line and "status_code: 429" in line]
+
+
 async def test_at_the_months_cap_the_reply_says_so_a_routine_waits_and_a_note_offers_more(steve):
     said = await steve.chat("Every Monday, plan my week and email it to me.")
     assert said["text"] == ROUTINE_SET, steve.logs()
@@ -90,12 +99,15 @@ async def test_with_openais_balance_spent_the_reply_says_to_top_up_and_nothing_r
 
     assert said["type"] == "error" and caps.NO_CREDIT in said["error"], said
     asked = chats(steve)
-    # OpenAI's SDK tries a 429 twice more on its own; nothing past that.
-    # Five came on CI's first nightly run (22 October 2026), and the
-    # assertion said nothing of which: the SDK numbers its own tries.
-    assert 1 <= asked <= 3, ([(kept.path, kept.headers.get("x-stainless-retry-count"))
-                              for kept in steve.world.openai.requests
-                              if ASKED in json.dumps(kept.body)], steve.logs())
+    # OpenAI's SDK tries a 429 twice more on its own, numbering its tries,
+    # and the turn's own retry (agent/llm.run_agent) never tries a spent
+    # balance again. Counted whole, as up to 22 October 2026, a turn tried
+    # again after a transport error, as it should be, read as the balance
+    # tried again: five came on CI's first nightly run. So each is checked.
+    tries = [int(kept.headers.get("x-stainless-retry-count", 0))
+             for kept in steve.world.openai.requests if ASKED in json.dumps(kept.body)]
+    assert asked and max(tries) <= 2, (tries, steve.logs())
+    assert not tried_again(steve), steve.logs()
     time.sleep(5)
     assert chats(steve) == asked
     notes = [n for n in steve.get("/control/needs").json()["needs"] if n["kind"] == "stopped"]

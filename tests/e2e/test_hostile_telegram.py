@@ -58,12 +58,8 @@ def arrived(steve: Backend, words: str) -> list[str]:
 
 
 def said_on_the_page(steve: Backend) -> str | None:
-    # A reply without `bridge` is the supervisor's, not the page's: CI's
-    # runner once got one mid-test (22 October 2026), and a KeyError said
-    # neither what came back nor what the backend logged.
-    status = steve.get("/telegram/status")
-    assert status.status_code == 200, (status.status_code, status.text, steve.logs())
-    return status.json()["bridge"].get("error")
+    """The trouble the app's Telegram page shows: it reads the bridge's state."""
+    return steve.bridge_error("telegram")
 
 
 def test_a_reply_telegram_rate_limits_waits_the_time_it_names_and_arrives_once(steve):
@@ -96,10 +92,12 @@ def test_another_program_on_the_bot_is_said_on_the_page_and_steve_answers_once_i
     fake = steve.world.telegram
     fake.trouble["getUpdates"] = [CONFLICT] * 100
 
-    assert until(lambda: said_on_the_page(steve) == TAKEN, within=20), steve.logs()
+    assert until(lambda: said_on_the_page(steve) == TAKEN, within=20), (
+        f"{said_on_the_page(steve)}\n{steve.logs()}")
 
     fake.trouble["getUpdates"].clear()
     fake.says(ASK_LIGHT)
 
     assert until(lambda: len(arrived(steve, LIGHT)) == 1, within=30), steve.logs()
-    assert until(lambda: said_on_the_page(steve) is None, within=10)
+    assert until(lambda: said_on_the_page(steve) is None, within=10), (
+        f"{said_on_the_page(steve)}\n{steve.logs()}")

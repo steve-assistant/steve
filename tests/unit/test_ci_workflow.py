@@ -217,20 +217,34 @@ def test_the_apps_windows_are_built_with_the_rigs_arguments_as_their_own():
 
 def test_the_test_builds_windows_are_the_apps_own_with_the_rigs_arguments():
     """CI's build of the app differs from the developer's in its windows'
-    browser arguments alone: the rig's, and the autoplay policy wry gives a
-    window with none of its own. A window left out would be a window the
-    tests never see, or one that fails to start beside the others."""
+    browser arguments, the rig's and the autoplay policy wry gives a window
+    with none of its own, and in its update server alone. A window left out
+    would be a window the tests never see, or one that fails to start
+    beside the others."""
     from tests.unit.ui import rig
 
     conf = json.loads((rig.UI / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8"))
     built = json.loads(rig.build_config())
-    assert list(built) == ["app"] and list(built["app"]) == ["windows"]
+    assert list(built) == ["app", "plugins"] and list(built["app"]) == ["windows"]
     windows = built["app"]["windows"]
     assert [{k: v for k, v in w.items() if k != "additionalBrowserArgs"}
             for w in windows] == conf["app"]["windows"]
     for window in windows:
         assert window["additionalBrowserArgs"].startswith(rig.WEBVIEW_ARGS + " "), window["label"]
         assert "--remote-debugging-port=0" in window["additionalBrowserArgs"]
+
+
+def test_the_test_build_asks_no_update_server():
+    """The shipped settings name the release's server, and a walk running a
+    minute asked it for an update, from CI's runner (22 October 2026).
+    Tauri's build merges TAURI_CONFIG as a JSON merge patch: a list is
+    replaced whole, and the key beside it is left as it is."""
+    from tests.unit.ui import rig
+
+    conf = json.loads((rig.UI / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8"))
+    built = json.loads(rig.build_config())
+    assert conf["plugins"]["updater"]["endpoints"], "the shipped app names a server"
+    assert built["plugins"] == {"updater": {"endpoints": []}}
 
 
 def test_each_push_runs_the_shells_rust_tests_as_the_check_does():

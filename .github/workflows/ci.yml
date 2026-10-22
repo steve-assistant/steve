@@ -166,10 +166,11 @@ jobs:
       # The app's windows take the rig's arguments as their own in this
       # build. Everything on the runner runs elevated, and an elevated
       # WebView2 takes no arguments from outside the app: not the variable
-      # the rig sets, nor machine policy (both tried, 22 October 2026).
+      # the rig sets, nor machine policy (both tried, 22 October 2026). And
+      # it names no update server, so no walk asks the release's for one.
       # Tauri's build merges TAURI_CONFIG into tauri.conf.json; the
       # installer's build never sees it (tests/unit/ui/rig.py `build_config`).
-      - name: The app's windows take the tests' arguments
+      - name: The app's windows take the tests' arguments, and it asks no update server
         shell: bash
         run: echo "TAURI_CONFIG=$(uv run --no-sync python -c 'from tests.unit.ui.rig import build_config; print(build_config())')" >> "$GITHUB_ENV"
 
@@ -292,10 +293,11 @@ jobs:
       # The app's windows take the rig's arguments as their own in this
       # build. Everything on the runner runs elevated, and an elevated
       # WebView2 takes no arguments from outside the app: not the variable
-      # the rig sets, nor machine policy (both tried, 22 October 2026).
+      # the rig sets, nor machine policy (both tried, 22 October 2026). And
+      # it names no update server, so no walk asks the release's for one.
       # Tauri's build merges TAURI_CONFIG into tauri.conf.json; the
       # installer's build never sees it (tests/unit/ui/rig.py `build_config`).
-      - name: The app's windows take the tests' arguments
+      - name: The app's windows take the tests' arguments, and it asks no update server
         id: config
         shell: bash
         run: |
@@ -305,7 +307,7 @@ jobs:
 
       # The app as built for the tests, kept under the hash of all it is
       # built from: ui/, the privacy statement its setup shows, and the
-      # windows' arguments. A round that changed only the backend or the
+      # test build's own settings. A round that changed only the backend or the
       # tests built the same app again, four of a focus run's fifteen
       # minutes (22 October 2026). Restored and saved apart, so that a
       # failed job's build is kept too: a fix's runs mostly fail.
@@ -407,10 +409,11 @@ jobs:
       # The app's windows take the rig's arguments as their own in this
       # build. Everything on the runner runs elevated, and an elevated
       # WebView2 takes no arguments from outside the app: not the variable
-      # the rig sets, nor machine policy (both tried, 22 October 2026).
+      # the rig sets, nor machine policy (both tried, 22 October 2026). And
+      # it names no update server, so no walk asks the release's for one.
       # Tauri's build merges TAURI_CONFIG into tauri.conf.json; the
       # installer's build never sees it (tests/unit/ui/rig.py `build_config`).
-      - name: The app's windows take the tests' arguments
+      - name: The app's windows take the tests' arguments, and it asks no update server
         id: config
         shell: bash
         run: |
@@ -420,7 +423,7 @@ jobs:
 
       # The app as built for the tests, kept under the hash of all it is
       # built from: ui/, the privacy statement its setup shows, and the
-      # windows' arguments. A round that changed only the backend or the
+      # test build's own settings. A round that changed only the backend or the
       # tests built the same app again, four of a focus run's fifteen
       # minutes (22 October 2026). Restored and saved apart, so that a
       # failed job's build is kept too: a fix's runs mostly fail.

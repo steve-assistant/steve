@@ -23,6 +23,7 @@ import os
 import subprocess
 import sys
 import time
+import warnings
 from collections.abc import Callable, Iterator
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -59,6 +60,17 @@ class Backend:
         return next(a["status"] for a in reply.json()["items"]
                     if a["kind"] == "action" and a["id"] == card["action_id"])
 
+    def bridge_error(self, channel: str) -> str | None:
+        """The trouble the app's page for `channel` shows (it reads the
+        bridge's state), or what the route answered instead, so a wait
+        meets the supervisor's own error for a moment and waits on. On CI
+        (22 October 2026) one such reply to Telegram's page stopped a wait
+        with a KeyError, as with `action`."""
+        reply = self.get(f"/{channel}/status")
+        if reply.status_code != 200:
+            return f"answered {reply.status_code}: {reply.text[:300]}"
+        return reply.json()["bridge"].get("error")
+
     def get(self, path: str, **kwargs) -> httpx.Response:
         return httpx.get(self.base + path, headers=self.headers, timeout=30,
                          verify=localapi.tls(), **kwargs)
@@ -89,20 +101,37 @@ class Backend:
 
     async def chat(self, text: str, *, within: float = 60, **more) -> dict:
         """One turn over `/ws`, as the app's chat sends it: the reply, or
-        the error the socket gave instead."""
+        the error the socket gave instead.
+
+        A socket closed before its hello is opened once more, as the app
+        reconnects on any close (ui/src/api.ts `AgentSocket`): on CI (22
+        October 2026) one closed so, and the scenario failed on a socket the
+        app would simply have opened again. Closed twice, it fails with the
+        backend's logs, which say why (core/supervisor.py `ws_proxy`)."""
         import asyncio
 
         import websockets
 
         url = self.base.replace("http://", "ws://") + "/ws"
-        async with websockets.connect(url, subprotocols=["steve", f"token.{self.token}"]) as ws:
-            assert json.loads(await ws.recv())["type"] == "hello"
-            await ws.send(json.dumps({"type": "chat", "text": text, **more}))
-            async with asyncio.timeout(within):
-                while True:
-                    said = json.loads(await ws.recv())
-                    if said["type"] in ("reply", "error"):
-                        return said
+        for tries in (1, 2):
+            async with websockets.connect(url, subprotocols=["steve", f"token.{self.token}"]) as ws:
+                try:
+                    hello = json.loads(await ws.recv())
+                except websockets.ConnectionClosed as closed:
+                    if tries == 2:
+                        raise AssertionError(f"the socket closed twice before its hello "
+                                             f"({closed})\n{self.logs()}") from closed
+                    warnings.warn(f"the socket closed before its hello ({closed}); "
+                                  "opened again", stacklevel=2)
+                    continue
+                assert hello["type"] == "hello", hello
+                await ws.send(json.dumps({"type": "chat", "text": text, **more}))
+                async with asyncio.timeout(within):
+                    while True:
+                        said = json.loads(await ws.recv())
+                        if said["type"] in ("reply", "error"):
+                            return said
+        raise AssertionError("unreachable")
 
     def leaks(self) -> list[str]:
         """Every secret seen out of its place (tests/fakes/world.py), the

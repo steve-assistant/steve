@@ -58,7 +58,7 @@ def sends(steve: Backend, words: str) -> list[dict]:
 
 def said_on_the_page(steve: Backend) -> str | None:
     """The trouble the app's Signal page shows: it reads the bridge's state."""
-    return steve.get("/signal/status").json()["bridge"].get("error")
+    return steve.bridge_error("signal")
 
 
 def test_a_reply_signal_refuses_three_times_is_tried_until_it_goes_and_arrives_once(steve):
@@ -86,9 +86,11 @@ def test_a_daemon_that_dies_is_started_again_and_answers_what_comes_after_once(s
 
     # The app's Signal page says so while it is down, and no longer once it
     # is back.
-    assert until(lambda: "stopped" in (said_on_the_page(steve) or ""), within=10), steve.logs()
+    assert until(lambda: "stopped" in (said_on_the_page(steve) or ""), within=10), (
+        f"{said_on_the_page(steve)}\n{steve.logs()}")
     assert until(lambda: signal_cli.streams(made.signal) > opened, within=60), steve.logs()
-    assert until(lambda: said_on_the_page(steve) is None, within=10)
+    assert until(lambda: said_on_the_page(steve) is None, within=10), (
+        f"{said_on_the_page(steve)}\n{steve.logs()}")
     again = signal_cli.says(made.signal, ASK_LIGHT)
     heard(steve, LIGHT, after=again)
     # What came before the daemon died is not answered a second time.

@@ -98,11 +98,17 @@ def build_config() -> str:
     arguments and nothing from outside: on the runner neither the variable
     nor WebView2's machine policy, under the app's name or `*`, reached the
     browser (22 October 2026). A window's own arguments replace wry's, so
-    its autoplay policy is given again (`ON_SCREEN` keeps the rest)."""
+    its autoplay policy is given again (`ON_SCREEN` keeps the rest).
+
+    And no update server. With the release's named, as the shipped settings
+    name it, each walk long enough asked github.com for an update a minute
+    in (CI's app log, 22 October 2026): a test reaching a live service. With
+    none, a check says updates are not set up (ui/src-tauri/src/update.rs
+    `explain`), which only the console hears."""
     config = json.loads((UI / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8"))
     own = f"{WEBVIEW_ARGS} --autoplay-policy=no-user-gesture-required"
     windows = [dict(window, additionalBrowserArgs=own) for window in config["app"]["windows"]]
-    return json.dumps({"app": {"windows": windows}})
+    return json.dumps({"app": {"windows": windows}, "plugins": {"updater": {"endpoints": []}}})
 
 STARTS_WITHIN_S = 60  # the app: its webview, then its backend
 QUERYABLE_MS = 5_000  # Playwright's first look for an element in a page (`Desktop._queryable`)

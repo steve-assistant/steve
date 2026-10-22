@@ -28,8 +28,10 @@ would be the network the container was denied:
   time cut it off for good, every connection after refused.
 
 Only the process Steve started is served (`Connection.client_pid`). A
-refusal closes the connection and is said to `note`, the server's log,
-which its owner keeps redacted; the server sees a connection closed.
+refusal resets the connection and is said to `note`, the server's log,
+which its owner keeps redacted; the server sees its connection reset, an
+error, as a refused TCP connection gives. Only a connection whose service
+ended it ends cleanly, once the server has what the service sent last.
 """
 
 from __future__ import annotations
@@ -229,7 +231,7 @@ class Relay:
         with self._lock:
             live = list(self._live.items())
         for connection, upstream in live:
-            connection.close()
+            connection.close(reset=True)
             if upstream is not None:
                 with contextlib.suppress(OSError):
                     upstream.close()
@@ -251,11 +253,11 @@ class Relay:
             if connection is None:
                 continue
             if connection.client_pid != self.pid:
-                connection.close()
+                connection.close(reset=True)
                 self._refuse("a process not the server's opened its pipe")
                 continue
             if why := self._admit():
-                connection.close()
+                connection.close(reset=True)
                 self._refuse(why)
                 continue
             thread = threading.Thread(target=self._serve, args=(connection,), daemon=True,
@@ -294,7 +296,8 @@ class Relay:
         except OSError as exc:
             self.note(f"steve: a connection ended: {type(exc).__name__}")
         finally:
-            connection.close()
+            # A connection relayed to its end is closed already, and cleanly.
+            connection.close(reset=True)
             if upstream is not None:
                 with contextlib.suppress(OSError):
                     upstream.close()
@@ -306,7 +309,7 @@ class Relay:
         """The connection's host checked and connected, and the bytes read
         so far, to send on first. Held to `HELLO_S`: a server that opens
         and says nothing would hold a connection for nothing."""
-        timer = threading.Timer(HELLO_S, connection.close)
+        timer = threading.Timer(HELLO_S, connection.close, kwargs={"reset": True})
         timer.start()
         try:
             data = b""
@@ -376,12 +379,16 @@ class Relay:
 
         sender = threading.Thread(target=outward, daemon=True, name="relay-out")
         sender.start()
+        ended = False
         try:
             while chunk := upstream.recv(CHUNK):
                 self._count("into", len(chunk))
                 connection.stream.write(chunk)
+            ended = True
         finally:
-            connection.close()
+            # A clean end only where the service ended: one cut off by a
+            # cap, a reset or a stop is not a whole reply.
+            connection.close(reset=not ended)
             with contextlib.suppress(OSError):
                 upstream.shutdown(socket.SHUT_RDWR)
             sender.join(5)

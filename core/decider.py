@@ -321,7 +321,10 @@ def _environment(port: int, *, offline: bool = True) -> dict[str, str]:
 
 def _spawn(port: int, *, offline: bool = True) -> subprocess.Popen:
     """The server process, its output to `log_path()`, never a pipe
-    (docs/protocols.md §5). `tests/gate/fences.py` refuses it."""
+    (docs/protocols.md §5), started suspended: it runs once `_contain` has
+    it in its job. `tests/gate/fences.py` refuses it."""
+    from core.sandbox import win32
+
     (home() / "home").mkdir(parents=True, exist_ok=True)
     log_path().parent.mkdir(parents=True, exist_ok=True)
     # Emptied in place past `LOG_BYTES`, as the app empties the supervisor's
@@ -334,15 +337,23 @@ def _spawn(port: int, *, offline: bool = True) -> subprocess.Popen:
         return subprocess.Popen(
             [str(_exe()), "serve"], cwd=home(), env=_environment(port, offline=offline),
             stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
-            creationflags=subprocess.CREATE_NO_WINDOW)
+            creationflags=subprocess.CREATE_NO_WINDOW | win32.CREATE_SUSPENDED)
 
 
 def _contain(process: subprocess.Popen) -> Callable[[], None]:
     """Put the server in a job object that kills everything in it when its
     last handle closes -- this process's, when it exits, however it exits --
-    and return what ends it now. The server starts nothing for its first
-    tenth of a second (GPU discovery comes after; the runner with the first
-    request), so it is in the job before its first child is."""
+    let it run, and return what ends it now.
+
+    It is started suspended (`_spawn`), so it is in the job before its
+    first instruction. Until 22 October 2026 it started running and was put
+    in the job after `Popen` returned, on the word that it starts nothing
+    for its first tenth of a second: a busy machine's tenth of a second can
+    be longer, and a process it started in between would stay outside, with
+    nothing to end it. A process not started suspended is let run as it
+    was."""
+    import psutil
+
     from core.sandbox import job
 
     # Popen's own handle to the process, not one opened by its pid, which a
@@ -353,6 +364,14 @@ def _contain(process: subprocess.Popen) -> Callable[[], None]:
         # Never run it outside the job: a server nothing kills is the thing
         # this exists to prevent.
         process.kill()
+        raise
+    # Popen keeps no handle to the first thread; psutil resumes the process
+    # as a whole (NtResumeProcess), by its pid, which Popen's handle keeps
+    # from being reused.
+    try:
+        psutil.Process(process.pid).resume()
+    except psutil.Error:
+        held.end()
         raise
     return held.end
 

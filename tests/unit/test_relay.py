@@ -35,7 +35,7 @@ PACKAGE = "S-1-15-2-1-2-3-4-5-6-7"
 class Service(Network):
     """The network behind the broker: names resolve as `names` says, and a
     connection to a public address reaches one TLS service, which echoes
-    what it is sent, in capitals."""
+    what it is sent, in capitals, and hangs up once it has said "BYE"."""
 
     def __init__(self, ca: trustme.CA, names: dict[str, list[str]]) -> None:
         self.names = names
@@ -65,6 +65,8 @@ class Service(Network):
             while data := tls.recv(65536):
                 self.heard.append(data)
                 tls.sendall(data.upper())
+                if data == b"bye":
+                    break
 
 
 class Tls:
@@ -152,12 +154,16 @@ def _open(name: str):
     raise AssertionError("the pipe never opened")
 
 
-def _closed(stream) -> bool:
-    """True once the broker has closed this connection."""
+def _reset(stream) -> bool:
+    """True once the broker has reset this connection: the server's read
+    fails. A clean end instead would read as a service that answered and
+    hung up, and Node gives a plain socket no error for one, so a server
+    waiting for its refused connection's error would wait for ever."""
     try:
-        return stream.read(1) == b""
+        stream.read(1)
     except OSError:
         return True
+    return False
 
 
 def test_a_connection_to_an_approved_host_reaches_it_and_its_tls_is_the_servers_own(
@@ -173,6 +179,21 @@ def test_a_connection_to_an_approved_host_reaches_it_and_its_tls_is_the_servers_
         assert served.out > 0 and served.into > 0 and notes == []
 
 
+def test_a_reply_its_service_hangs_up_after_reaches_the_server_whole_and_then_a_clean_end(
+        service, trusting):
+    """A service that answers and hangs up is the common case; the broker
+    writes its last chunk and closes at once. A reset there would discard
+    the chunk the server had not read yet, and tell it the connection
+    failed when it ended."""
+    with serving(service) as (served, name, notes), _open(name) as stream:
+        stream.write(f"{HOST}:443\n".encode())
+        client = Tls(stream, HOST, trusting)
+        client.handshake()
+        assert client.say(b"bye") == b"BYE"
+        assert stream.read(1) == b""
+    assert served.refused == []
+
+
 @pytest.mark.parametrize(("line", "why"), [
     ("elsewhere.example:443", "not a host the server was approved for"),
     (f"{HOST}:8443", "not a host the server was approved for"),
@@ -186,7 +207,7 @@ def test_a_host_or_port_the_server_was_not_approved_for_reaches_nothing(
     with serving(service) as (served, name, notes), _open(name) as stream:
         host = line.split(":")[0]
         stream.write(line.encode() + b"\n" + Tls(stream, host, trusting).first())
-        assert _closed(stream)
+        assert _reset(stream)
     assert service.opened == []
     assert any(why in said for said in served.refused), served.refused
 
@@ -199,7 +220,7 @@ def test_a_handshake_for_another_name_than_the_line_asked_for_is_refused(
     with serving(service) as (served, name, notes), _open(name) as stream:
         stream.write(f"{HOST}:443\n".encode()
                      + Tls(stream, "other.notes.example", trusting).first())
-        assert _closed(stream)
+        assert _reset(stream)
     assert service.opened == []
     assert served.refused == [f"it asked for {HOST} and greeted other.notes.example"]
 
@@ -208,7 +229,7 @@ def test_a_connection_that_is_not_tls_is_refused(service):
     """Plain HTTP would carry its host in what the broker does not read."""
     with serving(service) as (served, name, notes), _open(name) as stream:
         stream.write(f"{HOST}:443\nGET / HTTP/1.1\r\nHost: elsewhere.example\r\n\r\n".encode())
-        assert _closed(stream)
+        assert _reset(stream)
     assert service.opened == [] and served.refused == ["it is not TLS"]
 
 
@@ -235,7 +256,7 @@ def test_a_handshake_that_hides_its_name_is_refused(service, trusting):
         assert relay.hello_name(hello) == HOST
         stream.write(f"{HOST}:443\n".encode()
                      + _with_extension(hello, relay.ENCRYPTED_CLIENT_HELLO, b"\x00" * 8))
-        assert _closed(stream)
+        assert _reset(stream)
     assert service.opened == []
     assert served.refused == ["it hides the name it asks for (Encrypted Client Hello)"]
 
@@ -257,7 +278,7 @@ def test_an_approved_name_that_resolves_inside_the_network_is_never_dialled(
     with serving(service, reach=relay.Reach({host: (443,)})) as (served, name, notes), \
             _open(name) as stream:
         stream.write(f"{host}:443\n".encode() + Tls(stream, host, trusting).first())
-        assert _closed(stream)
+        assert _reset(stream)
     assert service.opened == [] and len(served.refused) == 1
 
 
@@ -273,11 +294,11 @@ def test_a_server_approved_for_anywhere_reaches_public_names_on_443_alone(
         with _open(name) as stream:
             stream.write(b"anywhere.example:22\n"
                          + Tls(stream, "anywhere.example", trusting).first())
-            assert _closed(stream)
+            assert _reset(stream)
         with _open(name) as stream:
             stream.write(b"home.notes.example:443\n"
                          + Tls(stream, "home.notes.example", trusting).first())
-            assert _closed(stream)
+            assert _reset(stream)
     assert service.opened == [(PUBLIC, 443)] and len(served.refused) == 2
 
 
@@ -288,7 +309,7 @@ def test_only_the_servers_own_process_is_served(service, trusting):
             _open(name) as stream:
         with contextlib.suppress(OSError):  # closed before it is written to
             stream.write(f"{HOST}:443\n".encode() + Tls(stream, HOST, trusting).first())
-        assert _closed(stream)
+        assert _reset(stream)
     assert service.opened == []
     assert served.refused == ["a process not the server's opened its pipe"]
 
@@ -303,7 +324,7 @@ def test_connections_past_a_minutes_cap_are_refused_until_the_minute_passes(
                 stream.write(f"{HOST}:443\n".encode())
                 Tls(stream, HOST, trusting).handshake()
         with _open(name) as stream:
-            assert _closed(stream)
+            assert _reset(stream)
         now[0] += 61
         with _open(name) as stream:
             stream.write(f"{HOST}:443\n".encode())
@@ -354,5 +375,5 @@ def test_a_server_past_its_bytes_for_the_hour_is_served_again_once_the_hour_pass
 def test_a_connection_that_never_says_where_is_closed(monkeypatch, service):
     monkeypatch.setattr(relay, "HELLO_S", 0.3)
     with serving(service) as (served, name, notes), _open(name) as stream:
-        assert _closed(stream)
+        assert _reset(stream)
     assert served.refused == ["it closed before saying where to"]

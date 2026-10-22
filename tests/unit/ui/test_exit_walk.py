@@ -23,6 +23,7 @@ import re
 
 import pytest
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
+from playwright.sync_api import expect
 
 from core import knobs
 from tests.fakes.openai import REPLY, ROUTINE_SET
@@ -84,16 +85,30 @@ def test_a_stranger_goes_from_a_fresh_install_to_a_first_answer_and_a_first_yes(
         page.get_by_role("button", name="Keep this key").click()
 
         _on(page, "How much may Steve spend a month?")
-        # The name step reads the profile kept so far as it opens, and puts it
-        # in the form when it comes, over anything typed before then
-        # (ui/src/Setup.tsx `Name`). On CI's slow backend the walk typed
-        # first and its name was wiped (22 October 2026), so it waits.
-        with page.expect_request_finished(
-                lambda r: r.method == "GET" and r.url.endswith("/control/profile")):
-            page.get_by_role("button", name="Continue").click()
+        # The name step reads the profile kept so far as it opens. On CI's
+        # slow backend (22 October 2026) it came after the walk had typed
+        # the name, and the form took it whole, wiping the name
+        # (ui/src/Setup.tsx `Name`). Its reply is held here until the name
+        # is typed, every time, and carries pronouns, so its coming shows.
+        held = []
+        profile = re.compile(r"/control/profile$")
+        page.route(profile, lambda route: held.append(route) if route.request.method == "GET"
+                   else route.continue_())
+        page.get_by_role("button", name="Continue").click()
 
         _on(page, "What should Steve call you?")
         page.get_by_label("Your name").fill("Maya Lindqvist")
+        # A route's handler runs only while Playwright is called: the wait pumps it.
+        until(lambda: held or page.wait_for_timeout(50), within=10,
+              said=lambda: "the name step never asked for the profile")
+        page.unroute(profile)
+        kept = held[0].fetch()
+        said = kept.json()
+        held[0].fulfill(response=kept,
+                        json={**said, "profile": {**(said.get("profile") or {}),
+                                                  "pronouns": "they/them"}})
+        expect(page.get_by_label("Pronouns (optional)")).to_have_value("they/them")
+        expect(page.get_by_label("Your name")).to_have_value("Maya Lindqvist")
         page.get_by_role("button", name="Continue").click()
 
         _on(page, "Choose a passphrase")

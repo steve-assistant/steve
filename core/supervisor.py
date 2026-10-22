@@ -297,9 +297,22 @@ async def ws_proxy(ws: WebSocket) -> None:
     # `steve`, if the app offered it: its token rode in the other subprotocol.
     await ws.accept(subprotocol=localapi.subprotocol(ws.scope))
     worker.inflight += 1
+    code = 1000
     try:
-        async with websockets.connect(f"ws://127.0.0.1:{worker.port}/ws",
-                                      additional_headers=localapi.headers()) as upstream:
+        try:
+            upstream = await websockets.connect(f"ws://127.0.0.1:{worker.port}/ws",
+                                                additional_headers=localapi.headers())
+        except Exception as exc:  # noqa: BLE001 - said in the log, and to the app
+            # Said only at debug before, with an ordinary close: on CI (22
+            # October 2026) a chat's socket closed before its hello, and
+            # nothing in the log said why. A worker still up that did not
+            # take the socket is worth a warning; one already gone, as on a
+            # quit, is not.
+            (log.warning if worker.alive else log.info)(
+                "worker :%d did not take an app socket: %s", worker.port, exc)
+            code = 1013  # try again later, as with no worker
+            return
+        async with upstream:
 
             async def client_to_worker() -> None:
                 while True:
@@ -330,7 +343,7 @@ async def ws_proxy(ws: WebSocket) -> None:
             for task in done:
                 with contextlib.suppress(Exception):
                     task.result()
-    except Exception as exc:  # upstream gone, handshake failed, client vanished
+    except Exception as exc:  # upstream gone mid-way, client vanished
         log.debug("ws proxy closed: %s", exc)
     finally:
         worker.inflight -= 1
@@ -338,7 +351,7 @@ async def ws_proxy(ws: WebSocket) -> None:
         # not RuntimeError: every quit from the tray left two tracebacks in
         # the log the app shows when the backend keeps stopping.
         with contextlib.suppress(RuntimeError, WebSocketDisconnect):
-            await ws.close()
+            await ws.close(code=code)
 
 
 # ---------------------------------------------------------------------------

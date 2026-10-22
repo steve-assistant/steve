@@ -115,7 +115,9 @@ class Stream:
     def flush(self) -> None:
         """Nothing is held: each write is the pipe's."""
 
-    def close(self) -> None:
+    def close(self, *, reset: bool = False) -> None:
+        """End both ways. The client reads what is left, then the end; or,
+        with `reset`, an error at once, as a reset TCP connection gives."""
         with self._idle:
             if self._closed:
                 return
@@ -124,7 +126,16 @@ class Stream:
             # Ends a read or write another thread waits in; each returns.
             api.CancelIoEx(self._handle, None)
             self._idle.wait_for(lambda: self._busy == 0, CLOSE_S)
-            api.DisconnectNamedPipe(self._handle)
+            # Closed, not disconnected, unless asked. DisconnectNamedPipe
+            # discards what the client has not read yet, and the relay
+            # writes a server's last chunk and closes at once, so a reply
+            # that ended with its connection lost its tail (CI, 22 October
+            # 2026). But a plain close reads as a clean end, which a refused
+            # connection is not: Node reports no error for one on a plain
+            # socket, and a server waiting for its connection's error waited
+            # for ever (tests/gate/test_local_servers.py).
+            if reset:
+                api.DisconnectNamedPipe(self._handle)
             api.CloseHandle(self._handle)
 
 
@@ -135,9 +146,9 @@ class Connection:
     client_pid: int
     stream: Stream
 
-    def close(self) -> None:
+    def close(self, *, reset: bool = False) -> None:
         with contextlib.suppress(OSError):
-            self.stream.close()
+            self.stream.close(reset=reset)
 
 
 class Pipe:
