@@ -47,6 +47,29 @@ def test_an_install_id_that_is_not_one_is_refused_rather_than_replaced():
         profiles.install()
 
 
+def test_a_process_asking_for_the_install_id_while_another_makes_it_gets_the_same_id(
+        monkeypatch):
+    """The supervisor and the worker each ask at start. Created empty and
+    then written, the file could be read in between, and was refused as a
+    damaged id: on CI (22 October 2026) the worker's wake task could not be
+    named. Here the second asks at the moment the first makes its id."""
+    made = profiles.secrets.token_hex
+    asked: list[str] = []
+    making = False
+
+    def meanwhile(n: int) -> str:
+        nonlocal making
+        if not making:
+            making = True
+            asked.append(profiles.install())
+        return made(n)
+
+    monkeypatch.setattr(profiles.secrets, "token_hex", meanwhile)
+    first = profiles.install()
+    assert asked == [first]
+    assert not list(paths.data_dir().glob(f"{profiles.INSTALL_FILE}.*"))
+
+
 def test_a_modules_container_is_named_for_its_install_and_fits_windows_limit():
     """Windows takes a profile name of up to 64 characters, and the longest
     module id must fit."""

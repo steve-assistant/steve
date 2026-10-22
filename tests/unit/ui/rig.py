@@ -568,8 +568,11 @@ class Desktop:
         with contextlib.suppress(Exception):
             main = [page for context in self.browser.contexts for page in context.pages
                     if page.url.startswith(APP_ORIGIN) and "#" not in page.url]
-            lines.append("the main window reads: "
-                         + repr(main[0].evaluate("document.body.innerText")[:400]))
+            # Its end too: a page's error line comes after its prose, which
+            # on setup's last page is longer than the start kept here.
+            text = main[0].evaluate("document.body.innerText")
+            lines.append("the main window reads: " + repr(
+                text if len(text) <= 800 else f"{text[:400]} [...] {text[-400:]}"))
         for log in sorted((self.data / "logs").glob("*.log")):
             tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-25:]
             lines.append(f"--- {log.name}\n" + "\n".join(tail))
@@ -660,13 +663,17 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
         def noted(what: str, page) -> None:
             app.seen.append(f"{time.monotonic() - began:6.1f} s  {what}: {page.url}")
 
-        def navigation(request, how: str) -> None:
+        def sent(request, how: str) -> None:
             # Playwright's waits and clicks first wait out a navigation the
             # main frame has begun and not ended. On CI (22 October 2026)
             # the stranger's walk waited 90 s for a heading that was on the
             # page and visible, which reads that way: say each navigation.
-            if request.is_navigation_request():
-                app.seen.append(f"{time.monotonic() - began:6.1f} s  navigation {how}: "
+            # And each change the page asked of the backend: on CI the same
+            # day, Start on setup's last page left the page where it was,
+            # and nothing said whether its request was refused, or failed,
+            # or never answered.
+            if request.is_navigation_request() or request.method != "GET":
+                app.seen.append(f"{time.monotonic() - began:6.1f} s  {request.method} {how}: "
                                 f"{request.url[:120]}")
 
         def watch(page) -> None:
@@ -674,9 +681,9 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
             page.on("crash", lambda p: noted("crashed", p))
             page.on("framenavigated", lambda frame: frame == page.main_frame and noted(
                 "committed", page))
-            page.on("request", lambda r: navigation(r, "asked"))
-            page.on("requestfinished", lambda r: navigation(r, "finished"))
-            page.on("requestfailed", lambda r: navigation(r, f"failed ({r.failure})"))
+            page.on("request", lambda r: sent(r, "asked"))
+            page.on("response", lambda r: sent(r.request, f"answered {r.status}"))
+            page.on("requestfailed", lambda r: sent(r, f"failed ({r.failure})"))
 
         for context in browser.contexts:
             context.on("page", lambda p: (noted("opened", p), watch(p)))

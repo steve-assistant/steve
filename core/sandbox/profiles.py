@@ -33,8 +33,10 @@ _INSTALL = re.compile(r"^[0-9a-f]{32}$")
 
 def install() -> str:
     """This install's id, shortened to the eight characters names carry.
-    Made the first time it is asked for. Two processes asking at once agree:
-    the file is created exclusively, and the one that loses reads it."""
+    Made the first time it is asked for. Two processes asking at once agree,
+    and neither reads it half made: it is written whole under a name of its
+    own and then renamed into place, which on Windows fails rather than
+    replace a file already there, and the one that loses reads the other's."""
     path = paths.data_dir() / INSTALL_FILE
     for _ in range(2):
         with contextlib.suppress(FileNotFoundError):
@@ -43,10 +45,17 @@ def install() -> str:
                 return made[:8]
             raise OSError(f"{path} is not an install id; move it aside to make a new one")
         path.parent.mkdir(parents=True, exist_ok=True)
-        with contextlib.suppress(FileExistsError):
-            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
-            with os.fdopen(descriptor, "w", encoding="ascii", newline="\n") as f:
-                f.write(secrets.token_hex(16) + "\n")
+        # Not created in place and then written: between the two, the file
+        # was there and empty, and a process reading it then was refused as
+        # if the id were damaged.
+        whole = path.with_name(f"{INSTALL_FILE}.{secrets.token_hex(4)}.tmp")
+        try:
+            whole.write_text(secrets.token_hex(16) + "\n", encoding="ascii", newline="\n")
+            with contextlib.suppress(FileExistsError):
+                os.rename(whole, path)
+        finally:
+            with contextlib.suppress(OSError):
+                whole.unlink()
     raise OSError(f"could not make or read {path}")
 
 
