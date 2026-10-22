@@ -145,6 +145,16 @@ jobs:
           shared-key: app
           cache-on-failure: true
 
+      # The app's windows take the rig's arguments as their own in this
+      # build. Everything on the runner runs elevated, and an elevated
+      # WebView2 takes no arguments from outside the app: not the variable
+      # the rig sets, nor machine policy (both tried, 22 October 2026).
+      # Tauri's build merges TAURI_CONFIG into tauri.conf.json; the
+      # installer's build never sees it (tests/unit/ui/rig.py `build_config`).
+      - name: The app's windows take the tests' arguments
+        shell: bash
+        run: echo "TAURI_CONFIG=$(uv run --no-sync python -c 'from tests.unit.ui.rig import build_config; print(build_config())')" >> "$GITHUB_ENV"
+
       - name: Build the app
         shell: bash
         run: |
@@ -169,18 +179,6 @@ jobs:
           if ($signed.Status -ne "Valid" -or $signed.SignerCertificate.Subject -notmatch "O=Microsoft Corporation") { throw "not signed by Microsoft: $($signed.Status) $($signed.SignerCertificate.Subject)" }
           Start-Process $setup -ArgumentList "/silent", "/install" -Wait
           (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
-
-      # WebView2 ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS in a process
-      # running elevated, as everything on the runner does, and honours its
-      # machine policy. The arguments are the rig's (tests/unit/ui/rig.py).
-      - name: WebView2 takes the tests' arguments
-        shell: pwsh
-        run: |
-          $flags = uv run --no-sync python -c "from tests.unit.ui.rig import WEBVIEW_ARGS; print(WEBVIEW_ARGS)"
-          $key = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments"
-          New-Item -Path $key -Force | Out-Null
-          New-ItemProperty -Path $key -Name "app.exe" -Value $flags -PropertyType String -Force | Out-Null
-          (Get-ItemProperty -Path $key)."app.exe"
 
       - name: Tests
         run: uv run --no-sync pytest tests/unit/ui -q -n 4 --dist loadgroup -p no:cacheprovider --durations=15 --ignore=tests/unit/ui/test_app_walks.py --ignore=tests/unit/ui/test_exit_walk.py
@@ -280,6 +278,16 @@ jobs:
           shared-key: app
           cache-on-failure: true
 
+      # The app's windows take the rig's arguments as their own in this
+      # build. Everything on the runner runs elevated, and an elevated
+      # WebView2 takes no arguments from outside the app: not the variable
+      # the rig sets, nor machine policy (both tried, 22 October 2026).
+      # Tauri's build merges TAURI_CONFIG into tauri.conf.json; the
+      # installer's build never sees it (tests/unit/ui/rig.py `build_config`).
+      - name: The app's windows take the tests' arguments
+        shell: bash
+        run: echo "TAURI_CONFIG=$(uv run --no-sync python -c 'from tests.unit.ui.rig import build_config; print(build_config())')" >> "$GITHUB_ENV"
+
       - name: Build the app
         shell: bash
         run: |
@@ -296,18 +304,6 @@ jobs:
           if ($signed.Status -ne "Valid" -or $signed.SignerCertificate.Subject -notmatch "O=Microsoft Corporation") { throw "not signed by Microsoft: $($signed.Status) $($signed.SignerCertificate.Subject)" }
           Start-Process $setup -ArgumentList "/silent", "/install" -Wait
           (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
-
-      # WebView2 ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS in a process
-      # running elevated, as everything on the runner does, and honours its
-      # machine policy. The arguments are the rig's (tests/unit/ui/rig.py).
-      - name: WebView2 takes the tests' arguments
-        shell: pwsh
-        run: |
-          $flags = uv run --no-sync python -c "from tests.unit.ui.rig import WEBVIEW_ARGS; print(WEBVIEW_ARGS)"
-          $key = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments"
-          New-Item -Path $key -Force | Out-Null
-          New-ItemProperty -Path $key -Name "app.exe" -Value $flags -PropertyType String -Force | Out-Null
-          (Get-ItemProperty -Path $key)."app.exe"
 
       # Unbuilt, the worker says modules cannot run here, and the extension's
       # end-to-end test waits for an answer that never comes.
@@ -352,6 +348,16 @@ jobs:
           shared-key: app
           cache-on-failure: true
 
+      # The app's windows take the rig's arguments as their own in this
+      # build. Everything on the runner runs elevated, and an elevated
+      # WebView2 takes no arguments from outside the app: not the variable
+      # the rig sets, nor machine policy (both tried, 22 October 2026).
+      # Tauri's build merges TAURI_CONFIG into tauri.conf.json; the
+      # installer's build never sees it (tests/unit/ui/rig.py `build_config`).
+      - name: The app's windows take the tests' arguments
+        shell: bash
+        run: echo "TAURI_CONFIG=$(uv run --no-sync python -c 'from tests.unit.ui.rig import build_config; print(build_config())')" >> "$GITHUB_ENV"
+
       - name: Build the app
         shell: bash
         run: |
@@ -368,18 +374,6 @@ jobs:
           if ($signed.Status -ne "Valid" -or $signed.SignerCertificate.Subject -notmatch "O=Microsoft Corporation") { throw "not signed by Microsoft: $($signed.Status) $($signed.SignerCertificate.Subject)" }
           Start-Process $setup -ArgumentList "/silent", "/install" -Wait
           (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
-
-      # WebView2 ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS in a process
-      # running elevated, as everything on the runner does, and honours its
-      # machine policy. The arguments are the rig's (tests/unit/ui/rig.py).
-      - name: WebView2 takes the tests' arguments
-        shell: pwsh
-        run: |
-          $flags = uv run --no-sync python -c "from tests.unit.ui.rig import WEBVIEW_ARGS; print(WEBVIEW_ARGS)"
-          $key = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments"
-          New-Item -Path $key -Force | Out-Null
-          New-ItemProperty -Path $key -Name "app.exe" -Value $flags -PropertyType String -Force | Out-Null
-          (Get-ItemProperty -Path $key)."app.exe"
 
       - name: Build the module runtime
         run: uv run --no-sync python -m core.sandbox build

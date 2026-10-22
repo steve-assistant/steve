@@ -81,9 +81,23 @@ ON_SCREEN = (
 # and the two above. The rig gives them as WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS,
 # which WebView2 ignores in a process running elevated, as everything on CI's
 # runner does: there every test that started the app waited for a port never
-# asked for (22 October 2026). So CI writes this into WebView2's machine
-# policy for app.exe, which it honours (.github/workflows/ci.yml).
+# asked for (22 October 2026). So CI builds the app with them as its windows'
+# own (`build_config`).
 WEBVIEW_ARGS = subprocess.list2cmdline(["--remote-debugging-port=0", *LOOPBACK_ONLY, *ON_SCREEN])
+
+
+def build_config() -> str:
+    """TAURI_CONFIG for CI's build of the app, which Tauri's build merges
+    into tauri.conf.json: its windows as that file has them, each with the
+    rig's arguments as its own. An elevated WebView2 takes an app's own
+    arguments and nothing from outside: on the runner neither the variable
+    nor WebView2's machine policy, under the app's name or `*`, reached the
+    browser (22 October 2026). A window's own arguments replace wry's, so
+    its autoplay policy is given again (`ON_SCREEN` keeps the rest)."""
+    config = json.loads((UI / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8"))
+    own = f"{WEBVIEW_ARGS} --autoplay-policy=no-user-gesture-required"
+    windows = [dict(window, additionalBrowserArgs=own) for window in config["app"]["windows"]]
+    return json.dumps({"app": {"windows": windows}})
 
 STARTS_WITHIN_S = 60  # the app: its webview, then its backend
 

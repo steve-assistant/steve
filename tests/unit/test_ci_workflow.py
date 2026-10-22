@@ -9,6 +9,7 @@ need.
 
 from __future__ import annotations
 
+import json
 import re
 import shlex
 
@@ -145,20 +146,39 @@ def test_the_webview2_runtime_is_installed_before_the_tests_that_start_the_app()
         assert installed < next(i for i, run in enumerate(runs) if "pytest" in run), job
 
 
-def test_the_apps_webview_takes_the_rigs_arguments_by_machine_policy_before_the_tests():
+def test_the_apps_windows_are_built_with_the_rigs_arguments_as_their_own():
     """On the runner everything runs elevated, and an elevated WebView2
-    ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: every test that started
-    the app waited 60 s for a debugging port never asked for (22 October
-    2026). Machine policy it honours, written from the rig's own arguments
-    so the two can't drift."""
+    takes no arguments from outside the app: every test that started the
+    app waited 60 s for a debugging port never asked for, given by the
+    rig's variable and then by machine policy (22 October 2026). Each job
+    that builds the app sets TAURI_CONFIG from the rig before the build, so
+    the two can't drift; the installer's build never has it."""
     for job in APP_BUILT:
         runs = _runs(job)
-        installed = next(i for i, run in enumerate(runs) if "MicrosoftEdgeWebview2Setup" in run)
-        [policy] = [i for i, run in enumerate(runs) if "AdditionalBrowserArguments" in run]
-        assert "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge\\WebView2\\" in runs[policy], job
-        assert "from tests.unit.ui.rig import WEBVIEW_ARGS" in runs[policy], job
-        assert '-Name "app.exe"' in runs[policy], job
-        assert installed < policy < next(i for i, run in enumerate(runs) if "pytest" in run), job
+        [own] = [i for i, run in enumerate(runs) if "TAURI_CONFIG" in run]
+        assert "from tests.unit.ui.rig import build_config" in runs[own], job
+        assert runs[own].rstrip().endswith('>> "$GITHUB_ENV"'), job
+        assert own < next(i for i, run in enumerate(runs) if "cargo build" in run), job
+    assert "TAURI_CONFIG" not in yaml.safe_dump(JOBS["installer"])
+    assert "TAURI_CONFIG" not in yaml.safe_dump(DOC.get("env", {}))
+
+
+def test_the_test_builds_windows_are_the_apps_own_with_the_rigs_arguments():
+    """CI's build of the app differs from the developer's in its windows'
+    browser arguments alone: the rig's, and the autoplay policy wry gives a
+    window with none of its own. A window left out would be a window the
+    tests never see, or one that fails to start beside the others."""
+    from tests.unit.ui import rig
+
+    conf = json.loads((rig.UI / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8"))
+    built = json.loads(rig.build_config())
+    assert list(built) == ["app"] and list(built["app"]) == ["windows"]
+    windows = built["app"]["windows"]
+    assert [{k: v for k, v in w.items() if k != "additionalBrowserArgs"}
+            for w in windows] == conf["app"]["windows"]
+    for window in windows:
+        assert window["additionalBrowserArgs"].startswith(rig.WEBVIEW_ARGS + " "), window["label"]
+        assert "--remote-debugging-port=0" in window["additionalBrowserArgs"]
 
 
 def test_each_push_runs_the_shells_rust_tests_as_the_check_does():
