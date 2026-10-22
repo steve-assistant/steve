@@ -122,6 +122,24 @@ def _street_address_recogniser():
     )
 
 
+# Any address, whatever its ending. presidio's own email recogniser keeps
+# only those whose ending is on the public-suffix list, so an address on an
+# office's private domain (`.internal`, `.corp`), and the test persona's
+# `maya@contoso.example`, went to the judge verbatim: CI's first run with
+# presidio installed (22 October 2026) found it. Where both match, the
+# longest-first pass in `redact` keeps one.
+EMAIL_PATTERN = r"\b[\w.%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+\b"
+
+
+def _email_recogniser():
+    from presidio_analyzer import Pattern, PatternRecognizer
+
+    return PatternRecognizer(
+        supported_entity="EMAIL_ADDRESS",
+        patterns=[Pattern(name="any email", regex=EMAIL_PATTERN, score=0.9)],
+    )
+
+
 def _secret_recogniser():
     """API keys are not PII, but a transcript is exactly where one ends up
     after the agent reads a config file out loud, and a judge model is exactly
@@ -167,6 +185,7 @@ def _get_analyzer():
             _offline_suffixes()
             engine = AnalyzerEngine()
             engine.registry.add_recognizer(_street_address_recogniser())
+            engine.registry.add_recognizer(_email_recogniser())
             engine.registry.add_recognizer(_secret_recogniser())
             _analyzer = engine
     return _analyzer

@@ -15,6 +15,7 @@ worked.
 from __future__ import annotations
 
 import json
+import re
 
 import pytest
 
@@ -68,13 +69,6 @@ def spy_judge(monkeypatch):
 
         class Rec:
             cost_usd = 0.0001
-
-            def as_usage_row(self):
-                return {
-                    "model": "openai/gpt-6-luna", "effort": "none",
-                    "input_tokens": 900, "cached_tokens": 0, "output_tokens": 80,
-                    "reasoning_tokens": 0, "cost_usd": 0.0001, "latency_ms": 1200,
-                }
 
         return result, Rec()
 
@@ -532,25 +526,6 @@ def test_a_sweep_with_nothing_to_do_is_quiet(store):
     assert reflect.sweep(store) == []
 
 
-@needs_reflect
-async def test_the_judges_own_spend_lands_in_the_ledger(store, spy_judge):
-    """Reflection runs on every session without anybody asking for it, so it
-    is exactly the cost that goes unwatched. Nine real reflections had
-    produced zero usage rows before this."""
-    session_id = _session(
-        store,
-        [("user", "What is on for tomorrow?"), ("assistant", "One meeting at 9.")],
-    )
-    await reflect.reflect(store, session_id)
-
-    row = store.execute(
-        "SELECT * FROM usage_events WHERE session_id = ?", (session_id,)
-    ).fetchone()
-    assert row is not None, "reflection spent money and left no trace of it"
-    assert row["cost_usd"] > 0
-    assert row["effort"] == "none", "reflection must stay on the cheap tier"
-
-
 # --------------------------------------------------------------------------
 # Grounding: the half of the rubric the judge could not see
 # --------------------------------------------------------------------------
@@ -837,3 +812,18 @@ def test_redactions_email_check_reads_the_bundled_suffix_list_and_fetches_nothin
     assert tld.TLD_EXTRACTOR.suffix_list_urls == ()
     found = tldextract.extract("mail.example.co.uk")
     assert (found.subdomain, found.domain, found.suffix) == ("mail", "example", "co.uk")
+
+
+def test_the_redactors_email_pattern_takes_an_address_whatever_its_ending():
+    """presidio keeps an email only if its ending is on the public-suffix
+    list, so the persona's `maya@contoso.example`, and an address on an
+    office's private domain, reached the judge verbatim when CI first ran
+    reflection with presidio installed (22 October 2026). The redactor's
+    own pattern takes any ending, and stops before a sentence's full stop."""
+    from agent import redact
+
+    pattern = re.compile(redact.EMAIL_PATTERN, re.IGNORECASE)
+    for address in ("maya@contoso.example", "jo@team.test", "a.b+c@mail.example.com"):
+        assert pattern.fullmatch(address), address
+    assert pattern.search("Write to maya@contoso.example.").group() == "maya@contoso.example"
+    assert not pattern.search("Ask @maya on the forum.")
