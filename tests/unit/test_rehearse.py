@@ -13,6 +13,7 @@ once -- and that it can never reach a real microphone or speaker.
 from __future__ import annotations
 
 import sys
+import warnings
 
 import numpy as np
 import pytest
@@ -81,10 +82,47 @@ async def test_every_push_to_talk_scenario_passes_on_core_with_openai_faked(name
     cannot rehearse it: its scenarios run here, through the worker's own
     socket as the app sends the keys, with OpenAI faked at its two calls
     and nothing else loaded. At their own pace: a faster one multiplies the
-    worker's own time to answer, and failed on busy computers."""
-    result = await keys.rehearse(cli.available()[name], tmp=tmp_path)
+    worker's own time to answer, and failed on busy computers.
 
-    assert result.passed, keys.report(result)
+    A failed run is run once more, and the scenario fails if that one fails
+    too. Its checks are times, and on a busy computer they time the computer
+    as well: on CI (22 October 2026) two scenarios on two of the suite's
+    processes each waited about 3 s inside the worker, both ending about 6 s
+    in, while the rehearsal's own loop kept time. A press opened the
+    microphone after its release, and a first word came at 3.9 s for 2.5.
+    That was about one run in nine. A slow or broken desk fails both runs;
+    the first failure is a warning when the second passes, so how often the
+    computer, not the desk, failed it still shows."""
+    result = await keys.rehearse(cli.available()[name], tmp=tmp_path)
+    if result.passed:
+        return
+    first = keys.report(result)
+    (tmp_path / "again").mkdir()
+    again = await keys.rehearse(cli.available()[name], tmp=tmp_path / "again")
+
+    assert again.passed, f"failed twice:\n{first}\n\n{keys.report(again)}"
+    warnings.warn(f"passed on its second run; the first:\n{first}", stacklevel=1)
+
+
+def test_a_push_to_talk_report_shows_when_the_worker_answered_and_what_it_asked():
+    """On CI a press opened the microphone 3 s late, and the report showed
+    the press and the tick only: not whether the worker had answered the
+    press late, or OpenAI and the assistant been asked late."""
+    result = keys.Result(scenario=script.parse("scenario x\n0.5 key: press"), ts=10.0)
+    result.keys.append((10.5, "press", False))
+    result.lives.append(13.4)
+    result.worker += [(13.5, "worker sends listening"), (14.2, "OpenAI asked to hear")]
+    result.shuts.append(14.0)
+    result.asked.append((14.6, "What time is it?"))
+
+    assert keys.report(result).splitlines()[2:8] == [
+        "    0.50  key press",
+        "    3.40  microphone live",
+        "    3.50  worker sends listening",
+        "    4.00  microphone shut",
+        "    4.20  OpenAI asked to hear",
+        "    4.60  assistant asked: What time is it?",
+    ]
 
 
 def test_push_to_talk_is_rehearsed_from_the_press_to_the_reply_cut_by_a_press():

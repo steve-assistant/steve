@@ -105,6 +105,10 @@ class Result:
     # When the microphone went live, and when it closed, on the clock.
     lives: list[float] = field(default_factory=list)
     shuts: list[float] = field(default_factory=list)
+    # What the worker sent the app, and the faked OpenAI's calls, on the
+    # clock. Without them a late answer could not say where it waited: on CI
+    # a press opened the microphone 3 s late, and the report showed only that.
+    worker: list[tuple[float, str]] = field(default_factory=list)
     checks: list[tuple[str, bool, str]] = field(default_factory=list)
 
     @property
@@ -215,6 +219,7 @@ class _OpenAI:
         self.mic, self.result = mic, result
 
     def hear(self, name: str, data: bytes, key: str) -> dict:
+        self.result.worker.append((time.monotonic(), "OpenAI asked to hear"))
         time.sleep(HEAR_S * self.result.pace)
         text = " ".join(self.mic.words)
         self.result.heard.append(text)
@@ -223,6 +228,7 @@ class _OpenAI:
     def say(self, text: str, voice: str, speed: float, key: str) -> bytes:
         from core import voicing
 
+        self.result.worker.append((time.monotonic(), f"OpenAI asked to say {text[:40]!r}"))
         time.sleep(SAY_S * self.result.pace)
         self.result.spoken.append(text)
         seconds = max(0.3, len(text) / CHARS_PER_S) * self.result.pace
@@ -242,9 +248,10 @@ class _Socket:
 
     scope: dict = {"subprotocols": []}
 
-    def __init__(self) -> None:
+    def __init__(self, timeline: list[tuple[float, str]]) -> None:
         self.inbox: asyncio.Queue[str | None] = asyncio.Queue()
         self.sent: list[dict] = []
+        self.timeline = timeline
 
     def send(self, kind: str) -> None:
         self.inbox.put_nowait(json.dumps({"type": kind}))
@@ -265,6 +272,7 @@ class _Socket:
 
     async def send_json(self, data: dict) -> None:
         self.sent.append(data)
+        self.timeline.append((time.monotonic(), f"worker sends {data.get('type')}"))
 
     async def close(self, code: int = 1000) -> None:
         pass
@@ -296,7 +304,7 @@ async def rehearse(scenario: Scenario, *, tmp, pace: float = 1.0) -> Result:
     # A stand-in for the key, so the user's own is never read for a rehearsal.
     secrets.get = lambda name, default=None: "a rehearsal's key"
     conn = db.open_store(tmp / "rehearsal.db")
-    socket = _Socket()
+    socket = _Socket(result.worker)
     worker = _Worker()
     ours = asyncio.all_tasks()
     releases = 0
@@ -310,6 +318,7 @@ async def rehearse(scenario: Scenario, *, tmp, pace: float = 1.0) -> Result:
             await asyncio.to_thread(session.warm)
             speakers.runs.clear()
             result.spoken.clear()
+            result.worker.clear()
             worker.serve(session, socket)
             result.ts = time.monotonic()
             previous = result.ts
@@ -488,7 +497,11 @@ def report(result: Result) -> str:
     events = [(at, f"key {what}{'!' if mark else ''}") for at, what, mark in result.keys]
     events += [(s.words[0][0], f"user: {s.line.text}") for s in result.said if s.words]
     events += [(r.start, f"desk {r.kind} for {r.end - r.start:.2f} s") for r in result.runs]
-    for at, text in sorted(events):
+    events += [(at, "microphone live") for at in result.lives]
+    events += [(at, "microphone shut") for at in result.shuts]
+    events += [(at, f"assistant asked: {text}") for at, text in result.asked]
+    events += result.worker
+    for at, text in sorted(events, key=lambda event: event[0]):
         lines.append(f"  {at - result.ts:6.2f}  {text}")
     lines.append(f"  heard: {result.heard}")
     lines.append("")
