@@ -93,11 +93,12 @@ def _backend(*, said: list[dict] | None = None, places: dict | None = None):
     ])
 
 
-def _until(check, within: float = 15.0):
+def _until(check, within: float = 15.0, said=None):
+    """Waits for `check`; on the deadline, says what `said` reads then."""
     deadline = time.monotonic() + within
     while not check():
         if time.monotonic() > deadline:
-            raise TimeoutError("not within the time")
+            raise TimeoutError("not within the time" + (f": {said()}" if said else ""))
         time.sleep(0.05)
 
 
@@ -250,15 +251,22 @@ def test_the_title_bar_takes_the_colour_of_the_theme_shown(screen):
     the cream page. It follows Windows' theme, and the one chosen in
     Settings over it."""
     page = screen(_backend())
+
+    # One CI run (22 October 2026) waited 15 s for "ink" and said no more.
+    def said() -> str:
+        dark = page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches")
+        chosen = page.evaluate("document.documentElement.dataset.theme")
+        return f"set_caption {_calls(page, 'set_caption')}, dark media {dark}, chosen {chosen!r}"
+
     page.emulate_media(color_scheme="dark")
     page.locator("nav.sidebar").wait_for(timeout=15_000)
-    _until(lambda: _calls(page, "set_caption")[-1:] == [{"theme": "ink"}])
+    _until(lambda: _calls(page, "set_caption")[-1:] == [{"theme": "ink"}], said=said)
     page.emulate_media(color_scheme="light")
-    _until(lambda: _calls(page, "set_caption")[-1:] == [{"theme": "paper"}])
+    _until(lambda: _calls(page, "set_caption")[-1:] == [{"theme": "paper"}], said=said)
 
     appsettings.write({"theme": "ink"})
     page.reload()
-    _until(lambda: _calls(page, "set_caption")[-1:] == [{"theme": "ink"}])
+    _until(lambda: _calls(page, "set_caption")[-1:] == [{"theme": "ink"}], said=said)
     assert page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches") is False
 
 

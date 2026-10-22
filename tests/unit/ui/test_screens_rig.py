@@ -201,6 +201,32 @@ def test_a_webview_process_left_holding_its_folder_is_ended_and_the_scan_made_ag
         assert child.wait(10) is not None
 
 
+def test_a_contained_process_is_in_its_job_before_it_runs_and_runs_once_it_is(monkeypatch):
+    """Started running and put in its job after, the app could start a
+    WebView2 browser in between that no job held: on CI's busy runner
+    browsers and their helpers outlived the app's job, holding its webview
+    folder. Suspended until the job holds it, it starts nothing outside."""
+    import ctypes
+    from ctypes import wintypes
+
+    from core.sandbox import job
+
+    process_id = ctypes.WinDLL("kernel32").GetProcessId
+    process_id.argtypes, process_id.restype = [wintypes.HANDLE], wintypes.DWORD
+    states, contain = [], job.contain
+
+    def watched(handle: int, *limits):
+        states.append(psutil.Process(process_id(handle)).status())
+        return contain(handle, *limits)
+
+    monkeypatch.setattr(job, "contain", watched)
+    with rig.contained([sys.executable, "-c", "print('ran')"], stdout=subprocess.PIPE) as child:
+        said = child.stdout.readline()
+        child.stdout.close()
+    assert states == [psutil.STATUS_STOPPED]
+    assert said.strip() == b"ran"
+
+
 def test_a_tests_app_shows_its_window_and_page_behind_the_one_in_use(playwright, tmp_path):
     """Started by a process in the background, the app took the foreground
     anyway: Windows refuses it, so tao presses and releases Alt to get it

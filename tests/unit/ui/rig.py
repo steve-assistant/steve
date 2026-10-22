@@ -5,9 +5,10 @@ own `launch` of Edge took 30 s to close every time: Edge's main process
 outlived `Browser.close`, Playwright waited out its timeout, and the kill
 it sent then reached the main process alone. 71 of Edge's helpers from the
 spikes were still running afterwards, each holding its profile
-(docs/plan/spikes/s9-app.md). Here the test starts the browser, puts it in
-a kill-on-close job straight away (core/sandbox/job.py), attaches, and ends
-the job: up in under a second, gone at once, nothing left.
+(docs/plan/spikes/s9-app.md). Here the test starts the browser suspended,
+puts it in a kill-on-close job (core/sandbox/job.py) before it runs,
+attaches, and ends the job: up in under a second, gone at once, nothing
+left.
 
 Neither browser may reach past this computer. The fences
 (tests/gate/fences.py) hold the test and every Python it starts, the
@@ -128,15 +129,32 @@ def devtools_port(folder: Path, within: float) -> int:
 @contextlib.contextmanager
 def contained(command: list[str], **popen) -> Iterator[subprocess.Popen]:
     """A process in a kill-on-close job from its start, ended with the job
-    (and so with everything it started) when the block ends."""
-    from core.sandbox import job
+    (and so with everything it started) when the block ends.
 
-    process = subprocess.Popen(command, **popen)
+    It starts suspended, and runs only once it is in the job. Started
+    running and put in the job after `Popen` returned, as it was until 22
+    October 2026, it could start a process in between that stayed outside:
+    on CI's busy runner WebView2 browsers and their helpers outlived the
+    job that ended their app, and held its webview folder."""
+    import psutil
+
+    from core.sandbox import job, win32
+
+    flags = popen.pop("creationflags", 0) | win32.CREATE_SUSPENDED
+    process = subprocess.Popen(command, creationflags=flags, **popen)
     # Popen's own handle, not one opened by pid (core/decider._contain).
     try:
         held = job.contain(int(process._handle))
     except OSError:
         process.kill()
+        raise
+    # Popen keeps no handle to the first thread; psutil resumes the
+    # process as a whole (NtResumeProcess), by its pid, which Popen's
+    # handle keeps from being reused.
+    try:
+        psutil.Process(process.pid).resume()
+    except psutil.Error:
+        held.end()
         raise
     try:
         yield process
@@ -434,8 +452,10 @@ class Desktop:
     def story(self) -> str:
         """What a failure should say about the app: whether it is still
         running, its pages now, what happened to them, whether its main
-        window counts itself on screen, and the tail of each log in its data
-        folder, which goes with the test."""
+        window counts itself on screen, what that window reads, and the
+        tail of each log in its data folder, which goes with the test. On
+        CI (22 October 2026) a walk waited on a sidebar that never came,
+        and its story could not say what the window showed instead."""
         code = self.process.poll()
         lines = ["the app is " + ("running" if code is None else f"gone, exit code {code}")]
         with contextlib.suppress(Exception):
@@ -444,6 +464,11 @@ class Desktop:
         lines.extend(self.seen)
         with contextlib.suppress(Exception):
             lines.append(self.on_screen())
+        with contextlib.suppress(Exception):
+            main = [page for context in self.browser.contexts for page in context.pages
+                    if page.url.startswith(APP_ORIGIN) and "#" not in page.url]
+            lines.append("the main window reads: "
+                         + repr(main[0].evaluate("document.body.innerText")[:400]))
         for log in sorted((self.data / "logs").glob("*.log")):
             tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-25:]
             lines.append(f"--- {log.name}\n" + "\n".join(tail))
