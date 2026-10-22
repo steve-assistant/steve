@@ -73,7 +73,7 @@ def all_duties() -> tuple:
     not whether it runs (`tests/gate/test_off_means_original.py`)."""
     return (
         links.warm_voice,
-        links.start_signal,
+        links.keep_signal,
         links.start_telegram,
         background.heartbeat,
         background.probe_containers,

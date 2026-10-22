@@ -16,7 +16,8 @@ Telegram goes the same way, from its own step 1 (below).
 
 1. **signal-cli on this computer** receives it. The worker starts it as a
    duty of its own, once its add-ons' files check out and an account is
-   linked (`agent/worker/links.start_signal`). `channels/signal.py`
+   linked (`agent/worker/links.start_signal`), and tries a failed start
+   again (`keep_signal`). `channels/signal.py`
    `SignalChannel.receive` → `_to_incoming`: only Note to Self; a sync message
    from their phone; a reaction carries the timestamp of the message it is on.
    Anything else is ignored, and the attachments signal-cli downloaded for it

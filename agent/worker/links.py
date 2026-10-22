@@ -5,8 +5,9 @@ the desk voice session.
 message to the outbox (agent/outbox.py) and returns; `send_due`, the outbox
 duty's step, sends it to the paired remote channel.
 
-Signal is its own duty (`start_signal`), and so is Telegram
-(`start_telegram`). Neither needs anything of the speech models: a voice
+Signal is its own duty (`keep_signal`, which tries a failed start again),
+and so is Telegram (`start_telegram`). Neither needs anything of the
+speech models: a voice
 note is heard by OpenAI (`hear`, core/hearing.py). Signal waited for them
 until step 4, and without the voice add-on every voice note was answered
 "I can't transcribe voice notes right now".
@@ -337,6 +338,7 @@ async def start_signal() -> None:
     from agent.worker import pairing
 
     signal_is("starting")
+    bridge = None
     try:
         async def feedback(verdict: str, on: str) -> None:
             answering.note_feedback(verdict, on)
@@ -370,6 +372,38 @@ async def start_signal() -> None:
     except Exception as exc:  # noqa: BLE001 - Signal is optional, the agent is not
         signal_is("failed", error=f"{type(exc).__name__}: {exc}"[:300],
                   lost=bool(await asyncio.to_thread(signal_known)))
+        log.warning("Signal did not start: %s", runtime.signal_state["error"])
+        # A start that failed once signal-cli's daemon was running (it never
+        # answered) leaves the daemon holding the account's lock, and the
+        # next start's every signal-cli call would wait on it.
+        if bridge is not None:
+            with contextlib.suppress(Exception):
+                await bridge.stop()
+
+
+async def keep_signal(*, pause=asyncio.sleep) -> None:
+    """Signal's duty: start it, and while its start fails, try again, as
+    `SignalChannel._revive` does for a daemon that dies: soon at first, then
+    at most once a minute.
+
+    A start was tried once. When a step of it failed on a busy machine
+    (signal-cli is started twice, each a Java program, behind a PowerShell
+    query), Signal stayed off for the worker's whole life and the log said
+    nothing: the phone went unanswered until Steve restarted. A start
+    that ends in a state of the user's (Signal not set up, not linked, an
+    add-on changed) is not tried again: trying cannot fix it. Nor is one
+    that something else began meanwhile, such as linking from the app."""
+    tries = 0
+    while True:
+        await start_signal()
+        if runtime.signal_state.get("state") != "failed":
+            return
+        wait = min(2.0 * 2 ** tries, 60.0)
+        tries += 1
+        log.info("Signal: trying its start again in %.0f s (try %d)", wait, tries + 1)
+        await pause(wait)
+        if runtime.signal is not None or runtime.signal_state.get("state") != "failed":
+            return
 
 
 async def hear(path: Path, channel: str = "signal") -> str:

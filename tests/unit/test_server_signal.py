@@ -35,9 +35,13 @@ class _FakeBridge:
         self.waited = waited
         self.unpair = unpair
         self.started = False
+        self.stopped = False
 
     async def start(self) -> None:
         self.started = True
+
+    async def stop(self) -> None:
+        self.stopped = True
 
 
 class _FakeVoice:
@@ -177,6 +181,80 @@ async def test_a_channel_that_will_not_start_does_not_take_the_worker_down(monke
     assert "RuntimeError" in runtime.signal_state["error"]
 
 
+async def test_a_signal_start_that_fails_is_tried_again_until_it_starts(monkeypatch):
+    """A start was tried once: when a step of it failed on a busy machine,
+    Signal stayed off until Steve restarted, and the phone went unanswered.
+    Each failed try's daemon is stopped, or the next try would wait on its
+    lock, and the waits grow as `_revive`'s do."""
+    bridges = []
+
+    class FailingTwice(_FakeBridge):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            bridges.append(self)
+
+        async def start(self) -> None:
+            if len(bridges) < 3:
+                raise RuntimeError("signal-cli daemon never became reachable")
+            self.started = True
+
+    waits = []
+
+    async def pause(seconds):
+        waits.append(seconds)
+
+    _install(monkeypatch, FailingTwice)
+    monkeypatch.setattr(links, "signal_known", lambda: ["+15555550123"])
+    await links.keep_signal(pause=pause)
+
+    assert runtime.signal_state == {"state": "ready"}
+    assert runtime.signal is bridges[-1] and bridges[-1].started
+    assert [bridge.stopped for bridge in bridges] == [True, True, False]
+    assert waits == [2.0, 4.0]
+
+
+async def test_a_start_that_ends_in_the_users_hands_is_not_tried_again(monkeypatch):
+    """Not linked, or an add-on changed: trying again cannot fix either, and
+    each try runs signal-cli, a Java program, for nothing."""
+
+    class Unlinked(_FakeBridge):
+        async def start(self) -> None:
+            raise links.NotLinked("no linked Signal account")
+
+    async def pause(seconds):
+        raise AssertionError("tried again")
+
+    monkeypatch.setattr(links, "signal_known", lambda: [])
+    _install(monkeypatch, Unlinked)
+    await links.keep_signal(pause=pause)
+    assert runtime.signal_state["state"] == "unlinked"
+
+    _install(monkeypatch, unready="signal-cli is not installed")
+    await links.keep_signal(pause=pause)
+    assert runtime.signal_state["state"] == "unavailable"
+
+
+async def test_a_start_begun_elsewhere_while_waiting_to_try_again_is_left_to_it(monkeypatch):
+    """Linking from the app starts Signal itself (agent/worker/pairing.py).
+    A try of the duty's on top would start a second daemon on one account."""
+    tries = []
+
+    class Failing(_FakeBridge):
+        async def start(self) -> None:
+            tries.append(1)
+            raise RuntimeError("signal-cli daemon exited during startup")
+
+    async def pause(seconds):
+        links.signal_is("starting")
+
+    monkeypatch.setattr(links, "signal_known", lambda: [])
+    _install(monkeypatch, Failing)
+    await links.keep_signal(pause=pause)
+
+    assert len(tries) == 1
+    assert runtime.signal_state == {"state": "starting"}
+
+
 # --------------------------------------------------------------------------
 # Voice notes, without the speech models (step 4)
 # --------------------------------------------------------------------------
@@ -236,7 +314,9 @@ async def test_signal_is_a_duty_of_its_own_not_waiting_for_speech(monkeypatch):
     async def _start():
         started.append(True)
 
+    # The duty keeps Signal (`keep_signal`), trying a failed start again.
     monkeypatch.setattr(links, "start_signal", _start)
+    monkeypatch.setattr(links, "keep_signal", _start)
     monkeypatch.setattr(links, "VoiceSession", lambda *a, **k: _FakeVoice(speak=True))
     monkeypatch.setattr(links, "_voice_needed_at_start", lambda: True)
     monkeypatch.setattr(runtime, "voice_warm", {"state": "cold"})

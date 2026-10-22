@@ -8,6 +8,8 @@ import contextlib
 import time
 from datetime import UTC, datetime
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
 from agent import sqltime
 from agent.worker import setup
 from core import knobs, passphrase, settingsfile
@@ -23,7 +25,33 @@ WAIT_MS = 30_000
 # app's story (`rig.Desktop.story`). At 120 s, a walk waiting on a page
 # that never showed the sign-in was stopped there, and said nothing.
 STARTED_MS = 90_000
+# A wait on the app is made of short ones. On CI (22 October 2026), in about
+# one walk of twenty-five, a page's first `wait_for` stuck for its whole
+# limit: its call log never passed its first line, while the page showed
+# the heading and a `count()` just after found it. Playwright's wait polls
+# the page inside one call, so a reply from the page that never comes holds
+# that call to its end; each short wait asks the page afresh.
+TRY_MS = 3_000
 PASSPHRASE = "blue kettle at dawn"
+
+
+def appears(locator, within_ms: float = WAIT_MS) -> None:
+    """`locator.wait_for()`, in waits of at most `TRY_MS`, for `within_ms`
+    in all. Failing, the timeout says how many waits were made: every one
+    of them stuck is a page Playwright cannot query at all, not one lost
+    reply."""
+    deadline = time.monotonic() + within_ms / 1000
+    tries = 0
+    while True:
+        tries += 1
+        left_ms = (deadline - time.monotonic()) * 1000
+        try:
+            locator.wait_for(timeout=max(1.0, min(TRY_MS, left_ms)))
+            return
+        except PlaywrightTimeout as timed_out:
+            if time.monotonic() >= deadline:
+                raise PlaywrightTimeout(f"{timed_out.message}\n(in {tries} waits of up to"
+                                        f" {TRY_MS / 1000:.0f} s each)") from None
 
 
 def until(check, within: float = 30.0, said=None):
@@ -62,7 +90,7 @@ def set_up_already() -> None:
 def sign_in(page) -> None:
     """The sign-in, with the passphrase `set_up_already` chose. The shell
     holds the session in memory only: each start of the app asks again."""
-    page.get_by_role("heading", name="Welcome back").wait_for(timeout=STARTED_MS)
+    appears(page.get_by_role("heading", name="Welcome back"), STARTED_MS)
     page.get_by_label("Your passphrase").fill(PASSPHRASE)
     page.get_by_role("button", name="Sign in", exact=True).click()
 

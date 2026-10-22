@@ -30,6 +30,7 @@ from tests.unit.ui import rig
 from tests.unit.ui.walk import (
     STARTED_MS,
     WAIT_MS,
+    appears,
     fake_openai,
     send,
     set_up_already,
@@ -43,16 +44,20 @@ pytestmark = [pytest.mark.processes, pytest.mark.xdist_group("app")]
 def _on(page, question: str, within_ms: int = WAIT_MS) -> None:
     """On that page of setup; if not, the failure says which page it is on
     and what it says is wrong, not only that a heading never came."""
+    heading = page.get_by_role("heading", name=question)
     try:
-        page.get_by_role("heading", name=question).wait_for(timeout=within_ms)
+        appears(heading, within_ms)
     except PlaywrightTimeout as timed_out:
         shown = page.locator("h1, h2, [role=alert]").all_inner_texts()
-        # On CI (22 October 2026) the heading waited for was on the page,
-        # matched and visible, when the wait gave up: what the wait did
-        # instead is in Playwright's own log of the call.
-        named = page.get_by_role("heading", name=question).count()
-        raise AssertionError(f"not on {question!r}; the page shows {shown}; headings so"
-                             f" named now: {named}\n{timed_out.message}") from None
+        # The page's own script reads `shown`; Playwright's queries run
+        # apart from it, and this says whether they can see the heading.
+        # `is_visible`, not `count`, which waits without a limit.
+        try:
+            seen = heading.is_visible()
+        except PlaywrightTimeout:
+            seen = "no answer"
+        raise AssertionError(f"not on {question!r}; the page shows {shown}; the heading"
+                             f" visible to Playwright now: {seen}\n{timed_out.message}") from None
 
 
 def _past_hello(page) -> None:
