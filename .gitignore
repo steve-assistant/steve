@@ -1,0 +1,39 @@
+# --- Local state. data/memories/ is its own git repo and must never be
+# --- visible to the coding model that edits this repository.
+data/
+
+# Programs downloaded for a chosen feature: signal-cli and its Java
+# (core/addons.py). Pinned by hash, never committed.
+/.addons/
+
+# The module runtime, a Python and Node for containers, made by
+# `python -m core.sandbox build` (core/sandbox/runtime.py). Never committed.
+/.runtime/
+
+# The installed tree and its smoke test, made by `python -m devtools.package`.
+/build/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets
+.env
+*.pem
+secrets/
+
+# Node / Tauri
+node_modules/
+ui/dist/
+ui/src-tauri/target/
+
+# --- Product repo: never committed.
+# Spike scripts and builds (they name a real account; S1/S2 hold runtimes).
+/spikes/
+# The assistant's private working notes, and step 2's real-name map.
+/CLAUDE.local.md
+/private/

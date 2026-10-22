@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "quickbar",
+  "description": "the quick bar: talk to the agent, hide itself, size itself to its answer",
+  "windows": [
+    "quickbar"
+  ],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:allow-hide",
+    "core:window:allow-set-size",
+    "core:window:allow-set-focus"
+  ]
+}

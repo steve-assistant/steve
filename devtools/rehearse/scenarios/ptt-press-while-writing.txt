@@ -1,0 +1,20 @@
+# A press while the last reply is still being written: the microphone
+# closes on the release. Closed by the turn, which waits for the one before
+# it, it stayed open seconds after the release, and what the room said then
+# went with the request (review of steps 7 to 9, findings 1 and 31).
+scenario ptt-press-while-writing
+about a press while the last reply is still being written closes the microphone on its release
+length 12
+reply /weather/ 3.0: It is 64 and clear today.
+reply /what time/ 0.3: It is four o clock.
+0.5    key: press
++0.1   user: What is the weather today?
++0.3   key: release
++0.5   key: press
++0.1   user: What time is it?
++0.3   key!: release
++0.2   user: Never mind the weather.
+expect mic-shut <= 0.1
+expect heard ^what time is it\?$
+expect asked what time
+expect tick-live

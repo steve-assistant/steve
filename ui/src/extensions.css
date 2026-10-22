@@ -1,0 +1,162 @@
+/* Extensions (06-modules.md, section 9) in the back pages' terms
+   (docs/design/back-pages.md): each card, module, build and report is a
+   row between hairlines, its title in the text face and its facts in
+   ink-soft. The module's own words sit in a block of their own, ruled and
+   named, so they never read as Steve's; a card waiting for the user is
+   ruled at its left in ink. */
+
+.form-list > li.ext-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+}
+.form-list > li.ext-asking {
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--ink);
+}
+.ext-card > * {
+  max-width: 100%;
+}
+/* The row's gap spaces its lines; a paragraph's or a check's own margin
+   would double it. */
+.ext-card p,
+.ext-card .form-check {
+  margin: 0;
+}
+.ext-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+.back-body .panel .ext-title {
+  margin: 0;
+  font-size: var(--size-body);
+  line-height: var(--line-body);
+  font-weight: 600;
+}
+.ext-head-actions {
+  display: inline-flex;
+  gap: var(--space-3);
+}
+.ext-line,
+.ext-problem {
+  margin: 0;
+}
+.ext-line {
+  color: var(--ink-soft);
+}
+.ext-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-self: stretch;
+}
+.ext-findings {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.ext-quote {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--rule-strong);
+}
+.ext-own-words {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r-slip);
+}
+.ext-own-label {
+  font-size: var(--size-label);
+  line-height: var(--line-label);
+  color: var(--ink-faint);
+}
+.ext-text {
+  align-self: stretch;
+  margin: 0;
+  padding: var(--space-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--face-data);
+  font-size: var(--size-code);
+  line-height: var(--line-code);
+  background: var(--paper-deep);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.ext-text.ext-manifest {
+  white-space: pre;
+  overflow: auto;
+  max-height: 340px;
+}
+.ext-hash,
+.ext-hash-inline {
+  font-family: var(--face-data);
+  font-size: var(--size-code);
+  word-break: break-all;
+}
+.ext-hash {
+  display: block;
+  margin-top: var(--space-1);
+}
+.ext-imported,
+.ext-card .form-warning {
+  margin: 0;
+}
+.ext-details {
+  align-self: stretch;
+}
+.ext-details > summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.ext-details[open] > summary {
+  margin-bottom: var(--space-2);
+}
+.ext-tools,
+.ext-versions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-self: stretch;
+}
+.ext-tools > li,
+.ext-versions > li {
+  display: grid;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.ext-tools > li {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.ext-versions > li {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.ext-tools .form-check {
+  margin: 0;
+}
+.ext-write {
+  color: var(--red-ink);
+}
+.ext-passphrase {
+  width: 16em;
+}
+.ext-add,
+.ext-said {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.ext-said {
+  align-items: flex-start;
+}

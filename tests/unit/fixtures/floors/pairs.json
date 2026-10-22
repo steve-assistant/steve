@@ -1,0 +1,312 @@
+{
+ "about": "Labelled pairs for the relevance floors (tools/memory.py RELEVANCE_FLOOR and FACT_FLOOR): a fact against a user's message, a note against a recall query, each in the form Steve embeds it. A hit is a pair whose stored text answers what was asked; a miss, one whose stored text is the nearest in topic and does not. Written before they were measured, about the fictional persona. Scores by python -m devtools.floors.",
+ "model": "text-embedding-3-small",
+ "dim": 512,
+ "measured": "2026-10-12",
+ "facts": {
+  "home": "the user home city: Pittsburgh",
+  "work": "the user occupation: product designer at Contoso",
+  "owen": "Owen Tate email pattern: lastname.firstname@northwind.example",
+  "diet": "the user diet: vegetarian",
+  "sister": "the user sister: Elin, who lives in Stockholm",
+  "manager": "Mira Shah role: the user's manager at Contoso",
+  "allergy": "the user allergy: penicillin",
+  "seat": "the user seat preference: aisle",
+  "northwind": "Northwind (northwind.example) relationship: a client of the user's team",
+  "tuesday": "the user weekly routine: climbing on Tuesday evenings"
+ },
+ "memories": {
+  "travel": "Maya prefers aisle seats and morning flights\n\nWhen booking travel, Maya wants an aisle seat, a flight before noon, and no red-eyes.",
+  "thanks": "How Maya writes thank-you notes to clients\n\nShort and warm, one specific thing from the meeting, signed 'Best, Maya'.",
+  "format": "Northwind's email format is lastname.firstname@northwind.example\n\nConfirmed from Owen Tate's signature on 3 October.",
+  "style": "Maya's writing style guide\n\nPlain sentences, no exclamation marks, lists over long paragraphs, never 'circle back'.",
+  "train": "Train to Philadelphia on 24 October\n\nDeparts Pittsburgh at 7:30, seat 12A, booking reference QX7RT2.",
+  "review": "Contoso's design review is every Thursday at 2pm\n\nMaya presents the onboarding mockups to the product team.",
+  "dentist": "Maya's dentist\n\nDr. Ruiz at Lakeside Dental; cleanings every six months, the next one in March.",
+  "research": "Research: onboarding flows for mobile apps\n\nProgressive disclosure beats long tours; three screens at most before the first action.",
+  "climbing": "Maya's climbing on Tuesdays\n\nShe climbs with Sam on Tuesday evenings; keep Tuesdays after 6pm free.",
+  "elin": "Elin's birthday is 14 November\n\nMaya's sister; she likes design books and Swedish licorice."
+ },
+ "pairs": [
+  {
+   "kind": "fact",
+   "ask": "Is it going to rain at home this weekend?",
+   "stored": "home",
+   "hit": true,
+   "score": 0.2347
+  },
+  {
+   "kind": "fact",
+   "ask": "Can you write to Owen Tate at Northwind? I never remember their address format.",
+   "stored": "owen",
+   "hit": true,
+   "score": 0.7031
+  },
+  {
+   "kind": "fact",
+   "ask": "Find somewhere for dinner tonight that has food I can eat.",
+   "stored": "diet",
+   "hit": true,
+   "score": 0.1952
+  },
+  {
+   "kind": "fact",
+   "ask": "Book me a flight to Stockholm to visit my sister next month.",
+   "stored": "sister",
+   "hit": true,
+   "score": 0.5192
+  },
+  {
+   "kind": "fact",
+   "ask": "Draft a note to my manager saying I'll be late tomorrow.",
+   "stored": "manager",
+   "hit": true,
+   "score": 0.2468
+  },
+  {
+   "kind": "fact",
+   "ask": "The pharmacy asked if I'm allergic to anything. What should I tell them?",
+   "stored": "allergy",
+   "hit": true,
+   "score": 0.4487
+  },
+  {
+   "kind": "fact",
+   "ask": "Pick a seat for me on the flight to Denver.",
+   "stored": "seat",
+   "hit": true,
+   "score": 0.4481
+  },
+  {
+   "kind": "fact",
+   "ask": "Prepare me for the Northwind client call on Friday.",
+   "stored": "northwind",
+   "hit": true,
+   "score": 0.5227
+  },
+  {
+   "kind": "fact",
+   "ask": "Can I fit a dinner with friends in on Tuesday evening?",
+   "stored": "tuesday",
+   "hit": true,
+   "score": 0.3948
+  },
+  {
+   "kind": "fact",
+   "ask": "What do I do for work again? I need it for this form.",
+   "stored": "work",
+   "hit": true,
+   "score": 0.2944
+  },
+  {
+   "kind": "fact",
+   "ask": "Solve is done.",
+   "stored": "work",
+   "hit": false,
+   "score": 0.2615
+  },
+  {
+   "kind": "fact",
+   "ask": "Remind me to call mom at 7.",
+   "stored": "sister",
+   "hit": false,
+   "score": 0.2221
+  },
+  {
+   "kind": "fact",
+   "ask": "Add the design review to my calendar for Thursday at 2.",
+   "stored": "work",
+   "hit": false,
+   "score": 0.2697
+  },
+  {
+   "kind": "fact",
+   "ask": "What time is it in Tokyo right now?",
+   "stored": "home",
+   "hit": false,
+   "score": 0.1315
+  },
+  {
+   "kind": "fact",
+   "ask": "Thanks, that's perfect.",
+   "stored": "manager",
+   "hit": false,
+   "score": 0.213
+  },
+  {
+   "kind": "fact",
+   "ask": "Order more printer paper for the office.",
+   "stored": "work",
+   "hit": false,
+   "score": 0.1811
+  },
+  {
+   "kind": "fact",
+   "ask": "How do I say thank you in Swedish?",
+   "stored": "sister",
+   "hit": false,
+   "score": 0.3678
+  },
+  {
+   "kind": "fact",
+   "ask": "What's a good recipe for banana bread?",
+   "stored": "diet",
+   "hit": false,
+   "score": 0.1553
+  },
+  {
+   "kind": "fact",
+   "ask": "Is Denver's airport far from downtown?",
+   "stored": "seat",
+   "hit": false,
+   "score": 0.1561
+  },
+  {
+   "kind": "fact",
+   "ask": "Send the onboarding mockups to the team.",
+   "stored": "manager",
+   "hit": false,
+   "score": 0.2938
+  },
+  {
+   "kind": "memory",
+   "ask": "travel booking preferences",
+   "stored": "travel",
+   "hit": true,
+   "score": 0.4374
+  },
+  {
+   "kind": "memory",
+   "ask": "thank-you note style for clients",
+   "stored": "thanks",
+   "hit": true,
+   "score": 0.6854
+  },
+  {
+   "kind": "memory",
+   "ask": "Northwind email address format",
+   "stored": "format",
+   "hit": true,
+   "score": 0.7711
+  },
+  {
+   "kind": "memory",
+   "ask": "how Maya likes her writing",
+   "stored": "style",
+   "hit": true,
+   "score": 0.6706
+  },
+  {
+   "kind": "memory",
+   "ask": "Philadelphia train booking",
+   "stored": "train",
+   "hit": true,
+   "score": 0.589
+  },
+  {
+   "kind": "memory",
+   "ask": "when is the design review",
+   "stored": "review",
+   "hit": true,
+   "score": 0.6454
+  },
+  {
+   "kind": "memory",
+   "ask": "dentist appointment details",
+   "stored": "dentist",
+   "hit": true,
+   "score": 0.522
+  },
+  {
+   "kind": "memory",
+   "ask": "onboarding flow research",
+   "stored": "research",
+   "hit": true,
+   "score": 0.7335
+  },
+  {
+   "kind": "memory",
+   "ask": "Tuesday evening plans",
+   "stored": "climbing",
+   "hit": true,
+   "score": 0.4419
+  },
+  {
+   "kind": "memory",
+   "ask": "sister's birthday gift ideas",
+   "stored": "elin",
+   "hit": true,
+   "score": 0.3986
+  },
+  {
+   "kind": "memory",
+   "ask": "travel preferences",
+   "stored": "thanks",
+   "hit": false,
+   "score": 0.1939
+  },
+  {
+   "kind": "memory",
+   "ask": "Northwind format",
+   "stored": "style",
+   "hit": false,
+   "score": 0.2324
+  },
+  {
+   "kind": "memory",
+   "ask": "flight to Stockholm",
+   "stored": "train",
+   "hit": false,
+   "score": 0.3425
+  },
+  {
+   "kind": "memory",
+   "ask": "Maya's partner",
+   "stored": "climbing",
+   "hit": false,
+   "score": 0.443
+  },
+  {
+   "kind": "memory",
+   "ask": "doctor's phone number",
+   "stored": "dentist",
+   "hit": false,
+   "score": 0.3825
+  },
+  {
+   "kind": "memory",
+   "ask": "client meeting agenda",
+   "stored": "thanks",
+   "hit": false,
+   "score": 0.3956
+  },
+  {
+   "kind": "memory",
+   "ask": "mobile app bug report",
+   "stored": "research",
+   "hit": false,
+   "score": 0.4593
+  },
+  {
+   "kind": "memory",
+   "ask": "Thursday dinner reservation",
+   "stored": "review",
+   "hit": false,
+   "score": 0.3387
+  },
+  {
+   "kind": "memory",
+   "ask": "Elin's address",
+   "stored": "elin",
+   "hit": false,
+   "score": 0.5504
+  },
+  {
+   "kind": "memory",
+   "ask": "Maya's favourite books",
+   "stored": "elin",
+   "hit": false,
+   "score": 0.4683
+  }
+ ]
+}

@@ -1,0 +1,24 @@
+# A calendar link (05-connectors.md, section 5): a calendar the user can
+# read only by its private address, through core's ICS engine. Read only.
+# The link is a secret, since anyone holding it reads the calendar; setup
+# keeps only its host with the account.
+manifest_version = 1
+sdk = 1
+id = "ics"
+version = "1"
+label = "Calendar link"
+for = "A calendar you can read by its private link: a course site's due dates, a team's rota, a calendar someone shared"
+effort = "About a minute"
+tier = "backend"
+classes = ["calendar"]
+
+[calendar]
+engine = "ics"
+read_only = true
+
+[setup]
+steps = ["fields", "test"]
+fields = [
+  { name = "link", type = "secret", form = "link", label = "The calendar's private link (it starts https:// or webcal://)" },
+  { name = "due_dates", type = "flag", label = "Its events are due dates, such as a course site's", optional = true },
+]

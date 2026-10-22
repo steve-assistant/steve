@@ -1,0 +1,12 @@
+# The night's skills (agent/skills.py) as a module: a switch over core's
+# tables, which stay in core with core/skills.py's checks. Off, every skill
+# Steve wrote for itself leaves its conversations, and the night writes no
+# more (agent/modtext.py). Each can still be taken back alone, with REVOKE
+# SKILL and its number.
+manifest_version = 1
+sdk = 1
+id = "skills"
+version = "1"
+label = "Skills"
+for = "Steps Steve writes down at night from your requests that went well, offered when a request like them comes again"
+tier = "backend"

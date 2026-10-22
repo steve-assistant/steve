@@ -1,0 +1,10 @@
+# A video on the laptop saying the wake phrase is the laptop's own sound,
+# heard on the loopback too (core/desk.py): it wakes nothing and reaches no
+# model. Passed by ear on 9 October 2026; kept here so it stays so.
+scenario video-says-hey-steve
+about a video on the laptop saying "hey Steve" wakes nothing
+length 25
+1.0   video!: Hey Steve, what's the weather like in Paris today?
+expect not-asked
+expect wakes == 0
+expect end-mode idle

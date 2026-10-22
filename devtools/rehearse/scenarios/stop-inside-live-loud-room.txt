@@ -1,0 +1,19 @@
+# 10 October 2026, 00:20: over a live call's voice the raw microphone scored
+# "hey Steve, stop" 0.91 and the echo canceller left 0.00 of it; the first
+# stop was never heard. "hey Steve" must end a live call at once.
+scenario stop-inside-live-loud-room
+about the same, with laptop speakers loud beside the microphone
+room echo 0
+room drive 2
+length 50
+live says Sure. Let's go through your week day by day. On Monday you have the
+  project kickoff in the large meeting room at eleven thirty, then two calls.
+  Tuesday is quieter, with one meeting in the morning and an open afternoon.
+  On Thursday there are two events in the evening, a talk at four and a
+  dinner at five thirty, and your quarterly report is due that night.
+0.5      user: Hey Steve, let's talk live about my week.
+live+4   user!: Hey Steve, stop.
+expect cut-in <= 1.5
+expect silent-after <= 2.5
+expect live wake
+expect one-voice

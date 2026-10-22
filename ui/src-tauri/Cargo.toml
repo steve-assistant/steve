@@ -1,0 +1,77 @@
+[package]
+name = "app"
+version = "0.1.0"
+description = "Steve, a personal assistant for Windows: the desktop app"
+authors = ["The Steve authors"]
+license = "Apache-2.0"
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+sha2 = "0.10"
+hex = "0.4"
+# The integrity manifest's signature (src/integrity.rs): minisign, checked
+# as Tauri's updater checks its own, by the crate the updater brings.
+minisign-verify = "0.2"
+base64 = "0.22"
+getrandom = "0.3"
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    # The title bar's colour (src/caption.rs).
+    "Win32_Graphics_Dwm",
+    "Win32_Security",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_JobObjects",
+    # The taskbar's theme, for the tray's icon (src/trayicon.rs).
+    "Win32_System_Registry",
+    "Win32_System_RemoteDesktop",
+    # The sign-in's ends: idle time and time asleep (src/signin.rs).
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+    "Win32_UI_Input_KeyboardAndMouse",
+    # ShellExecuteW and its SW_SHOWNORMAL: a link opened in the user's browser.
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+# The toasts (src/toast.rs) and Windows Hello (src/hello.rs): WinRT, the
+# version tauri already brings.
+windows = { version = "0.61", features = [
+    "Data_Xml_Dom",
+    "Foundation",
+    "Security_Credentials",
+    "Security_Cryptography",
+    "Security_Cryptography_Core",
+    "Storage_Streams",
+    "UI_Notifications",
+] }
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.6", features = ["tray-icon", "image-png"] }
+tauri-plugin-log = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-autostart = "2"
+# Updates and repair (src/update.rs); semver names the versions it compares.
+# Without its default `zip` feature: an update for Windows is the signed
+# installer itself (`createUpdaterArtifacts: true`), never an archive. The
+# zip 4 it would take has advisories on extraction (RUSTSEC-2026-0367 to
+# -0369), and no 2.x release of the plugin takes a fixed one.
+tauri-plugin-updater = { version = "2", default-features = false, features = ["rustls-tls", "system-proxy"] }
+semver = "1"
+
+[dev-dependencies]
+# Tauri's mock runtime, for the updater's fetch tests (src/update.rs): an app
+# with the real updater plugin and no window. For the tests only; the app is
+# built without it.
+tauri = { version = "2.11.6", features = ["test"] }

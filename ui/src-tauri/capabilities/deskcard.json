@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "deskcard",
+  "description": "the desk card: hear what Steve is doing; its window is moved, sized and shown by the app's own commands (src/deskcard.rs)",
+  "windows": [
+    "deskcard"
+  ],
+  "permissions": [
+    "core:default",
+    "core:event:default"
+  ]
+}

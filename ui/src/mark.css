@@ -1,0 +1,108 @@
+/* The mark's states (Mark.tsx) and the hand-drawn marks (HandMark.tsx).
+   Their moves are the tokens' distances and times (tokens.css), so with
+   Windows' animation effects off they hold still without a case here. */
+
+.mark {
+  display: block;
+  overflow: visible;
+}
+.mark .body path {
+  fill: var(--ink);
+}
+.mark .body .faint {
+  opacity: 0.45;
+}
+/* Its colour as a variable, not an inline `color`, which no rule could
+   override in a contrast theme (below). */
+.mark .diamond {
+  color: var(--gem);
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: translate var(--t-entry) ease-out;
+}
+.mark .diamond .line {
+  display: none;
+  fill: none;
+  stroke: currentColor;
+}
+.mark .diamond.outline .fill {
+  display: none;
+}
+.mark .diamond.outline .line,
+.mark .diamond.catching .line {
+  display: inline;
+}
+/* Waking: each outline fills in, left to right. */
+.mark .diamond.catching .fill {
+  animation: steve-fill-in var(--t-catch-up) ease-out both;
+  animation-delay: calc(var(--t-catch-up) * var(--n));
+}
+/* Listening and speaking: the cyan diamond grows with the voice's level
+   (level.ts sets --level, 0 to 1), and is 15% larger without one. */
+.mark .diamond.voice {
+  scale: calc(1 + 0.3 * var(--level, 0.5));
+  transition: scale var(--t-level) linear;
+}
+.mark.quiet .gems {
+  opacity: 0.55;
+}
+.mark:hover .gems .diamond {
+  translate: 0 calc(var(--lift-mark) * var(--px) * -1);
+}
+.mark .nods {
+  animation: steve-nod var(--t-nod) ease-in-out;
+}
+/* The pen's line, thickened by a screen pixel: at 40px the drawn circle
+   alone is thinner than a pixel, and vanishes. */
+.mark .circle {
+  fill: var(--red);
+  stroke: var(--red);
+  stroke-width: 1.2px;
+}
+.mark .circle path {
+  vector-effect: non-scaling-stroke;
+}
+
+@keyframes steve-fill-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes steve-nod {
+  50% {
+    translate: 0 calc(var(--nod) * var(--px));
+  }
+}
+
+/* A turning diamond held still would look like nothing is happening, so
+   it's drawn as an outline instead (presence.md, States). */
+@media (prefers-reduced-motion: reduce) {
+  .mark .diamond.working .fill {
+    display: none;
+  }
+  .mark .diamond.voice {
+    scale: 1.15;
+  }
+  .mark .diamond.working .line {
+    display: inline;
+  }
+}
+
+/* A contrast theme makes the body and the brand's colours one system
+   colour, and Edge leaves SVG fills alone: the diamonds become cut-outs, as
+   the centre one is, and the circle the system's highlight. */
+@media (forced-colors: active) {
+  .mark .diamond {
+    color: Canvas;
+  }
+  .mark .circle {
+    fill: Highlight;
+  }
+}
+
+.hand-mark {
+  display: block;
+  overflow: visible;
+  fill: currentColor;
+}

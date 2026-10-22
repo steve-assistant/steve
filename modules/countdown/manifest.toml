@@ -1,0 +1,22 @@
+# Days until a date (06-modules.md, section 4): the first tool module, and
+# the one that replaced the in-process `tools/countdown.py`. It reaches
+# nothing: no hosts, no reads, no secrets. It runs in the sandbox all the
+# same, as every module's code does, so a module from outside that does the
+# same takes exactly this path.
+manifest_version = 1
+sdk = 1
+id = "countdown"
+version = "1"
+label = "Countdown"
+for = "Working out how many days there are until a date, rather than counting"
+tier = "sandbox"
+code = "countdown.py"
+
+[[tools]]
+name = "days_until"
+class = "read"
+description = "How many calendar days until a date, and which day of the week it falls on. Use it rather than counting. Signed: 0 is today, negative is past."
+params = [
+  { name = "target", type = "string", description = "The date, as YYYY-MM-DD" },
+  { name = "today", type = "string", description = "Count from this date instead of today, as YYYY-MM-DD", optional = true },
+]

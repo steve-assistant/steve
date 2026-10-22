@@ -1,0 +1,66 @@
+# Outlook on this computer, over COM (05-connectors.md, section 5): every
+# account classic Outlook holds, every store merged, its calendar read only.
+# An account the user adds since step 5's item 10: Outlook is asked nothing
+# before, since asking starts it.
+manifest_version = 1
+sdk = 1
+id = "outlook_classic"
+version = "1"
+label = "Outlook on this computer"
+for = "Any account classic Outlook holds, work accounts among them"
+effort = "A minute, if Outlook is set up"
+tier = "backend"
+classes = ["mail", "calendar"]
+code = "provider.py"
+com = ["Outlook.Application"]
+# Each path is the end of the path from Outlook (`core/modctx.ModuleCom`).
+# Named, an object or a method; `.*`, the plain values on one, never an
+# object, a setter or an action. A method is called, and a value set, only
+# where Steve knows it reads (`steve_sdk.manifest.KNOWN_PROGRAMS`); every
+# other is listed under `com_actions`, as is each member that sends, saves,
+# deletes or runs.
+com_members = [
+    # The profile, its accounts and stores, and their folders at any depth.
+    "GetNamespace", "Accounts", "Stores", "Folders", "Items", "Recipients",
+    "Item", "Item.*", "Count",
+    "GetDefaultFolder", "GetDefaultFolder.*",
+    # Walking a folder's items, and fetching one by its EntryID.
+    "Sort", "GetFirst", "GetFirst.*", "GetNext", "GetNext.*",
+    "Items.IncludeRecurrences=",
+    "GetItemFromID", "GetItemFromID.*",
+    # A person's real address, where Exchange stored a directory name.
+    "Sender", "Sender.*", "GetOrganizer", "GetOrganizer.*",
+    "AddressEntry", "AddressEntry.*", "GetExchangeUser", "GetExchangeUser.*",
+    "PropertyAccessor", "GetProperty",
+    # A draft's values.
+    "Reply.*", "ReplyAll.*", "CreateItem.*",
+]
+com_actions = [
+    # Drafts: a reply saved, or a new message saved; never sent from here.
+    "GetItemFromID.Reply", "GetItemFromID.ReplyAll", "ReplyAll.Recipients.Remove",
+    "Reply.Save", "ReplyAll.Save", "CreateItem", "CreateItem.Save",
+    # What a draft is given before it is saved.
+    "Reply.HTMLBody=", "ReplyAll.HTMLBody=",
+    "Reply.CC=", "Reply.BCC=", "ReplyAll.CC=", "ReplyAll.BCC=",
+    "CreateItem.SendUsingAccount=", "CreateItem.To=",
+    "CreateItem.CC=", "CreateItem.BCC=",
+    "CreateItem.Subject=", "CreateItem.HTMLBody=",
+    # A draft sent on the user's yes, or thrown away (`send_draft`, `delete_draft`).
+    "GetItemFromID.Send", "GetItemFromID.Delete",
+]
+
+[setup]
+steps = ["guide", "test"]
+
+[[setup.guide]]
+text = "Steve will open Outlook to check. If Outlook asks whether to allow a program to access it, allow it."
+
+[mail]
+engine = "code"
+provider = "OutlookMail"
+every_min = 5  # a walk of the local cache, as the stand-in's was
+
+[calendar]
+engine = "code"
+provider = "OutlookCalendar"
+read_only = true

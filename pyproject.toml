@@ -1,0 +1,193 @@
+[project]
+name = "steve"
+version = "0.1.0"
+description = "A personal assistant for Windows: mail, calendar, approvals and voice, on your own OpenAI key"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+
+dependencies = [
+    # Supervisor / transport
+    "starlette>=1.6",
+    "uvicorn[standard]>=0.53",
+    "websockets>=17.1",   # also the desk's live conversation (voice/live.py)
+    "httpx>=0.28",        # supervisor proxy
+    "httpx2>=2.13",       # model calls; pydantic-ai drops httpx in v3
+    "psutil>=7.0",
+    # Agent core
+    "pydantic>=2.10",
+    "pydantic-ai-slim[openai]>=2.53",
+    # Storage and retrieval
+    "sqlite-vec>=0.1.9",
+    # Memory's history (tools/memory.py): git's own format, written without
+    # the git program, which a stranger's Windows does not have.
+    "dulwich>=1.2",
+    # The local injection detector's tokenizer (core/detector.py).
+    # Its model runs on the onnxruntime the voice extra installs -- the
+    # laptop's, which is the only place the detector runs.
+    "tokenizers>=0.23",
+    # Web tools
+    "trafilatura>=2.2",
+    # Where a saved browser login may be used: a site's own domain, never a
+    # public suffix anyone can host under (core/browser/vault.py). Read from
+    # its bundled list, offline. Already here through presidio; declared
+    # because the vault relies on it.
+    "tldextract>=5.3",
+    # Windows Hello's signature on a high-risk yes or a sign-in is checked
+    # against the key registered at setup (core/hello.py). Already here
+    # through presidio and google-auth; declared because the check relies
+    # on it.
+    "cryptography>=50.0",
+    # Linking a Signal device means showing a QR code. [pil] because link()
+    # writes a PNG as well as printing ASCII -- a terminal that mangles block
+    # characters is common enough that the image is the fallback that works.
+    "qrcode[pil]>=8.0",
+    # Tracing. pydantic-ai emits OTel spans natively, so this is the exporter
+    # only -- the backend is a config choice, and tracing stays off until an
+    # endpoint is set. See agent/tracing.py on why span content is treated as
+    # personal data.
+    "opentelemetry-sdk>=1.44",
+    "opentelemetry-exporter-otlp-proto-http>=1.44",
+    # Config and secrets
+    "pyyaml>=6.0",
+    "keyring>=25.5",
+    # Mail by password: core's IMAP engine (core/engines/imap.py). It reads
+    # folder names in their modified UTF-7 and speaks the extensions the
+    # engine relies on (MOVE, UIDPLUS, CONDSTORE, Gmail's), which raw
+    # imaplib leaves to every caller to parse by hand.
+    "imapclient>=3.0",
+    # Calendars by password: core's CalDAV engine (core/engines/caldav.py)
+    # reads and writes iCalendar with it, and repeats are expanded on our
+    # side, since a server may not (and the ICS engine needs both too).
+    "icalendar>=6.0",
+    "recurring-ical-events>=3.3",
+    # Reading mail out of the Outlook already signed in on this computer,
+    # which reaches that mailbox without an app registration and without
+    # Steve holding a token. Platform-marked: it exists only on Windows, and
+    # an unmarked entry fails to install anywhere else.
+    "pywin32>=306; sys_platform == 'win32'",
+    # Push-to-talk, core's voice (voice/audio.py): the microphone and the
+    # speakers (PortAudio ships inside the wheel), and resampling, since no
+    # device here offers 16 kHz to hear or 24 kHz to say -- soxr does 3 s of
+    # audio in ~1 ms. The words and the voice are OpenAI's
+    # (voice/cloud.py); the local models are the voice extra's.
+    "sounddevice>=0.5",
+    "numpy>=2.1",
+    "soxr>=1.0",
+]
+
+[project.optional-dependencies]
+# No `trace` extra on purpose. arize-phoenix is a viewer, not a dependency:
+# declaring it constrained the whole resolution -- it pulled wrapt back from
+# 2.4.1 to 1.17.3 for everyone, including people who would never install it.
+# The agent speaks plain OTLP, so any collector works. To use Phoenix:
+#   uv pip install arize-phoenix && phoenix serve
+#   STEVE_TRACE_ENDPOINT=http://127.0.0.1:6006/v1/traces
+voice = [
+    # The add-on: push-to-talk on local models, for those who choose it
+    # (STEVE_LOCAL_VOICE=1, agent/worker/links._local_voice). Core's ear and
+    # voice are OpenAI's, and core installs no local model (07-voice.md,
+    # section 9). Everything here runs on a CPU.
+    #
+    # STT: Whisper, through CTranslate2.
+    "faster-whisper>=1.1",
+    # TTS, run in its own process (voice/tts_server.py).
+    "kokoro-onnx>=0.4",
+    # onnxruntime's CPU build. A GPU is a developer's option, not the
+    # add-on's: uninstall onnxruntime, then install onnxruntime-gpu and the
+    # CUDA wheels it does not bundle (nvidia-cudnn-cu12, nvidia-cublas-cu12,
+    # and nvidia-cuda-runtime-cu12, without which the CUDA provider fails
+    # with a bare "error 3" naming the wrong library). Never both builds:
+    # they install into the same `onnxruntime/` directory, the one that
+    # landed last wins, silently, and TTS once dropped from 0.30 s to 1.07 s
+    # a sentence with no error anywhere (tests/unit/test_voice.py).
+    "onnxruntime>=1.20",
+]
+# Hands-free's packages, for its own step after v0.1 (07-voice.md): a
+# developer's, and offered to no one in v0.1 (agent/worker/desk.offered).
+handsfree = [
+    # Reading and writing sound files: the wake word's training clips
+    # (voice/wake_train.py) and the bench's recordings.
+    "soundfile>=0.13",
+    # Hands-free listening (voice/listen.py), through WASAPI: the speakers'
+    # own output -- a wake phrase the laptop itself plays is not the user's
+    # -- and a microphone plugged in after start. sounddevice's PortAudio
+    # has no loopback and sees only the devices there when it started.
+    "soundcard>=0.4.3",
+    # WebRTC's audio processing -- echo cancellation, noise suppression --
+    # through LiveKit's SDK (voice/echo.py): the laptop's own sound taken out
+    # of the microphone, so the user can talk over it on the speakers.
+    "livekit>=1.1.20",
+]
+accounts = [
+    "google-auth-oauthlib>=1.2",
+    "google-api-python-client>=2.155",
+    "python-docx>=1.1",
+    "openpyxl>=3.1",
+    "python-pptx>=1.0",
+]
+# Redaction. This was briefly in the required set, on the argument that an
+# optional redactor is one that is missing exactly when it matters. That
+# argument was right about reflection and wrong about the shape: requiring
+# presidio everywhere puts spaCy and a 600MB language model into every
+# install, for users who never turn reflection on.
+#
+# The property is preserved where it counts instead: redact.py fails closed if
+# the engine cannot load, and a gate test asserts presidio is importable
+# wherever reflection is wired up.
+reflect = [
+    "presidio-analyzer>=2.2",
+    "presidio-anonymizer>=2.2",
+    # spaCy models are not on PyPI and `spacy download` is not reproducible
+    # from a lockfile, so the wheel is pinned by URL.
+    "en-core-web-lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl",
+]
+dev = [
+    "pytest>=9.1",
+    "pytest-asyncio>=0.25",
+    # The suite across cores (`pytest -n`): ~5 minutes one test at a time.
+    "pytest-xdist>=3.6",
+    "ruff>=0.16",
+    # The voice tests and the desk's rehearsal rig build audio as arrays. The
+    # voice extra brings numpy where voice runs; without it, these came only
+    # through the old memory embedder, and the suite could not be collected.
+    "numpy>=2.1",
+    # The mail engine's fakes (tests/fakes/): a certificate authority made
+    # for the test, and a real SMTP server on loopback.
+    "trustme>=1.2",
+    "aiosmtpd>=1.4",
+    # The CalDAV engine's fake: a real CalDAV server, in the process, behind
+    # a layer that adds the habits of Google's (tests/fakes/caldav.py).
+    "radicale>=3.2",
+    # The app's screens (tests/unit/ui/): Microsoft Edge, the copy Windows ships,
+    # against the built UI and a fake backend; and the real app's WebView2
+    # over CDP. No browser is downloaded (`playwright install` is never run).
+    "playwright>=1.50",
+]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+# Every package under these, subpackages too: the top-level names alone
+# left agent/worker, agent/toolset and the rest out of a built wheel.
+# Folders without an __init__.py, such as agent/prompts, are data, not code.
+include = ["core*", "agent*", "tools*", "voice*", "channels*", "steve_sdk*", "modules*"]
+namespaces = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+# The conftests import `tests.gate.fences`, and `tests` is not an installed
+# package. `python -m pytest` finds it only because -m puts the current
+# folder on the path; plain `pytest`, as CI and CLAUDE.md run it, did not.
+pythonpath = ["."]
+markers = ["live: hits real external APIs; requires credentials"]

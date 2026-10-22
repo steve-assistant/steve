@@ -1,0 +1,152 @@
+# Frozen-core policy.
+#
+# This file and everything it lists as frozen are OUTSIDE the agent's reach.
+# Until step 6 Steve changed its own tree, and a gate kept it off these
+# paths. Now what Steve builds for itself is a module, in a draft folder
+# apart from the tree, and two layers remain, as developer tooling until
+# step 8's signed manifest:
+#
+#   1. The coding pipeline's write tool      -> core/coder/workspace.py
+#      refuses a frozen path                    (coder_may_write)
+#   2. policy.lock SHA-256 manifest          -> checked by the supervisor at
+#                                               each start, and by
+#                                               devtools.check
+
+version: 1
+
+# Paths the agent may never modify. Globs are POSIX-style, repo-relative.
+frozen:
+  - "core/**"           # supervisor, gate, eval harness, this policy
+  - "tests/gate/**"     # THE JUDGE - the agent must not grade itself
+  - "tests/__init__.py" # imported inside the gate's own pytest, and nothing
+                        # froze it: one line (`atexit.register(lambda:
+                        # os._exit(0))`) made a failing suite exit 0, and the
+                        # gate trusted the exit code (audit of 8 October 2026)
+  - "steve_sdk/**"      # all a module may import: its interfaces, ids, exact
+                        # targets and the manifest's one parser (step 5)
+  - "modules/**"        # the built-in connectors, which ship enabled and reach
+                        # the user's mail, calendar, files and tasks (step 5);
+                        # Google's sign-in among them, frozen as auth/** was
+                        # until it moved here (step 5, item 4f)
+  - "pyproject.toml"    # dependency changes are never automatic
+  - "uv.lock"
+  - ".gitignore"        # keeps data/ out of the coding model's view
+  - ".gitattributes"    # controls the bytes policy.lock hashes
+  - "scripts/**"        # the user runs these, some elevated: a quiet addition
+                        # would run as administrator (audit of 27 September
+                        # 2026)
+
+# The coding pipeline (core/coder/): which model plays each role, and what
+# each may spend. The maintainer, 27 September 2026: "a semi-budget project ... at
+# most a dollar or two per night". The models were chosen on the live runs
+# of 27-28 September (docs/self-upgrade.md); the judge is the same model at
+# high effort, independent because it shares no memory with the coder.
+# Model names are keys of core/coder/models.CATALOG.
+# The tester's clock was 600s: at GLM's pace in the live runs (40-85s a
+# turn) that is 7-12 turns, and twice it spent them all reading and wrote
+# no tests. 1200s gives it time for its 30 turns at 40s each.
+coder:
+  night_budget_usd: 2.00
+  attempt_budget_usd: 0.50
+  # GPT-6 Luna for the coder and the test builder from 28 September 2026,
+  # the user's call on the live runs: GLM 5.3 Flash took 10 task runs to get 2
+  # all the way through, mostly on harness trouble, stalls and revisions it
+  # did not follow; Luna got its tasks right in fewer turns and fewer failed
+  # edits, at the same 1-5 cents a task, and off OpenRouter.
+  coder:  {model: gpt-6-luna,      budget_usd: 0.25, max_turns: 60, max_seconds: 1200}
+  tester: {model: gpt-6-luna,      budget_usd: 0.10, max_turns: 30, max_seconds: 1200}
+  judge:  {model: gpt-6-luna-high, budget_usd: 0.15, max_turns: 3,  max_seconds: 300}
+
+# Whether the agent may start changing itself on its own initiative: the
+# night's proposals. A change the user asks for in a conversation still
+# runs, and every module, however built, waits for the user's card. Here, in
+# a frozen file, so the agent cannot take off its own brake; checked first
+# in agent/night/tinkering.py.
+self_upgrade:
+  agent_initiated: false
+  why: off by default
+
+# The sandboxed browser (core/browser/, docs/security-model.md section 6).
+# These are ceilings: what this build lets a user turn on. Each is also the
+# user's own switch (BROWSER and BACKGROUND_BROWSING, core/knobs.py), off
+# until they turn it on, and both must say yes. Here, in a frozen file, so
+# the agent cannot widen what a user may switch on.
+browser:
+  enabled: true
+  why: >-
+    the browser runs in Docker behind a gate of its own, and
+    `python -m core.browser check` proves the sandbox holds
+    (docs/security-model.md section 6)
+  # A background task may start a browsing worker: a browser kept to the
+  # sites the task was shown, with none of the user's mail, calendar, files
+  # or memory, no login, no submit, at most two at once. The attention
+  # loop's doer, the night's research and the tasks the agent sets itself
+  # may start them (agent/workers.py `send_browsing`), each from what its
+  # own searches return; the injection screen reads what they bring back.
+  background: true
+
+# The model scout (agent/models_scout.py; the bounds are checked in
+# core/models_guard.py). The maintainer, 1 October 2026: when a trusted provider
+# releases a model that is smarter or cheaper, switch to it, watch it for a
+# day, and switch back if things get worse -- as they moved every role from
+# GPT-5.6 Luna to GPT-6 Luna by hand on 25 September. Here, in a frozen
+# file, so the scout cannot lower its bar or raise its ceilings. Which models
+# it may switch to at all, OpenAI's with a frozen price, is the guard's own
+# table (`models_guard.PRICED`).
+models:
+  # The scout may scan and evaluate while this is off; it switches nothing.
+  auto_switch: false
+  why: >-
+    off until the user has watched one switch and one revert done by hand
+    (docs/autonomy.md); the plan approved on 1 October 2026 says so
+  # Switched by the scout on its own. The coding pipeline (`coder:` above),
+  # Jev (core/screen.py) and the call voice are set in frozen files and get
+  # a proposal instead.
+  auto_roles: [triage, converse, reason, escalate, bulk]
+  min_context: 200000
+  # USD per million tokens, whatever the role. GPT-6 Luna is 0.10 and 0.50;
+  # these are three times that, and they hold however many switches are
+  # made -- "better at 1.5x the cost", applied to each new incumbent in
+  # turn, would compound without them.
+  ceiling_usd_per_mtok: {input: 0.30, output: 1.50}
+  # The bar (models_guard.weigh). A switch for cost:
+  cheaper_by: 0.10        # costs at least 10% less per turn, measured,
+  noninferiority: 0.05    # and loses on at most 5% of turns more than it wins.
+  # A switch for quality:
+  better_by: 0.10         # wins on at least 10% of turns more than it loses,
+  significance: 0.05      # which a sign test says is not luck,
+  better_max_cost: 1.5    # and costs at most 1.5x.
+  min_turns: 30           # of the user's own, replayed; fewer decides nothing
+  triage_agreement: 0.90  # triage has no judge: it must agree with the incumbent
+  # The roles the user waits on: no slower to the first token than 1.2x what they
+  # replace, and under a second. Luna measured 0.63-0.72s on 25 September.
+  latency:
+    triage: {ratio: 1.2, ceiling_s: 1.0}
+    converse: {ratio: 1.2, ceiling_s: 1.0}
+  # What testing candidates may spend.
+  candidate_budget_usd: 1.00
+  month_budget_usd: 5.00
+  # After a switch, the day's watch (models_guard.watch_verdict): the
+  # canary's count of failures (core/canary.py) against the two days
+  # before, and the new model's calls against the old one's. Worse on
+  # either, and the role goes back on its own.
+  watch:
+    hours: 24
+    baseline_hours: 48
+    latency_rise: 1.5     # median seconds a call, new over old
+    cost_rise: 2.0        # dollars a call, new over old
+    min_calls: 5          # fewer calls than this on either side say nothing
+
+# The action critic (core/critic.py). The maintainer, 4 October 2026: the main
+# priority after the mailbox -- a second model that sees only their
+# instruction and the action an unattended session proposes, never what the
+# session read, and says whether the action serves it. In shadow first:
+# every review recorded, nothing changed, until the user has seen its calls and
+# moves this to `enforce`, when anything short of a plain yes asks them.
+critic:
+  # Enforcing since 5 October 2026, the user: "critic seems good to go". In
+  # shadow from 4 October; the yardstick's first runs had it stopping 21 of
+  # 21 hijacked actions and asking needlessly about 1 of 22 real ones. Back
+  # to `shadow` here turns enforcing off; nothing turns the critic off.
+  mode: enforce
+  allow_at: 0.6

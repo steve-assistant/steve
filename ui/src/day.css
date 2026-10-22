@@ -1,0 +1,824 @@
+/* The day page (Day.tsx): docs/design/journal.md, The day page, Entries
+   and The composer; foundations.md for the gutter, the signifiers and the
+   space between entries. Every colour, face and size is a token. */
+
+.day-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.day-stream {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Days loaded above keep the reader where they were. */
+  overflow-anchor: auto;
+}
+.day-column,
+.day-foot {
+  width: 100%;
+  max-width: calc(var(--measure) + 72px + 32px);
+  margin: 0 auto;
+  padding: 0 32px 0 0;
+}
+.day-column {
+  padding-top: 20px;
+  padding-bottom: 24px;
+}
+
+/* ------------------------------------------------------------ the heading */
+
+.day-sheet + .day-sheet {
+  margin-top: 48px;
+}
+.day-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 24px 72px;
+}
+.day-head h2 {
+  margin: 0;
+  color: var(--ink);
+}
+/* The day's name underlined by hand, in red ink, as a page in a paper
+   journal is dated. Stretched to the name's width, whatever the day. */
+.day-title {
+  position: relative;
+}
+.day-underline {
+  position: absolute;
+  left: -3px;
+  bottom: 1px;
+  width: calc(100% + 6px);
+  height: 8px;
+  color: var(--red-ink);
+  pointer-events: none;
+}
+.day-date {
+  color: var(--ink-soft);
+}
+.lenses {
+  display: flex;
+  gap: 4px;
+}
+.lenses button {
+  position: relative;
+  padding: 4px 8px;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+/* The chosen lens is circled by hand, as one picks on paper; a CSS
+   underline read as a link. */
+.lenses button[aria-pressed="true"] {
+  color: var(--ink);
+}
+.lens-circle {
+  position: absolute;
+  left: -3px;
+  top: -2px;
+  width: calc(100% + 6px);
+  height: calc(100% + 4px);
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+.lenses button:hover {
+  background: var(--slip);
+}
+
+/* ------------------------------------------------------- folded days */
+
+.folded-days {
+  margin: 0 0 32px;
+  padding: 0;
+  list-style: none;
+}
+/* One line each: as two lines with room around them, a week of bands was
+   taller than the window's first screen of today. */
+.folded {
+  display: grid;
+  grid-template-columns: 14em minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 16px;
+  width: 100%;
+  margin: 0 0 2px;
+  padding: 5px 16px 5px 72px;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: var(--paper-deep);
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.folded:hover {
+  outline: 1px solid var(--rule-strong);
+}
+.folded-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+}
+.folded-quiet {
+  padding: 5px 16px 5px 72px;
+  color: var(--ink-faint);
+}
+.folded-line {
+  color: var(--ink-soft);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.folded-count {
+  color: var(--ink-faint);
+}
+.earlier {
+  margin: 0 0 16px 72px;
+}
+
+/* ------------------------------------------------------------- entries */
+
+.entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.entry {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  margin: 0 0 16px;
+  animation: steve-arrive var(--t-entry) ease-out both;
+}
+/* Between exchanges, more room than between the lines of one. */
+.entry.kind-said:not(:first-child) {
+  margin-top: 32px;
+}
+.gutter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  /* The time to the left, the sign to the right of it. */
+  padding: 2px 16px 0 0;
+  color: var(--ink-faint);
+}
+.gutter time,
+.gutter .t-meta {
+  color: var(--ink-faint);
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+.gutter .sent {
+  white-space: normal;
+}
+.entry-body {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+}
+
+/* The signifiers (foundations.md): 9px diamonds on the middle of the
+   first line's lowercase letters, ink-soft, except the red and the cyan.
+   `.sign-line` is a line in the first line's type (Day.tsx, Sign), so
+   `middle` puts the sign at its baseline plus half its x-height. The
+   square is turned with `transform`; the in-progress tick turns it with
+   `rotate`. */
+.sign-line {
+  position: absolute;
+  top: 0;
+  right: 6px;
+  white-space: nowrap;
+}
+.sign {
+  display: inline-block;
+  vertical-align: middle;
+  width: 7px;
+  height: 7px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ink-soft);
+  transform: rotate(45deg);
+}
+.sign-done {
+  background: var(--ink-soft);
+}
+.sign-needs {
+  width: 6px;
+  height: 6px;
+  background: var(--red);
+  border-color: var(--red);
+}
+.sign-spoken {
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+.sign-failed,
+.sign-ticked {
+  width: 12px;
+  height: 12px;
+  margin-right: -3px;
+  border: none;
+  transform: none;
+  color: var(--red-ink);
+}
+/* A reminder that went off: ticked, as on a list kept by hand. */
+.sign-ticked {
+  color: var(--ink-soft);
+}
+
+/* The user's words: a slip, to the right, at most three quarters wide. */
+.slip {
+  width: fit-content;
+  max-width: 75%;
+  margin-left: auto;
+  padding: 8px 14px;
+  background: var(--slip);
+  border-radius: var(--r-slip);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.unsent .slip {
+  opacity: 0.7;
+}
+.unsent.failed .slip {
+  opacity: 1;
+  background: var(--tint-red);
+}
+.not-sent {
+  display: block;
+  margin: 4px 0 0 auto;
+  color: var(--red-ink);
+}
+
+/* Steve's words: unboxed, at the measure. */
+.prose {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.prose > :first-child {
+  margin-top: 0;
+}
+.prose > :last-child {
+  margin-bottom: 0;
+}
+.prose p {
+  margin: 0 0 12px;
+}
+.prose ul,
+.prose ol {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+.prose ul {
+  list-style: none;
+}
+.prose ul > li {
+  position: relative;
+}
+/* Lists with outline diamonds. */
+.prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ink-soft);
+  transform: rotate(45deg);
+}
+.prose pre {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: var(--slip);
+  border-radius: var(--r-slip);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+.prose-link {
+  display: inline;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  text-decoration-color: var(--ink-soft);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.update,
+.action {
+  color: var(--ink-soft);
+}
+.action.asked {
+  color: var(--ink);
+}
+/* A dictation or a lecture's notes, read in place: its own lines kept, and
+   a long one scrolls inside the entry rather than pushing the day away. */
+.listening-text {
+  margin-top: 6px;
+  max-height: 24em;
+  overflow-y: auto;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+.failed-words {
+  color: var(--red-ink);
+  font-weight: 600;
+}
+.text-button {
+  margin-left: 8px;
+  padding: 0 4px;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+}
+.text-button:hover {
+  color: var(--ink);
+}
+/* An empty day's starters: lines to fill in, dashed as a form's blank is,
+   that write into the composer and send nothing. */
+.starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.starter {
+  padding: 4px 12px;
+  font: inherit;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.starter:hover,
+.starter:focus-visible {
+  color: var(--ink);
+  background: var(--slip);
+}
+.undo {
+  margin-left: 12px;
+  padding: 0 4px;
+  color: var(--cyan-ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.task .t-small {
+  color: var(--ink-soft);
+}
+
+/* Reacting: a check and a cross in the gutter while the reply is hovered,
+   and the chosen one stays drawn. */
+.reactions {
+  display: flex;
+  margin-left: -3px;
+  gap: 4px;
+  opacity: 0;
+}
+.entry:hover .reactions,
+.reactions:focus-within,
+.reactions.reacted {
+  opacity: 1;
+}
+.reactions button {
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.reactions.reacted button:not(.chosen) {
+  visibility: hidden;
+}
+.entry:hover .reactions.reacted button {
+  visibility: visible;
+}
+.reactions button:hover {
+  background: var(--slip);
+}
+.reactions .chosen {
+  color: var(--ink);
+}
+.reactions .chosen[aria-label="Not right"] {
+  color: var(--red-ink);
+}
+
+/* A conversation by voice, folded on cyan. */
+.spoken {
+  background: var(--tint-cyan);
+  border-radius: var(--r-slip);
+}
+/* The night's work, folded the same way on the deeper paper. */
+.night {
+  background: var(--paper-deep);
+  border-radius: var(--r-slip);
+}
+.night-parts {
+  padding: 0 14px 12px;
+}
+.night-parts .part-title {
+  margin: 8px 0 2px;
+  color: var(--ink-soft);
+}
+.night-parts ul {
+  margin: 0;
+  padding-left: 16px;
+}
+/* The sign's line starts where the box's first line does. */
+.kind-spoken,
+.kind-task {
+  --spoken-inset: 10px;
+}
+.spoken-line {
+  padding-top: var(--spoken-inset);
+}
+.spoken-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: var(--spoken-inset) 14px;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.spoken-head .t-meta {
+  color: var(--ink-soft);
+}
+.transcript {
+  margin: 0;
+  padding: 0 14px 12px;
+  list-style: none;
+}
+.transcript li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+.transcript time {
+  color: var(--ink-faint);
+}
+.transcript .by-user span {
+  color: var(--ink-soft);
+}
+
+/* Updates in a row, under a bracket. */
+.run {
+  position: relative;
+  margin: 0 0 16px;
+}
+.run-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px 72px;
+  color: var(--ink-faint);
+}
+.run-bracket {
+  position: absolute;
+  left: -18px;
+  top: 4px;
+  width: 10px;
+  height: calc(100% - 8px);
+  color: var(--ink-faint);
+}
+.run-more {
+  margin-left: 72px;
+}
+
+/* Asleep: a quiet divider. */
+.entry.asleep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 24px 0;
+  color: var(--ink-faint);
+}
+.asleep-wave {
+  width: 48px;
+  height: 8px;
+}
+
+/* The dinkus: the three diamonds, small and centred, closing the page. */
+.dinkus {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 24px 0 0 72px;
+}
+.dinkus .sign {
+  border: none;
+}
+.sign-red {
+  background: var(--red);
+}
+.sign-yellow {
+  background: var(--yellow);
+}
+.sign-cyan {
+  background: var(--cyan);
+}
+
+/* The working line: the turning diamond and what Steve is doing. */
+.entry.working .entry-body {
+  color: var(--ink-soft);
+  min-height: 1.4em;
+}
+
+/* New since the user last looked: a highlighter swipe behind the first
+   line, drawn rather than ruled, that fades a second long, three seconds
+   after it has been on screen. */
+.entry.new > .entry-body::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -6px;
+  top: 0.05em;
+  width: min(100% + 12px, 28em);
+  height: 1.45em;
+  background: var(--highlight);
+  border-radius: 38% 12% 30% 16% / 60% 40% 70% 30%;
+  transform: rotate(-0.6deg);
+}
+.entry.new.seen > .entry-body::before {
+  animation: steve-highlight-fades 1s ease-out 3s forwards;
+}
+@keyframes steve-highlight-fades {
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entry.new.seen > .entry-body::before {
+    animation-duration: 1ms;
+  }
+}
+
+/* The entry a search went to, for a moment (foundations.md: tint-yellow is
+   a search result's line). Its body's ground, spread a little past the
+   text so the words don't touch its edge. */
+.entry[data-sought] > .entry-body {
+  background: var(--tint-yellow);
+  box-shadow: 0 0 0 6px var(--tint-yellow);
+  border-radius: var(--r-slip);
+}
+/* The user's own words sit in a slip at the right: the slip is tinted,
+   not the empty width beside it. */
+.entry.kind-said[data-sought] > .entry-body {
+  background: none;
+  box-shadow: none;
+}
+.entry.kind-said[data-sought] .slip {
+  background: var(--tint-yellow);
+}
+
+/* ------------------------------------------------------------ the composer */
+
+.day-foot {
+  padding-bottom: 16px;
+}
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-left: 72px;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--rule);
+}
+.composer.listening {
+  background: var(--tint-cyan);
+}
+.composer textarea {
+  flex: 1;
+  /* As tall as what's written, up to a third of the window. */
+  field-sizing: content;
+  min-height: 1.6em;
+  max-height: 33vh;
+  padding: 6px 0;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+}
+.composer textarea::placeholder {
+  color: var(--ink-faint);
+}
+.composer .send {
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  color: var(--ink);
+  background: none;
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.composer .send:hover {
+  background: var(--slip);
+}
+/* Photos: chosen, above the composer; sent, on the message. */
+.attached,
+.photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.attached,
+.attached-left {
+  margin: 0 0 8px 72px;
+}
+.attached-left {
+  color: var(--ink-soft);
+}
+.photos {
+  margin-bottom: 6px;
+}
+.thumb,
+.photo {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-note);
+}
+.photo {
+  width: 120px;
+  height: 120px;
+}
+.thumb img,
+.photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo.gone {
+  display: grid;
+  place-items: center;
+  width: auto;
+  height: auto;
+  padding: 2px 8px;
+  color: var(--ink-faint);
+}
+.thumb-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 20px;
+  height: 20px;
+  padding: 3px;
+  color: var(--ink);
+  background: var(--note);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.composer .attach {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 3px;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.composer .attach:hover {
+  background: var(--slip);
+}
+.attach-clip {
+  width: 26px;
+  height: 26px;
+}
+/* A file dragged over the page: dropped anywhere, it joins the message. */
+.day-page.dropping .composer {
+  outline: 1.5px dashed var(--ink-faint);
+  outline-offset: 4px;
+}
+/* The one round control. */
+.voice {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: var(--note);
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.voice.on {
+  border-color: var(--cyan-ink);
+  background: var(--tint-cyan);
+  /* The ring thickens with the voice's level (level.ts sets --level). */
+  box-shadow: 0 0 0 calc(var(--level, 0) * 4px) var(--cyan-ink);
+  transition: box-shadow var(--t-level) linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice.on {
+    box-shadow: none;
+  }
+}
+.voice:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+/* A drawn microphone: a rounded outline here read as a nought. */
+.voice-mic {
+  width: 22px;
+  height: 22px;
+  color: var(--ink-soft);
+}
+.voice.on .voice-mic {
+  color: var(--cyan-ink);
+}
+
+@media (max-width: 760px) {
+  .day-column,
+  .day-foot {
+    padding-right: 16px;
+  }
+}
+@media (max-width: 520px) {
+  .day-head,
+  .composer,
+  .attached,
+  .attached-left,
+  .run-head,
+  .run-more,
+  .earlier,
+  .dinkus {
+    margin-left: 48px;
+  }
+  .entry {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+}
+
+@media (forced-colors: active) {
+  .slip,
+  .spoken,
+  .night,
+  .folded {
+    border: 1px solid CanvasText;
+  }
+  .sign-done,
+  .sign-needs,
+  .sign-spoken {
+    background: CanvasText;
+  }
+}
+
+/* ------------------------------------------------------------ an update */
+
+/* A newer Steve, found by the daily look: a line at the top of the day,
+   and Install in Settings, where what an update does is said. */
+.day-update {
+  margin: 0 0 16px;
+  color: var(--ink-soft);
+}
+.day-update button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

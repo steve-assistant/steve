@@ -1,0 +1,15 @@
+# A take begun at the press: its first word must be kept. The microphone
+# opens on the press and never before it (07-voice.md, Questions, 6), so a
+# word begun before the press is lost. It takes a moment to open
+# (keys.OPEN_S), and a word begun at the press is kept while it is live
+# within half a word: the bar of 150 ms from press to live.
+scenario ptt-first-word-at-press
+about the first word said at the very moment of the press is heard
+length 8
+reply /plumber/ 0.5: I will remind you at noon.
+0.5    key: press
++0.0   user: Remind me to call the plumber at noon.
++0.2   key!: release
+expect heard ^remind me to call the plumber
+expect asked plumber
+expect mic-live <= 0.15

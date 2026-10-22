@@ -1,0 +1,18 @@
+# A press during a reply stops it at once, and starts a new capture: the
+# bar is silence within 0.15 s of the press.
+scenario ptt-press-over-a-reply
+about a press during a long answer silences it, and the new request is heard
+length 14
+reply /history of tea/ 0.5: Tea was first drunk in China, as a medicine. It spread
+  along the trade routes to Japan and Korea. Merchants brought it to Europe in
+  the sixteenth century, and it became a daily habit in Britain.
+reply /what time/ 0.3: It is four o clock.
+0.5        key: press
++0.1       user: Tell me about the history of tea.
++0.3       key: release
+voice+1.5  key!: press
++0.1       user: What time is it?
++0.3       key: release
+expect silenced <= 0.15
+expect heard ^what time is it
+expect asked what time

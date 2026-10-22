@@ -1,0 +1,1810 @@
+{
+ "attention after": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "lasted 60 min; with iris@fabrikam.example, tomas.varga@contoso.example",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "after:ev0001golden:2026-10-14",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-14T08:30:00-04:00",
+     "event_id": "ev0001golden",
+     "follow_up": "not worth asking",
+     "follow_up_why": "not asked: RuntimeError: a unit test tried to reach live Jev (core/decide.py). Inject a fake instead -- see tests/unit/conftest.py",
+     "link": "https://calendar.example/event?eid=ev0001golden",
+     "location": null,
+     "people": [
+      "iris@fabrikam.example",
+      "tomas.varga@contoso.example"
+     ],
+     "start": "2026-10-14T07:30:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "after",
+    "task": "",
+    "title": "Just ended: Planning sync",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14T08:30:00-04:00",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 1 found, 1 new"
+ },
+ "attention calendar": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "with iris@fabrikam.example; created 2026-09-24T13:30:00Z",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "calendar:ev0002golden:2026-10-14T08:30:00Z",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-14T10:15:00-04:00",
+     "event_id": "ev0002golden",
+     "link": "https://calendar.example/event?eid=ev0002golden",
+     "location": null,
+     "people": [
+      "iris@fabrikam.example"
+     ],
+     "start": "2026-10-14T10:00:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "calendar",
+    "task": "",
+    "title": "Changed or new: Team standup",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14T10:00:00-04:00",
+    "why": ""
+   },
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "at Juniper Cafe; with dana@example.com; created 2026-09-24T13:30:00Z",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "calendar:ev0004golden:2026-10-13T17:30:00Z",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-14T13:30:00-04:00",
+     "event_id": "ev0004golden",
+     "link": "https://calendar.example/event?eid=ev0004golden",
+     "location": "Juniper Cafe",
+     "people": [
+      "dana@example.com"
+     ],
+     "start": "2026-10-14T12:30:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "calendar",
+    "task": "",
+    "title": "Changed or new: Lunch with Dana",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14T12:30:00-04:00",
+    "why": ""
+   },
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "created 2026-09-24T13:30:00Z",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "calendar:ev0006golden:2026-10-14T10:30:00Z",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-14T20:00:00-04:00",
+     "event_id": "ev0006golden",
+     "link": "https://calendar.example/event?eid=ev0006golden",
+     "location": null,
+     "people": [],
+     "start": "2026-10-14T18:30:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "calendar",
+    "task": "",
+    "title": "CANCELLED: Choir rehearsal",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14T18:30:00-04:00",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 3 found, 3 new"
+ },
+ "attention commitments": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "due 2026-10-15",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "commitment:1:2026-10-15",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "commitment_id": 1
+    },
+    "say": null,
+    "sender": null,
+    "source": "commitments",
+    "task": "",
+    "title": "The user committed to: Send Iris comments on the quarterly plan",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-15",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 1 found, 1 new"
+ },
+ "attention deadlines": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "Due on Course site; the feed does not say whether it has been handed in. Glaze three test tiles and bring them to the studio.",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "deadlines:event-assignment-700101:2026-10-16T23:59:00-04:00",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "calendar": "Course site",
+     "url": "https://courses.example/calendar#assignment_700101"
+    },
+    "say": null,
+    "sender": null,
+    "source": "deadlines",
+    "task": "",
+    "title": "Test tiles [ART 110], due Fri 16 Oct, 11:59pm",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-16T23:59:00-04:00",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 1 found, 1 new"
+ },
+ "attention drive": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "owner iris@fabrikam.example; application/vnd.google-apps.document",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "drive:1golden0001Drive:2026-10-14T09:30:00Z",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "account": "gmail",
+     "file_id": "1golden0001Drive",
+     "link": "https://docs.example/d/1golden0001Drive",
+     "owner": "iris@fabrikam.example"
+    },
+    "say": null,
+    "sender": null,
+    "source": "drive",
+    "task": "",
+    "title": "Quarterly plan 2026 -- changed in their files (gmail)",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14T09:30:00Z",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 1 found, 1 new"
+ },
+ "attention gmail": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "gmail, unread. Could you look at the quarterly plan before Friday? The numbers are in section 2.\n\nThanks,\nIris",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "mail:19a0000000000001",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "account": "gmail",
+     "from": "Iris Novak <iris@fabrikam.example>",
+     "message_id": "19a0000000000001",
+     "recipients": 1,
+     "rfc_id": "<plan-1@fabrikam.example>",
+     "subject": "Quarterly plan draft",
+     "thread_id": "19a0000000000001"
+    },
+    "say": null,
+    "sender": null,
+    "source": "mail:67d3d26cc730",
+    "task": "",
+    "title": "Quarterly plan draft -- from Iris Novak <iris@fabrikam.example>",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14 08:10 EDT",
+    "why": ""
+   },
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "gmail, already read. Your order 4471 has shipped and should arrive on Friday.",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "mail:19a0000000000002",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "account": "gmail",
+     "from": "Northwind Pharmacy <orders@northwind.example>",
+     "message_id": "19a0000000000002",
+     "recipients": 1,
+     "rfc_id": "<order-4471@northwind.example>",
+     "subject": "Your order has shipped",
+     "thread_id": "19a0000000000002"
+    },
+    "say": null,
+    "sender": null,
+    "source": "mail:67d3d26cc730",
+    "task": "",
+    "title": "Your order has shipped -- from Northwind Pharmacy <orders@northwind.example>",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-13 07:30 EDT",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 2 found, 2 new"
+ },
+ "attention home": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "home, unread. Your plot is number 14. The first work day is on Saturday at 10.",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "mail:INBOX\n7001\n1\n<plots-14@greenway-garden.example>",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "account": "home",
+     "from": "Greenway Garden <committee@greenway-garden.example>",
+     "message_id": "INBOX\n7001\n1\n<plots-14@greenway-garden.example>",
+     "recipients": 1,
+     "rfc_id": "<plots-14@greenway-garden.example>",
+     "subject": "Plot assignments for spring",
+     "thread_id": "<plots-14@greenway-garden.example>"
+    },
+    "say": null,
+    "sender": null,
+    "source": "mail:8c4d1477ffce",
+    "task": "",
+    "title": "Plot assignments for spring -- from Greenway Garden <committee@greenway-garden.example>",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14 06:30 EDT",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 1 found, 1 new"
+ },
+ "attention horizon": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "with iris@fabrikam.example; inside two days",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "horizon:ev0002golden:soon",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-14T10:15:00-04:00",
+     "event_id": "ev0002golden",
+     "link": "https://calendar.example/event?eid=ev0002golden",
+     "location": null,
+     "people": [
+      "iris@fabrikam.example"
+     ],
+     "start": "2026-10-14T10:00:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "horizon",
+    "task": "",
+    "title": "Team standup",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14T10:00:00-04:00",
+    "why": ""
+   },
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "at Room 4B; with iris@fabrikam.example; inside two days",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "horizon:ev0003golden:soon",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-14T12:00:00-04:00",
+     "event_id": "ev0003golden",
+     "link": "https://calendar.example/event?eid=ev0003golden",
+     "location": "Room 4B",
+     "people": [
+      "iris@fabrikam.example"
+     ],
+     "start": "2026-10-14T11:00:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "horizon",
+    "task": "",
+    "title": "Design review with Iris",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14T11:00:00-04:00",
+    "why": ""
+   },
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "at Juniper Cafe; with dana@example.com; inside two days",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "horizon:ev0004golden:soon",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-14T13:30:00-04:00",
+     "event_id": "ev0004golden",
+     "link": "https://calendar.example/event?eid=ev0004golden",
+     "location": "Juniper Cafe",
+     "people": [
+      "dana@example.com"
+     ],
+     "start": "2026-10-14T12:30:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "horizon",
+    "task": "",
+    "title": "Lunch with Dana",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14T12:30:00-04:00",
+    "why": ""
+   },
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "with tomas.varga@contoso.example; inside two days",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "horizon:00000000APPTVendorcall@20261015T180000Z:soon",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-15T14:30:00-04:00",
+     "event_id": "00000000APPTVendorcall@20261015T180000Z",
+     "link": null,
+     "location": null,
+     "people": [
+      "Tomas Varga <tomas.varga@contoso.example>"
+     ],
+     "start": "2026-10-15T14:00:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "horizon",
+    "task": "",
+    "title": "Vendor call",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-15T14:00:00-04:00",
+    "why": ""
+   },
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "at Harbor Dental; inside two days",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "horizon:ev0005golden:soon",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "all_day": false,
+     "end": "2026-10-15T16:00:00-04:00",
+     "event_id": "ev0005golden",
+     "link": "https://calendar.example/event?eid=ev0005golden",
+     "location": "Harbor Dental",
+     "people": [],
+     "start": "2026-10-15T15:00:00-04:00"
+    },
+    "say": null,
+    "sender": null,
+    "source": "horizon",
+    "task": "",
+    "title": "Dentist",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-15T15:00:00-04:00",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 5 found, 5 new"
+ },
+ "attention outlook": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "outlook, unread. Security asked everyone to renew their building badge by Friday. The desk is open 9 to 4.",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "mail:00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000001",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "account": "outlook",
+     "from": "\"Tomas Varga\" <tomas.varga@contoso.example>",
+     "message_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000001",
+     "subject": "Badge renewal by Friday",
+     "thread_id": null
+    },
+    "say": null,
+    "sender": null,
+    "source": "mail:9174c4f353d1",
+    "task": "",
+    "title": "Badge renewal by Friday -- from \"Tomas Varga\" <tomas.varga@contoso.example>",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-14 07:30 EDT",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 1 found, 1 new"
+ },
+ "attention threads": {
+  "observed": [
+   {
+    "critical": false,
+    "deliver_at": null,
+    "detail": "gmail; a reply owed to the user; 1 message(s) in the thread; Are you still hosting book club on Friday? I can bring the second copy.",
+    "first_seen": null,
+    "headline": "",
+    "id": null,
+    "key": "thread:mail:67d3d26cc730:3913a92d3ef9:3913a92d3ef9",
+    "outcome": null,
+    "place": null,
+    "reason": null,
+    "ref": {
+     "account": "gmail",
+     "message_id": "19a0000000000003",
+     "subject": "Book club on Friday?",
+     "waiting": "owed to the user",
+     "with": "Dana Ortiz <dana@example.com>"
+    },
+    "say": null,
+    "sender": null,
+    "source": "threads",
+    "task": "",
+    "title": "No reply from Dana Ortiz in 6 days to your email: Book club on Friday?",
+    "triaged_at": null,
+    "vetted": null,
+    "when": "2026-10-08T09:30",
+    "why": ""
+   }
+  ],
+  "ran": "ok: 1 found, 1 new"
+ },
+ "tools": [
+  {
+   "acted": [],
+   "args": {
+    "account": "gmail",
+    "query": "quarterly plan"
+   },
+   "result": {
+    "count": 1,
+    "found_in": {
+     "gmail": 1
+    },
+    "messages": [
+     {
+      "account": "gmail",
+      "from": "Iris Novak <iris@fabrikam.example>",
+      "id": "19a0000000000001",
+      "labels": [
+       "INBOX"
+      ],
+      "snippet": "Could you look at the quarterly plan before Friday? The numbers are in section 2. Thanks, Iris",
+      "subject": "Quarterly plan draft",
+      "to": "maya@example.com",
+      "unread": true,
+      "when": "2026-10-14 08:10 EDT"
+     }
+    ],
+    "problems": [],
+    "query": "quarterly plan"
+   },
+   "tool": "search_email"
+  },
+  {
+   "acted": [],
+   "args": {
+    "message_id": "19a0000000000001"
+   },
+   "result": {
+    "account": "gmail",
+    "body": "Could you look at the quarterly plan before Friday? The numbers are in section 2.\n\nThanks,\nIris",
+    "body_length": 95,
+    "body_truncated": false,
+    "from": "Iris Novak <iris@fabrikam.example>",
+    "id": "19a0000000000001",
+    "internal_date": 1791979800000,
+    "labels": [
+     "INBOX",
+     "UNREAD"
+    ],
+    "subject": "Quarterly plan draft",
+    "thread_id": "19a0000000000001",
+    "to": "maya@example.com",
+    "unread": true,
+    "when": "2026-10-14 08:10 EDT"
+   },
+   "tool": "read_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "account": "gmail",
+      "body": "Thanks, I will look at it today.",
+      "reply_to_message_id": "19a0000000000001",
+      "subject": "Re: Quarterly plan draft",
+      "to": "iris@fabrikam.example"
+     },
+     "asks": false,
+     "preview": "Draft to iris@fabrikam.example\nSubject: Re: Quarterly plan draft",
+     "tool": "draft_email"
+    }
+   ],
+   "args": {
+    "account": "gmail",
+    "body": "Thanks, I will look at it today.",
+    "reply_to_message_id": "19a0000000000001",
+    "subject": "Re: Quarterly plan draft",
+    "to": "iris@fabrikam.example"
+   },
+   "result": {
+    "account": "gmail",
+    "draft_id": "r0000000000000000005",
+    "drafted": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": true
+     },
+     "status": "verified_success",
+     "target": "r0000000000000000005",
+     "tool": "draft_email",
+     "why": ""
+    },
+    "subject": "Re: Quarterly plan draft",
+    "thread_id": "19a0000000000001",
+    "to": "iris@fabrikam.example",
+    "url": "https://mail.google.com/mail/u/0/#drafts?compose=19a0000000000004",
+    "where": "gmail Drafts"
+   },
+   "tool": "draft_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "draft_id": "r0000000000000000005",
+      "ident": "<19a0000000000004.golden@mail.example>",
+      "shown": "85433dba53316d550fefce109225e4131b2e6a256634a41b5e2d0737047e7a30"
+     },
+     "asks": true,
+     "preview": "Send from your gmail account\nTo: iris@fabrikam.example\nSubject: Re: Quarterly plan draft\n\nThe full email is in your gmail Drafts.",
+     "tool": "send_draft"
+    }
+   ],
+   "args": {
+    "draft_id": "r0000000000000000005"
+   },
+   "result": {
+    "account": "gmail",
+    "id": "19a0000000000006",
+    "ident": "19a0000000000006.golden@mail.example",
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "labels": [
+       "SENT"
+      ]
+     },
+     "status": "verified_success",
+     "target": "19a0000000000006",
+     "tool": "send_draft",
+     "why": ""
+    },
+    "sent": true,
+    "subject": "Re: Quarterly plan draft",
+    "thread_id": "19a0000000000001",
+    "to": "iris@fabrikam.example"
+   },
+   "tool": "send_draft"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "account": "gmail",
+      "body": "Are you free on Saturday morning?",
+      "reply_to_message_id": null,
+      "subject": "Saturday",
+      "to": "dana@example.com"
+     },
+     "asks": false,
+     "preview": "Draft to dana@example.com\nSubject: Saturday",
+     "tool": "draft_email"
+    }
+   ],
+   "args": {
+    "account": "gmail",
+    "body": "Are you free on Saturday morning?",
+    "subject": "Saturday",
+    "to": "dana@example.com"
+   },
+   "result": {
+    "account": "gmail",
+    "draft_id": "r0000000000000000008",
+    "drafted": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": true
+     },
+     "status": "verified_success",
+     "target": "r0000000000000000008",
+     "tool": "draft_email",
+     "why": ""
+    },
+    "subject": "Saturday",
+    "thread_id": "19a0000000000007",
+    "to": "dana@example.com",
+    "url": "https://mail.google.com/mail/u/0/#drafts?compose=19a0000000000007",
+    "where": "gmail Drafts"
+   },
+   "tool": "draft_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "draft_id": "r0000000000000000008",
+      "ident": "<19a0000000000007.golden@mail.example>",
+      "shown": "23fd56967c37fda77db0746a711e86b52d33a42592e5b23027a286370b5da9b6"
+     },
+     "asks": true,
+     "preview": "Delete a draft in your gmail Drafts\nTo: dana@example.com\nSubject: Saturday",
+     "tool": "delete_draft"
+    }
+   ],
+   "args": {
+    "draft_id": "r0000000000000000008"
+   },
+   "result": {
+    "account": "gmail",
+    "deleted": true,
+    "draft_id": "r0000000000000000008",
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": false
+     },
+     "status": "verified_success",
+     "target": "r0000000000000000008",
+     "tool": "delete_draft",
+     "why": ""
+    }
+   },
+   "tool": "delete_draft"
+  },
+  {
+   "acted": [],
+   "args": {
+    "account": "outlook",
+    "query": "badge renewal"
+   },
+   "result": {
+    "count": 1,
+    "found_in": {
+     "outlook": 1
+    },
+    "messages": [
+     {
+      "account": "outlook",
+      "folder": "Inbox",
+      "from": "\"Tomas Varga\" <tomas.varga@contoso.example>",
+      "id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000001",
+      "snippet": "Security asked everyone to renew their building badge by Friday. The desk is open 9 to 4.",
+      "subject": "Badge renewal by Friday",
+      "to": "",
+      "unread": true,
+      "when": "2026-10-14 07:30 EDT"
+     }
+    ],
+    "problems": [],
+    "query": "badge renewal"
+   },
+   "tool": "search_email"
+  },
+  {
+   "acted": [],
+   "args": {
+    "message_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000001"
+   },
+   "result": {
+    "account": "outlook",
+    "body": "Security asked everyone to renew their building badge by Friday. The desk is open 9 to 4.",
+    "body_length": 89,
+    "body_truncated": false,
+    "from": "\"Tomas Varga\" <tomas.varga@contoso.example>",
+    "id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000001",
+    "internal_date": 1791977400000,
+    "subject": "Badge renewal by Friday",
+    "to": "\"Maya Lindqvist\" <maya@contoso.example>",
+    "unread": true,
+    "when": "2026-10-14 07:30 EDT"
+   },
+   "tool": "read_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "account": "outlook",
+      "body": "Thanks, I will look at it today.",
+      "reply_to_message_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000001",
+      "subject": "Re: Badge renewal by Friday",
+      "to": "tomas.varga@contoso.example"
+     },
+     "asks": false,
+     "preview": "Draft to tomas.varga@contoso.example\nSubject: Re: Badge renewal by Friday",
+     "tool": "draft_email"
+    }
+   ],
+   "args": {
+    "account": "outlook",
+    "body": "Thanks, I will look at it today.",
+    "reply_to_message_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000001",
+    "subject": "Re: Badge renewal by Friday",
+    "to": "tomas.varga@contoso.example"
+   },
+   "result": {
+    "account": "outlook",
+    "draft_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000003",
+    "drafted": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": true
+     },
+     "status": "verified_success",
+     "target": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000003",
+     "tool": "draft_email",
+     "why": ""
+    },
+    "subject": "RE: Badge renewal by Friday",
+    "to": "\"Tomas Varga\" <tomas.varga@contoso.example>",
+    "where": "Outlook Drafts"
+   },
+   "tool": "draft_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "draft_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000003",
+      "shown": "9cbc5e1d4a8152756ec3213b4435530549e3cca64766fa857083127a06990c73"
+     },
+     "asks": true,
+     "preview": "Send from your outlook account\nTo: 'Tomas Varga' <tomas.varga@contoso.example>\nSubject: RE: Badge renewal by Friday\n\nThe full email is in your outlook Drafts.",
+     "tool": "send_draft"
+    }
+   ],
+   "args": {
+    "draft_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000003"
+   },
+   "result": {
+    "account": "outlook",
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {},
+     "status": "tool_reported_success",
+     "target": "",
+     "tool": "send_draft",
+     "why": "could not read it back: the account gave no id to read the sent message by"
+    },
+    "sent": true,
+    "subject": "RE: Badge renewal by Friday",
+    "to": "Tomas Varga"
+   },
+   "tool": "send_draft"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "account": "outlook",
+      "body": "Are you free on Saturday morning?",
+      "reply_to_message_id": null,
+      "subject": "Saturday",
+      "to": "dana@example.com"
+     },
+     "asks": false,
+     "preview": "Draft to dana@example.com\nSubject: Saturday",
+     "tool": "draft_email"
+    }
+   ],
+   "args": {
+    "account": "outlook",
+    "body": "Are you free on Saturday morning?",
+    "subject": "Saturday",
+    "to": "dana@example.com"
+   },
+   "result": {
+    "account": "outlook",
+    "draft_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000005",
+    "drafted": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": true
+     },
+     "status": "verified_success",
+     "target": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000005",
+     "tool": "draft_email",
+     "why": ""
+    },
+    "subject": "Saturday",
+    "to": "dana@example.com",
+    "where": "Outlook Drafts"
+   },
+   "tool": "draft_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "draft_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000005",
+      "shown": "32798ed66300edf3ddb9540f1e605548dac5a43b9da5c6afbc1c094243e4156e"
+     },
+     "asks": true,
+     "preview": "Delete a draft in your outlook Drafts\nTo: dana@example.com\nSubject: Saturday",
+     "tool": "delete_draft"
+    }
+   ],
+   "args": {
+    "draft_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000005"
+   },
+   "result": {
+    "account": "outlook",
+    "deleted": true,
+    "draft_id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000005",
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": false
+     },
+     "status": "verified_success",
+     "target": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000005",
+     "tool": "delete_draft",
+     "why": ""
+    }
+   },
+   "tool": "delete_draft"
+  },
+  {
+   "acted": [],
+   "args": {
+    "account": "home",
+    "query": "plot assignments"
+   },
+   "result": {
+    "count": 1,
+    "found_in": {
+     "home": 1
+    },
+    "messages": [
+     {
+      "account": "home",
+      "folder": "INBOX",
+      "from": "Greenway Garden <committee@greenway-garden.example>",
+      "id": "INBOX\n7001\n1\n<plots-14@greenway-garden.example>",
+      "snippet": "Your plot is number 14. The first work day is on Saturday at 10.",
+      "subject": "Plot assignments for spring",
+      "thread_id": "<plots-14@greenway-garden.example>",
+      "to": "maya@lindqvist.example",
+      "unread": true,
+      "when": "2026-10-14 06:30 EDT"
+     }
+    ],
+    "problems": [],
+    "query": "plot assignments"
+   },
+   "tool": "search_email"
+  },
+  {
+   "acted": [],
+   "args": {
+    "message_id": "INBOX\n7001\n1\n<plots-14@greenway-garden.example>"
+   },
+   "result": {
+    "account": "home",
+    "body": "Your plot is number 14. The first work day is on Saturday at 10.",
+    "body_length": 64,
+    "body_truncated": false,
+    "folder": "INBOX",
+    "from": "Greenway Garden <committee@greenway-garden.example>",
+    "id": "INBOX\n7001\n1\n<plots-14@greenway-garden.example>",
+    "internal_date": 1791973800000,
+    "subject": "Plot assignments for spring",
+    "thread_id": "<plots-14@greenway-garden.example>",
+    "to": "maya@lindqvist.example",
+    "unread": true,
+    "when": "2026-10-14 06:30 EDT"
+   },
+   "tool": "read_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "account": "home",
+      "body": "Thanks, I will look at it today.",
+      "reply_to_message_id": "INBOX\n7001\n1\n<plots-14@greenway-garden.example>",
+      "subject": "Re: Plot assignments for spring",
+      "to": "committee@greenway-garden.example"
+     },
+     "asks": false,
+     "preview": "Draft to committee@greenway-garden.example\nSubject: Re: Plot assignments for spring",
+     "tool": "draft_email"
+    }
+   ],
+   "args": {
+    "account": "home",
+    "body": "Thanks, I will look at it today.",
+    "reply_to_message_id": "INBOX\n7001\n1\n<plots-14@greenway-garden.example>",
+    "subject": "Re: Plot assignments for spring",
+    "to": "committee@greenway-garden.example"
+   },
+   "result": {
+    "account": "home",
+    "draft_id": "Drafts\n7003\n1\n<golden-1@lindqvist.example>",
+    "drafted": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": true
+     },
+     "status": "verified_success",
+     "target": "Drafts\n7003\n1\n<golden-1@lindqvist.example>",
+     "tool": "draft_email",
+     "why": ""
+    },
+    "subject": "Re: Plot assignments for spring",
+    "thread_id": "<plots-14@greenway-garden.example>",
+    "to": "committee@greenway-garden.example",
+    "where": "home Drafts"
+   },
+   "tool": "draft_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "draft_id": "Drafts\n7003\n1\n<golden-1@lindqvist.example>",
+      "ident": "<golden-1@lindqvist.example>",
+      "shown": "3c1b3ec43b56d13beac71c175d2135684cb9716ab71a912c827260d17e9ca717"
+     },
+     "asks": true,
+     "preview": "Send from your home account\nTo: committee@greenway-garden.example\nSubject: Re: Plot assignments for spring\n\nThe full email is in your home Drafts.",
+     "tool": "send_draft"
+    }
+   ],
+   "args": {
+    "draft_id": "Drafts\n7003\n1\n<golden-1@lindqvist.example>"
+   },
+   "result": {
+    "account": "home",
+    "filed_in_sent": true,
+    "ident": "golden-2@lindqvist.example",
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {},
+     "status": "tool_reported_success",
+     "target": "",
+     "tool": "send_draft",
+     "why": "could not read it back: the account gave no id to read the sent message by"
+    },
+    "sent": true,
+    "subject": "Re: Plot assignments for spring",
+    "to": "committee@greenway-garden.example"
+   },
+   "tool": "send_draft"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "account": "home",
+      "body": "Are you free on Saturday morning?",
+      "reply_to_message_id": null,
+      "subject": "Saturday",
+      "to": "dana@example.com"
+     },
+     "asks": false,
+     "preview": "Draft to dana@example.com\nSubject: Saturday",
+     "tool": "draft_email"
+    }
+   ],
+   "args": {
+    "account": "home",
+    "body": "Are you free on Saturday morning?",
+    "subject": "Saturday",
+    "to": "dana@example.com"
+   },
+   "result": {
+    "account": "home",
+    "draft_id": "Drafts\n7003\n2\n<golden-3@lindqvist.example>",
+    "drafted": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": true
+     },
+     "status": "verified_success",
+     "target": "Drafts\n7003\n2\n<golden-3@lindqvist.example>",
+     "tool": "draft_email",
+     "why": ""
+    },
+    "subject": "Saturday",
+    "thread_id": "<golden-3@lindqvist.example>",
+    "to": "dana@example.com",
+    "where": "home Drafts"
+   },
+   "tool": "draft_email"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "draft_id": "Drafts\n7003\n2\n<golden-3@lindqvist.example>",
+      "ident": "<golden-3@lindqvist.example>",
+      "shown": "23fd56967c37fda77db0746a711e86b52d33a42592e5b23027a286370b5da9b6"
+     },
+     "asks": true,
+     "preview": "Delete a draft in your home Drafts\nTo: dana@example.com\nSubject: Saturday",
+     "tool": "delete_draft"
+    }
+   ],
+   "args": {
+    "draft_id": "Drafts\n7003\n2\n<golden-3@lindqvist.example>"
+   },
+   "result": {
+    "account": "home",
+    "deleted": true,
+    "draft_id": "Drafts\n7003\n2\n<golden-3@lindqvist.example>",
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": false
+     },
+     "status": "verified_success",
+     "target": "Drafts\n7003\n2\n<golden-3@lindqvist.example>",
+     "tool": "delete_draft",
+     "why": ""
+    }
+   },
+   "tool": "delete_draft"
+  },
+  {
+   "acted": [],
+   "args": {
+    "limit": 10,
+    "query": "Friday"
+   },
+   "result": {
+    "count": 5,
+    "found_in": {
+     "gmail": 3,
+     "home": 0,
+     "outlook": 2
+    },
+    "messages": [
+     {
+      "account": "gmail",
+      "from": "Iris Novak <iris@fabrikam.example>",
+      "id": "19a0000000000001",
+      "labels": [
+       "INBOX"
+      ],
+      "snippet": "Could you look at the quarterly plan before Friday? The numbers are in section 2. Thanks, Iris",
+      "subject": "Quarterly plan draft",
+      "to": "maya@example.com",
+      "unread": true,
+      "when": "2026-10-14 08:10 EDT"
+     },
+     {
+      "account": "gmail",
+      "from": "Northwind Pharmacy <orders@northwind.example>",
+      "id": "19a0000000000002",
+      "labels": [
+       "INBOX"
+      ],
+      "snippet": "Your order 4471 has shipped and should arrive on Friday.",
+      "subject": "Your order has shipped",
+      "to": "maya@example.com",
+      "unread": false,
+      "when": "2026-10-13 07:30 EDT"
+     },
+     {
+      "account": "gmail",
+      "direction": "sent",
+      "from": "maya@example.com",
+      "id": "19a0000000000003",
+      "labels": [
+       "SENT"
+      ],
+      "snippet": "Are you still hosting book club on Friday? I can bring the second copy.",
+      "subject": "Book club on Friday?",
+      "to": "Dana Ortiz <dana@example.com>",
+      "unread": false,
+      "when": "2026-10-08 09:30 EDT"
+     },
+     {
+      "account": "outlook",
+      "direction": "sent",
+      "folder": "Sent Items",
+      "from": "",
+      "id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000004",
+      "snippet": "",
+      "subject": "RE: Badge renewal by Friday",
+      "to": "\"Tomas Varga\" <tomas.varga@contoso.example>",
+      "unread": false,
+      "when": "2026-10-14 09:30 EDT"
+     },
+     {
+      "account": "outlook",
+      "folder": "Inbox",
+      "from": "\"Tomas Varga\" <tomas.varga@contoso.example>",
+      "id": "00000000A1B2C3D4E5F60708090A0B0C0D0E0F00000001",
+      "snippet": "Security asked everyone to renew their building badge by Friday. The desk is open 9 to 4.",
+      "subject": "Badge renewal by Friday",
+      "to": "",
+      "unread": true,
+      "when": "2026-10-14 07:30 EDT"
+     }
+    ],
+    "problems": [],
+    "query": "Friday"
+   },
+   "tool": "search_email"
+  },
+  {
+   "acted": [],
+   "args": {
+    "days": 2
+   },
+   "result": {
+    "count": 5,
+    "events": [
+     {
+      "end": "2026-10-14T10:15:00-04:00",
+      "guests": [
+       "iris@fabrikam.example (accepted)"
+      ],
+      "id": "ev0002golden",
+      "start": "2026-10-14T10:00:00-04:00",
+      "summary": "Team standup",
+      "user_response": "accepted"
+     },
+     {
+      "also_on": "outlook",
+      "end": "2026-10-14T12:00:00-04:00",
+      "guests": [
+       "iris@fabrikam.example (accepted)"
+      ],
+      "id": "ev0003golden",
+      "location": "Room 4B",
+      "start": "2026-10-14T11:00:00-04:00",
+      "summary": "Design review with Iris",
+      "user_response": "accepted"
+     },
+     {
+      "end": "2026-10-14T13:30:00-04:00",
+      "guests": [
+       "dana@example.com (accepted)"
+      ],
+      "id": "ev0004golden",
+      "location": "Juniper Cafe",
+      "start": "2026-10-14T12:30:00-04:00",
+      "summary": "Lunch with Dana",
+      "user_response": "accepted"
+     },
+     {
+      "attendee_count": 1,
+      "calendar": "outlook",
+      "end": "2026-10-15T14:30:00-04:00",
+      "guests": [
+       "Tomas Varga <tomas.varga@contoso.example> (accepted)"
+      ],
+      "id": "00000000APPTVendorcall@20261015T180000Z",
+      "start": "2026-10-15T14:00:00-04:00",
+      "summary": "Vendor call"
+     },
+     {
+      "end": "2026-10-15T16:00:00-04:00",
+      "id": "ev0005golden",
+      "location": "Harbor Dental",
+      "start": "2026-10-15T15:00:00-04:00",
+      "summary": "Dentist"
+     }
+    ],
+    "from": "2026-10-14T09:30:00-04:00",
+    "timezone": "America/New_York",
+    "to": "2026-10-16T09:30:00-04:00"
+   },
+   "tool": "calendar_agenda"
+  },
+  {
+   "acted": [],
+   "args": {
+    "date": "today"
+   },
+   "result": {
+    "date": "2026-10-14",
+    "free": [
+     {
+      "end": "2026-10-14T10:00:00-04:00",
+      "minutes": 60,
+      "start": "2026-10-14T09:00:00-04:00"
+     },
+     {
+      "end": "2026-10-14T11:00:00-04:00",
+      "minutes": 45,
+      "start": "2026-10-14T10:15:00-04:00"
+     },
+     {
+      "end": "2026-10-14T12:30:00-04:00",
+      "minutes": 30,
+      "start": "2026-10-14T12:00:00-04:00"
+     },
+     {
+      "end": "2026-10-14T18:00:00-04:00",
+      "minutes": 270,
+      "start": "2026-10-14T13:30:00-04:00"
+     }
+    ],
+    "timezone": "America/New_York"
+   },
+   "tool": "calendar_free"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "attendees": null,
+      "duration_minutes": 30,
+      "location": null,
+      "start": "2026-10-15T07:30",
+      "summary": "Haircut"
+     },
+     "asks": false,
+     "preview": "New event: Haircut\n2026-10-15T07:30 for 30 min\nInvites: no guests",
+     "tool": "create_event"
+    }
+   ],
+   "args": {
+    "duration_minutes": 30,
+    "start": "2026-10-15T07:30",
+    "summary": "Haircut"
+   },
+   "result": {
+    "all_day": false,
+    "attendees": [],
+    "calendar": "gmail",
+    "created": "2026-09-24T13:30:00Z",
+    "description": "",
+    "end": "2026-10-15T08:00:00-04:00",
+    "id": "ev0008golden",
+    "link": "https://calendar.example/event?eid=ev0008golden",
+    "location": null,
+    "organizer": "maya@example.com",
+    "organizer_self": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "end": "2026-10-15T08:00:00-04:00",
+      "start": "2026-10-15T07:30:00-04:00",
+      "summary": "Haircut"
+     },
+     "status": "verified_success",
+     "target": "ev0008golden",
+     "tool": "create_event",
+     "why": ""
+    },
+    "recurring": false,
+    "start": "2026-10-15T07:30:00-04:00",
+    "status": "confirmed",
+    "summary": "Haircut",
+    "timezone": "America/New_York",
+    "updated": "2026-10-14T13:30:00Z"
+   },
+   "tool": "create_event"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "attendees": [],
+      "end": "2026-10-15T08:15",
+      "event_id": "ev0008golden",
+      "ident": "ev0008golden@google.example",
+      "location": null,
+      "shown": "2060abee620889b5864ee3286e501a21f052b1d2fd1a7fe4ffa27d133cc19d36",
+      "start": "2026-10-15T07:45",
+      "summary": null
+     },
+     "asks": false,
+     "preview": "Change the event 'Haircut': start, end",
+     "tool": "update_event"
+    }
+   ],
+   "args": {
+    "event_id": "ev0008golden",
+    "start": "2026-10-15T07:45"
+   },
+   "result": {
+    "all_day": false,
+    "attendees": [],
+    "calendar": "gmail",
+    "created": "2026-09-24T13:30:00Z",
+    "description": "",
+    "end": "2026-10-15T08:15:00-04:00",
+    "id": "ev0008golden",
+    "link": "https://calendar.example/event?eid=ev0008golden",
+    "location": null,
+    "organizer": "maya@example.com",
+    "organizer_self": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "end": "2026-10-15T08:15:00-04:00",
+      "location": null,
+      "start": "2026-10-15T07:45:00-04:00",
+      "summary": "Haircut"
+     },
+     "status": "verified_success",
+     "target": "ev0008golden",
+     "tool": "update_event",
+     "why": ""
+    },
+    "recurring": false,
+    "start": "2026-10-15T07:45:00-04:00",
+    "status": "confirmed",
+    "summary": "Haircut",
+    "timezone": "America/New_York",
+    "updated": "2026-10-14T13:30:00Z"
+   },
+   "tool": "update_event"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "attendees": [],
+      "event_id": "ev0008golden",
+      "ident": "ev0008golden@google.example",
+      "shown": "20b34bfd63f010d85721c840b8cac73a776aa1ac783c67e445b8ae52548acb0a",
+      "why": "booked twice"
+     },
+     "asks": true,
+     "preview": "Delete 'Haircut'\n2026-10-15T07:45:00-04:00 to 2026-10-15T08:15:00-04:00\nNo guests\nWhy: booked twice",
+     "tool": "delete_event"
+    }
+   ],
+   "args": {
+    "event_id": "ev0008golden",
+    "why": "booked twice"
+   },
+   "result": {
+    "calendar": "gmail",
+    "deleted": true,
+    "id": "ev0008golden",
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "exists": false
+     },
+     "status": "verified_success",
+     "target": "ev0008golden",
+     "tool": "delete_event",
+     "why": ""
+    }
+   },
+   "tool": "delete_event"
+  },
+  {
+   "acted": [],
+   "args": {
+    "query": "quarterly plan"
+   },
+   "result": {
+    "count": 1,
+    "files": [
+     {
+      "id": "1golden0001Drive",
+      "link": "https://docs.example/d/1golden0001Drive",
+      "mime_type": "application/vnd.google-apps.document",
+      "modified": "2026-10-14T09:30:00Z",
+      "name": "Quarterly plan 2026",
+      "owner": "iris@fabrikam.example",
+      "size": null
+     }
+    ],
+    "query": "quarterly plan"
+   },
+   "tool": "search_drive"
+  },
+  {
+   "acted": [],
+   "args": {
+    "file_id": "1golden0001Drive"
+   },
+   "result": {
+    "id": "1golden0001Drive",
+    "mime_type": "application/vnd.google-apps.document",
+    "name": "Quarterly plan 2026",
+    "text": "Quarterly plan\n\nSection 2: the numbers for each team, and what changed.",
+    "truncated": false
+   },
+   "tool": "read_drive_file"
+  },
+  {
+   "acted": [],
+   "args": {},
+   "result": {
+    "tasks": [
+     {
+      "due": "2026-10-16",
+      "id": "dGFza0001golden",
+      "title": "Return the library books"
+     },
+     {
+      "due": "2026-10-15",
+      "id": "dGFza0003golden",
+      "title": "Send Iris comments on the quarterly plan"
+     }
+    ]
+   },
+   "tool": "list_tasks"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "due_date": "2026-10-20",
+      "task": "Renew the parking permit"
+     },
+     "asks": false,
+     "preview": "Track: Renew the parking permit (due 2026-10-20)",
+     "tool": "add_task"
+    }
+   ],
+   "args": {
+    "due_date": "2026-10-20",
+    "task": "Renew the parking permit"
+   },
+   "result": {
+    "commitment_id": 2,
+    "due_date": "2026-10-20",
+    "ok": true,
+    "on_phone": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "status": "open",
+      "title": "Renew the parking permit"
+     },
+     "status": "verified_success",
+     "target": "dGFza0004golden",
+     "tool": "add_task",
+     "why": ""
+    }
+   },
+   "tool": "add_task"
+  },
+  {
+   "acted": [
+    {
+     "args": {
+      "commitment_id": 2
+     },
+     "asks": false,
+     "preview": "Close commitment 2",
+     "tool": "complete_task"
+    }
+   ],
+   "args": {
+    "commitment_id": 2
+   },
+   "result": {
+    "commitment_id": 2,
+    "ok": true,
+    "receipt": {
+     "checked_at": "<sqlite now>",
+     "observed": {
+      "status": "completed"
+     },
+     "status": "verified_success",
+     "target": "dGFza0004golden",
+     "tool": "complete_task",
+     "why": ""
+    }
+   },
+   "tool": "complete_task"
+  },
+  {
+   "acted": [],
+   "args": {},
+   "result": {
+    "tasks": [
+     {
+      "due": "2026-10-16",
+      "id": "dGFza0001golden",
+      "title": "Return the library books"
+     },
+     {
+      "due": "2026-10-15",
+      "id": "dGFza0003golden",
+      "title": "Send Iris comments on the quarterly plan"
+     }
+    ]
+   },
+   "tool": "list_tasks"
+  }
+ ],
+ "wrote": [
+  {
+   "due": "2026-10-15T00:00:00.000Z",
+   "list": "MTgolden0002",
+   "notes": "“I'll send you my comments by Thursday.”",
+   "tasks": "tasks.insert",
+   "title": "Send Iris comments on the quarterly plan"
+  },
+  {
+   "body": "Thanks, I will look at it today.",
+   "draft": "r0000000000000000005",
+   "gmail": "drafts.create",
+   "in_reply_to": "<plan-1@fabrikam.example>",
+   "references": "<plan-1@fabrikam.example>",
+   "subject": "Re: Quarterly plan draft",
+   "thread": "19a0000000000001",
+   "to": "iris@fabrikam.example"
+  },
+  {
+   "body": "Thanks, I will look at it today.",
+   "from": "maya@example.com",
+   "gmail": "messages.send",
+   "in_reply_to": "<plan-1@fabrikam.example>",
+   "references": "<plan-1@fabrikam.example>",
+   "subject": "Re: Quarterly plan draft",
+   "thread": "19a0000000000001",
+   "to": "iris@fabrikam.example"
+  },
+  {
+   "draft": "r0000000000000000005",
+   "gmail": "drafts.delete"
+  },
+  {
+   "body": "Are you free on Saturday morning?",
+   "draft": "r0000000000000000008",
+   "gmail": "drafts.create",
+   "subject": "Saturday",
+   "thread": null,
+   "to": "dana@example.com"
+  },
+  {
+   "draft": "r0000000000000000008",
+   "gmail": "drafts.delete"
+  },
+  {
+   "html": "<html><body><p>Thanks, I will look at it today.</p><div><p>From: Tomas Varga</p><p>Security asked everyone to renew their building badge by Friday. The desk is open 9 to 4.</p></div></body></html>",
+   "outlook": "Save",
+   "subject": "RE: Badge renewal by Friday",
+   "to": "Tomas Varga"
+  },
+  {
+   "outlook": "Send",
+   "subject": "RE: Badge renewal by Friday",
+   "to": "Tomas Varga"
+  },
+  {
+   "html": "<p>Are you free on Saturday morning?</p>",
+   "outlook": "Save",
+   "subject": "Saturday",
+   "to": "dana@example.com"
+  },
+  {
+   "outlook": "Delete",
+   "subject": "Saturday"
+  },
+  {
+   "flags": [
+    "\\Draft",
+    "\\Seen"
+   ],
+   "folder": "Drafts",
+   "imap": "APPEND",
+   "subject": "Re: Plot assignments for spring",
+   "to": "committee@greenway-garden.example"
+  },
+  {
+   "body": "Thanks, I will look at it today.",
+   "recipients": [
+    "committee@greenway-garden.example"
+   ],
+   "smtp": "send",
+   "subject": "Re: Plot assignments for spring",
+   "to": "committee@greenway-garden.example"
+  },
+  {
+   "flags": [
+    "\\Seen"
+   ],
+   "folder": "Sent",
+   "imap": "APPEND",
+   "subject": "Re: Plot assignments for spring",
+   "to": "committee@greenway-garden.example"
+  },
+  {
+   "folder": "Drafts",
+   "imap": "MOVE",
+   "to": "Trash",
+   "uids": [
+    "1"
+   ]
+  },
+  {
+   "flags": [
+    "\\Draft",
+    "\\Seen"
+   ],
+   "folder": "Drafts",
+   "imap": "APPEND",
+   "subject": "Saturday",
+   "to": "dana@example.com"
+  },
+  {
+   "folder": "Drafts",
+   "imap": "MOVE",
+   "to": "Trash",
+   "uids": [
+    "2"
+   ]
+  },
+  {
+   "calendar": "events.insert",
+   "end": {
+    "dateTime": "2026-10-15T08:00:00-04:00",
+    "timeZone": "America/New_York"
+   },
+   "sendUpdates": "none",
+   "start": {
+    "dateTime": "2026-10-15T07:30:00-04:00",
+    "timeZone": "America/New_York"
+   },
+   "summary": "Haircut"
+  },
+  {
+   "calendar": "events.patch",
+   "description": "",
+   "end": {
+    "dateTime": "2026-10-15T08:15:00-04:00",
+    "timeZone": "America/New_York"
+   },
+   "id": "ev0008golden",
+   "if_match": "\"400001\"",
+   "location": "",
+   "start": {
+    "dateTime": "2026-10-15T07:45:00-04:00",
+    "timeZone": "America/New_York"
+   },
+   "summary": "Haircut"
+  },
+  {
+   "calendar": "events.delete",
+   "id": "ev0008golden",
+   "if_match": "\"400002\"",
+   "sendUpdates": "none"
+  },
+  {
+   "due": "2026-10-20T00:00:00.000Z",
+   "list": "MTgolden0002",
+   "tasks": "tasks.insert",
+   "title": "Renew the parking permit"
+  },
+  {
+   "list": "MTgolden0002",
+   "status": "completed",
+   "task": "dGFza0004golden",
+   "tasks": "tasks.patch"
+  }
+ ]
+}

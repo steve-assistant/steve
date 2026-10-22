@@ -1,0 +1,232 @@
+# Lint, secrets and the suite, on the platform Steve ships for; the desktop
+# app's types and lint; each night the end-to-end tier and the app's walks;
+# and, by hand, the installer's run on a clean Windows.
+# tests/unit/test_ci_workflow.py reads this file: a job or flag changed here
+# without it fails there.
+name: ci
+
+on:
+  push:
+  pull_request:
+  # Nightly, the tiers that start the whole backend or the app's window.
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      PYDANTIC_AI_NO_BANNER: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked --extra dev --extra accounts
+
+      - name: Lint
+        run: uv run --no-sync ruff check .
+
+      # Fails on any candidate not in .secrets.baseline. The baseline's 38
+      # were each read by hand: hashes, key names and test dummies. The
+      # pragma is for this line itself, whose "secrets==1.5.0" the keyword
+      # check reads as a secret.
+      - name: Secrets
+        shell: bash
+        run: git ls-files -z | xargs -0 uvx --from detect-secrets==1.5.0 detect-secrets-hook --baseline .secrets.baseline  # pragma: allowlist secret
+
+      # The app, built as a developer builds it, so the tests that start it
+      # run instead of skipping. Cargo's cache keeps the build short.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0  # v2.9.3
+        with:
+          workspaces: ui/src-tauri -> target
+
+      - name: Build the app
+        shell: bash
+        run: |
+          cd ui && npm ci && npm run build
+          cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
+
+      # The shell's own tests, built with the app's features so they reuse
+      # its crates (devtools/check.py `RUST_TESTS`, which the check runs).
+      - name: The shell's tests
+        run: cargo test --lib --manifest-path ui/src-tauri/Cargo.toml --features tauri/custom-protocol -j 3
+
+      # loadgroup keeps each xdist_group (the screens, the supervisors, the
+      # end-to-end files) on one worker, as devtools.check does. The
+      # end-to-end tier and the walks run each night instead.
+      - name: Tests
+        run: uv run --no-sync pytest tests/ -q -n 3 --dist loadgroup -p no:cacheprovider --ignore=tests/e2e --ignore=tests/unit/ui/test_app_walks.py --ignore=tests/unit/ui/test_exit_walk.py
+
+  # The base install deliberately omits the large reflection/redaction
+  # model. A separate job exercises it without enlarging every environment.
+  reflection:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      PYDANTIC_AI_NO_BANNER: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+
+      - name: Install reflection's locked dependencies
+        run: uv sync --locked --extra dev --extra accounts --extra reflect
+
+      - name: Require the real redactor and its language model
+        run: uv run --no-sync python -c "import presidio_analyzer, presidio_anonymizer, en_core_web_lg; en_core_web_lg.load()"
+
+      # The base job tests missing presidio. Here that case is excluded so
+      # every selected test must execute, including the real redaction gate.
+      # One process avoids loading a large model in each xdist worker.
+      - name: Exercise reflection and redaction with the extra installed
+        run: uv run --no-sync pytest tests/unit/test_reflect.py tests/unit/test_redact.py tests/unit/test_modbuild.py tests/unit/test_modtools.py tests/gate/test_redaction_present.py -q -p no:cacheprovider -k "not test_without_presidio_redaction_refuses" --junitxml=reflection-results.xml
+
+      - name: Reject skipped optional coverage
+        run: uv run --no-sync python -c "import xml.etree.ElementTree as E; root = E.parse('reflection-results.xml').getroot(); assert list(root.iter('testcase')), 'no reflection tests collected'; assert not list(root.iter('skipped')), 'optional coverage skipped'"
+
+  # The suite never type-checks the app, so without this a type error in
+  # ui/src would pass CI and wait for whoever next ran `npm run build`.
+  ui:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint
+
+  # The whole backend as shipped, driven through the channels' fakes, and
+  # the app's walks through its window: fakes only, never a real service
+  # (tests/gate/fences.py).
+  nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      PYDANTIC_AI_NO_BANNER: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked --extra dev --extra accounts
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0  # v2.9.3
+        with:
+          workspaces: ui/src-tauri -> target
+
+      - name: Build the app
+        shell: bash
+        run: |
+          cd ui && npm ci && npm run build
+          cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
+
+      - name: The end-to-end tier and the walks
+        run: uv run --no-sync pytest tests/e2e tests/unit/ui/test_app_walks.py tests/unit/ui/test_exit_walk.py -q -n 3 --dist loadgroup -p no:cacheprovider
+
+  # The installer's run (devtools/sandbox_check.py), by hand: install,
+  # start, update, downgrade refused, uninstall, and again over a running
+  # Steve. A hosted runner is a clean Windows thrown away after the job, as
+  # Windows Sandbox is on the maintainer's laptop. The update key is made
+  # here for the run and its public half built into the app, so the
+  # release key never leaves the maintainer's keychain.
+  installer:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      PYDANTIC_AI_NO_BANNER: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked --extra dev --extra accounts
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      # --ci with no password: the build signs with an empty one.
+      - name: A key for this run
+        working-directory: ui
+        run: |
+          npm ci
+          npx tauri signer generate --ci -w "$env:RUNNER_TEMP\update.key"
+
+      - name: Build two installers a patch apart
+        run: uv run --no-sync python -m devtools.sandbox_check build --key "$env:RUNNER_TEMP\update.key" --pubkey "$env:RUNNER_TEMP\update.key.pub"
+
+      # Where the sandbox maps them; the rig stays up at the end, as this
+      # machine is the job's.
+      - name: Run the rig
+        env:
+          STEVE_RIG_STAYS_UP: "1"
+        run: |
+          New-Item -ItemType Directory -Force C:\steve\results | Out-Null
+          Copy-Item build\sandbox\installers C:\steve\installers -Recurse
+          Copy-Item devtools C:\steve\rig -Recurse
+          powershell -NoProfile -ExecutionPolicy Bypass -File C:\steve\rig\sandbox_inside.ps1
+          New-Item -ItemType Directory -Force build\sandbox\results | Out-Null
+          Copy-Item C:\steve\results\results.json build\sandbox\results\results.json
+
+      - name: Report
+        run: uv run --no-sync python -m devtools.sandbox_check report

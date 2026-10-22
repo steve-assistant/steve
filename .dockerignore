@@ -1,0 +1,10 @@
+# Keep the build context small and, more importantly, keep private data out of
+# an image that ships to a cloud box. data/ holds the Signal device key, the
+# OAuth tokens and the memories repo; none of it belongs in a layer.
+data/
+.venv/
+.git/
+ui/node_modules/
+ui/dist/
+**/__pycache__/
+*.pyc

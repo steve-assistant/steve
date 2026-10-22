@@ -1,0 +1,305 @@
+/* The design's values, and nothing else: docs/design/foundations.md.
+
+   Every colour here is one of foundations.md's tables, and
+   tests/unit/ui/test_tokens.py holds the two to each other and checks
+   every pair the design lists for contrast, in both themes. A colour
+   picked by eye in a component drifts from the design and is never
+   checked; take it from here.
+
+   The theme follows Windows' light or dark setting. Settings can hold
+   it to one, and Reading, in Settings, too, as attributes on <html>:
+     data-theme="paper"     paper always; "ink", ink always
+     data-face="atkinson"   the text face is Atkinson Hyperlegible Next
+     data-hand="plain"      hand-set words are the text face, semibold
+     data-size="larger"     the type one step larger, in the app alone
+
+   The faces are bundled: the CSP lets the app fetch nothing, and a
+   person's names need Latin Extended, which each face loads only when a
+   page shows such a letter. */
+
+/* latin */
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: block;
+  src: url("./fonts/newsreader/newsreader-latin-standard-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Newsreader";
+  font-style: italic;
+  font-weight: 200 800;
+  font-display: block;
+  src: url("./fonts/newsreader/newsreader-latin-standard-italic.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./fonts/plex-mono/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("./fonts/plex-mono/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Playpen Sans";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: block;
+  src: url("./fonts/playpen-sans/playpen-sans-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: block;
+  src: url("./fonts/atkinson-next/atkinson-hyperlegible-next-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* latin-ext */
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: block;
+  src: url("./fonts/newsreader/newsreader-latin-ext-standard-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Newsreader";
+  font-style: italic;
+  font-weight: 200 800;
+  font-display: block;
+  src: url("./fonts/newsreader/newsreader-latin-ext-standard-italic.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./fonts/plex-mono/ibm-plex-mono-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("./fonts/plex-mono/ibm-plex-mono-latin-ext-500-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Playpen Sans";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: block;
+  src: url("./fonts/playpen-sans/playpen-sans-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: block;
+  src: url("./fonts/atkinson-next/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* The two themes, paper (day) and ink (night), one token a line:
+   light-dark(paper, ink). The page follows Windows' light or dark
+   setting; Settings can hold it to one (data-theme on <html>). */
+:root {
+  color-scheme: light dark;
+
+  /* The brand. On cream, its colours are accents, never text. */
+  --navy: #0d1c34;
+  --cream: #fff9ee;
+  --red: #ed1c24;
+  --yellow: #f9ed32;
+  --cyan: #00aeef;
+
+  --desk: light-dark(#f4ecdc, #08131f);
+  --paper: light-dark(#fff9ee, #0d1c34);
+  --note: light-dark(#fffdf7, #1b2c47);
+  --slip: light-dark(#f6eedf, #16263f);
+  --ink: light-dark(#0d1c34, #f0ece3);
+  --ink-soft: light-dark(#515a68, #b6b7b6);
+  --ink-faint: light-dark(#646c77, #9ea1a4);
+  --rule: light-dark(#e2ded8, #2f3b4e);
+  --rule-strong: light-dark(#cfcdc9, #46526a);
+  --red-ink: light-dark(#b8141c, #ff6b6f);
+  --cyan-ink: light-dark(#00739e, #00aeef);
+  --highlight: light-dark(#fdf4a7, #414a34);
+
+  --paper-deep: light-dark(#ede2cb, #152540);
+  --tint-red: light-dark(#fde3da, #2c1c32);
+  --tint-cyan: light-dark(#e0f0ee, #0b304e);
+  --tint-yellow: light-dark(#fef6c5, #293534);
+
+  /* One tile of fibre: grey specks, 3% on average, so the same tile
+     darkens cream and lightens navy. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .5' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 .06 0 0 0 0'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23g)'/%3E%3C/svg%3E");
+  --lift-note: 0 1px 0 rgb(13 28 52 / 0.06), 0 8px 16px -8px rgb(13 28 52 / 0.28);
+  --lift-window: 0 2px 4px rgb(13 28 52 / 0.08), 0 18px 40px -12px rgb(13 28 52 / 0.35);
+  /* A note's tilt, times its own number between -1 and 1 (`--tilt-of`). */
+  --tilt-max: 1deg;
+
+  --r-note: 2px;
+  --r-slip: 6px;
+  --r-window: 10px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+
+  /* Type. Every size is times --step, which Reading's size sets. */
+  --face-text: "Newsreader", Georgia, serif;
+  --face-data: "IBM Plex Mono", Consolas, monospace;
+  --face-hand: "Playpen Sans", var(--face-text);
+  --hand-weight: 400;
+  --hand-weight-strong: 600;
+  --step: 1;
+  --size-display: calc(34px * var(--step));
+  --line-display: calc(40px * var(--step));
+  --size-title: calc(22px * var(--step));
+  --line-title: calc(28px * var(--step));
+  --size-body: calc(17px * var(--step));
+  --line-body: calc(27px * var(--step));
+  --size-body-user: calc(16px * var(--step));
+  --line-body-user: calc(25px * var(--step));
+  --size-small: calc(15px * var(--step));
+  --line-small: calc(22px * var(--step));
+  --size-label: calc(13px * var(--step));
+  --line-label: calc(18px * var(--step));
+  --size-meta: calc(11.5px * var(--step));
+  --line-meta: calc(16px * var(--step));
+  --size-code: calc(13.5px * var(--step));
+  --line-code: calc(20px * var(--step));
+  --size-hand-day: calc(40px * var(--step));
+  --line-hand-day: calc(48px * var(--step));
+  --size-hand-kicker: calc(18px * var(--step));
+  --line-hand-kicker: calc(24px * var(--step));
+  --size-hand-note: calc(16px * var(--step));
+  --line-hand-note: calc(24px * var(--step));
+  --measure: 38em;
+
+  /* Motion. A move is a distance and a time, so reduced motion can take
+     the distance away and shorten the time, and a component that uses
+     these needs no case of its own. */
+  --rise-entry: 6px;
+  --t-entry: 160ms;
+  --t-mark: 280ms;
+  --draw-from: 100%;
+  --drop-note: 12px;
+  --arrive-tilted: 0;
+  --t-note-arrive: 220ms;
+  --ease-note: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --peel-note: 16px;
+  --peel-tilt: 2deg;
+  --t-note-answered: 180ms;
+  --t-tick: 1.4s;
+  --nod: 2px;
+  --t-nod: 200ms;
+  --lift-mark: 1px;
+  --t-catch-up: 280ms;
+  /* The voice's level comes eight times a second: each eases into the next. */
+  --t-level: 125ms;
+  --rise-window: 8px;
+  --t-window: 120ms;
+  --t-fold: 240ms;
+  --loops: running;
+}
+
+:root[data-theme="paper"] {
+  color-scheme: light;
+}
+:root[data-theme="ink"] {
+  color-scheme: dark;
+}
+
+/* Reading. */
+:root[data-face="atkinson"] {
+  --face-text: "Atkinson Hyperlegible Next", "Segoe UI", sans-serif;
+}
+:root[data-hand="plain"] {
+  --face-hand: var(--face-text);
+  --hand-weight: 600;
+  --hand-weight-strong: 600;
+}
+:root[data-size="larger"] {
+  --step: 1.125;
+}
+
+/* Windows' animation effects off: no move, only a cross-fade of at most
+   120ms, and a looping state holds still. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rise-entry: 0px;
+    --t-entry: 120ms;
+    --t-mark: 120ms;
+    --draw-from: 0%;
+    --drop-note: 0px;
+    --arrive-tilted: 1;
+    --t-note-arrive: 120ms;
+    --ease-note: ease-out;
+    --peel-note: 0px;
+    --peel-tilt: 0deg;
+    --t-note-answered: 120ms;
+    --nod: 0px;
+    --lift-mark: 0px;
+    --t-catch-up: 0ms;
+    --rise-window: 0px;
+    --t-fold: 0ms;
+    --loops: paused;
+  }
+}
+
+/* Windows' contrast themes: the system's colours throughout, and no
+   grain, shadow or tilt. Edge itself recolours text and boxes and drops
+   shadows; these reach what it leaves alone: an SVG's fill and stroke,
+   the grain, which is an image, and the tilt. */
+@media (forced-colors: active) {
+  :root {
+    --navy: CanvasText;
+    --cream: Canvas;
+    --red: CanvasText;
+    --yellow: CanvasText;
+    --cyan: CanvasText;
+    --desk: Canvas;
+    --paper: Canvas;
+    --note: Canvas;
+    --slip: Canvas;
+    --ink: CanvasText;
+    --ink-soft: CanvasText;
+    --ink-faint: CanvasText;
+    --rule: GrayText;
+    --rule-strong: CanvasText;
+    --red-ink: CanvasText;
+    --cyan-ink: CanvasText;
+    --highlight: Mark;
+    --paper-deep: Canvas;
+    --tint-red: Canvas;
+    --tint-cyan: Canvas;
+    --tint-yellow: Canvas;
+    --grain: none;
+    --tilt-max: 0deg;
+    --peel-tilt: 0deg;
+  }
+}

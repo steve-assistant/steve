@@ -1,0 +1,77 @@
+/* The tour (Tour.tsx): a note pinned beside what it explains, and a ring
+   drawn round that. Nothing covers the page: only the note takes clicks. */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.tour-ring {
+  position: fixed;
+  border: 1.5px dashed var(--ink-soft);
+  border-radius: var(--r-slip);
+  transition: left var(--t-entry) ease-out, top var(--t-entry) ease-out,
+    width var(--t-entry) ease-out, height var(--t-entry) ease-out;
+}
+.tour-note {
+  --tilt-of: -0.4;
+  position: fixed;
+  width: 300px;
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  color: var(--ink);
+  background-color: var(--note);
+  pointer-events: auto;
+}
+.tour-count {
+  margin: 0;
+  color: var(--ink-faint);
+}
+.tour-title {
+  margin: 2px 0 6px;
+}
+.tour-text {
+  margin: 0;
+  color: var(--ink-soft);
+}
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.tour-actions button {
+  padding: 4px 10px;
+  font: inherit;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.tour-actions button:hover,
+.tour-actions button:focus-visible {
+  color: var(--ink);
+  background: var(--slip);
+}
+.tour-actions .tour-next {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .tour-note {
+    border: 1px solid CanvasText;
+  }
+  .tour-ring {
+    border-color: Highlight;
+  }
+}

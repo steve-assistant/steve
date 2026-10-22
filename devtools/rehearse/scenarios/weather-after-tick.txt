@@ -1,0 +1,13 @@
+# 9 October 2026, 17:26: "hey Steve", a pause for the tick, then the question.
+# The end-of-turn judge closed the capture half a second after the wake and
+# the question, asked while the bare wake was being transcribed, was lost.
+scenario weather-after-tick
+about "hey Steve", a pause for the tick, then the question
+length 30
+reply /weather/ 1.5: It's 64 and clear today, with no rain expected.
+0.5    user: Hey Steve.
++1.8   user!: What's the weather today?
+expect asked weather
+expect outcome answered
+expect first-audio <= 6
+expect one-voice

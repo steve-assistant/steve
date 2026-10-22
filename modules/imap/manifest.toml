@@ -1,0 +1,71 @@
+# Any other mail server by password (05-connectors.md, section 5), through
+# core's IMAP and SMTP engine: three presets whose servers are known, and
+# "Other", whose servers the user types. A preset's calendar, or the one
+# whose address the user gives in "Other", opens with the same password
+# through core's CalDAV engine.
+manifest_version = 1
+sdk = 1
+id = "imap"
+version = "1"
+label = "Other mail"
+for = "iCloud, Fastmail, Yahoo, or any mail server you sign in to with a password, and its calendar"
+effort = "A few minutes"
+tier = "backend"
+classes = ["mail", "calendar"]
+
+[mail]
+engine = "imap"
+# Whether a server files its own copy of what is sent varies, and some
+# servers change their minds with a setting: look, and file it if not.
+sent_copy = "check"
+
+[calendar]
+engine = "caldav"
+
+[setup]
+steps = ["address", "preset", "fields", "classes", "test"]
+fields = [
+  { name = "password", type = "secret", label = "Password, or the app password your provider gives you" },
+  { name = "imap", type = "host", label = "Incoming (IMAP) server, as name:port", optional = true, advanced = true },
+  { name = "smtp", type = "host", label = "Outgoing (SMTP) server, as name:port", optional = true, advanced = true },
+  { name = "starttls", type = "flag", label = "The outgoing server starts plain and turns on TLS (STARTTLS)", optional = true, advanced = true },
+  { name = "username", type = "text", label = "User name, if it is not the address", optional = true, advanced = true },
+  { name = "url", type = "link", label = "Calendar address (CalDAV), if your provider gives one", optional = true, advanced = true, joins = "calendar" },
+]
+
+[[setup.presets]]
+id = "icloud"
+label = "iCloud"
+domains = ["icloud.com", "me.com", "mac.com"]
+revoke = "https://account.apple.com/"
+# Discovery from here answers with the account's own server under it
+# (p01-caldav.icloud.com and the like).
+hosts = ["*.icloud.com"]
+classes = ["mail", "calendar"]
+calendar = { url = "https://caldav.icloud.com/" }
+mail = { imap = "imap.mail.me.com:993", smtp = "smtp.mail.me.com:587", starttls = true, username = "local" }
+
+[[setup.presets]]
+id = "fastmail"
+label = "Fastmail"
+domains = ["fastmail.com"]
+revoke = "https://app.fastmail.com/settings/security"
+classes = ["mail", "calendar"]
+calendar = { url = "https://caldav.fastmail.com/dav/" }
+mail = { imap = "imap.fastmail.com:993", smtp = "smtp.fastmail.com:465", plus_addresses = true }
+
+[[setup.presets]]
+id = "yahoo"
+label = "Yahoo"
+domains = ["yahoo.com"]
+revoke = "https://login.yahoo.com/myaccount/security/"
+classes = ["mail", "calendar"]
+# Found by discovery; not yet tried against a Yahoo account.
+calendar = { url = "https://caldav.calendar.yahoo.com/" }
+mail = { imap = "imap.mail.yahoo.com:993", smtp = "smtp.mail.yahoo.com:465" }
+
+[[setup.presets]]
+id = "other"
+label = "Other"
+# Mail only, unless the user gives a calendar's address (the url field).
+classes = ["mail"]

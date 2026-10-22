@@ -1,0 +1,9 @@
+# A tap with nothing said: sent, OpenAI would be paid to hear a breath, and
+# might hear "Thank you." in it, which the agent would answer.
+scenario ptt-empty-press
+about a press and a release with nothing said sends nothing and asks nothing
+length 4
+0.5    key: press
++0.4   key!: release
+expect transcribed == 0
+expect not-asked

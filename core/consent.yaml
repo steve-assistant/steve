@@ -1,0 +1,361 @@
+# What needs asking, and what does not.
+#
+# Frozen, like everything in core/. The agent can propose a change here the
+# way it proposes any change, and a human merges it. It cannot widen its own
+# permissions, which is the entire point.
+#
+# A tool absent from BOTH lists is gated. Do not rely on that as a way of
+# adding things -- an unclassified tool produces a card that says "nobody
+# classified this", which is correct but unhelpful. Classify it.
+#
+# Keep `gate_when` / `free_when` conditions to the three predicates the loader
+# knows: non_empty, true, self. Anything more expressive stops being a
+# mechanical rule and starts being a judgement call in a costume.
+
+version: 1
+
+# ---------------------------------------------------------------------------
+# Free: happens immediately, still written to the ledger.
+# ---------------------------------------------------------------------------
+free:
+  # -- reading. Nothing to undo because nothing changed. ---------------------
+  web_search:        {reach: private, reversal: reversible}
+  read_page:         {reach: private, reversal: reversible}
+  search_and_read:   {reach: private, reversal: reversible}
+  recall:            {reach: private, reversal: reversible}
+  search_email:      {reach: private, reversal: reversible}
+  read_email:        {reach: private, reversal: reversible}
+  email_thread:      {reach: private, reversal: reversible}
+  calendar_agenda:   {reach: private, reversal: reversible}
+  calendar_free:     {reach: private, reversal: reversible}
+  calendar_search:   {reach: private, reversal: reversible}
+  search_drive:      {reach: private, reversal: reversible}
+  read_drive_file:   {reach: private, reversal: reversible}
+  read_spreadsheet:  {reach: private, reversal: reversible}
+  list_reminders:    {reach: private, reversal: reversible}
+  list_tasks:        {reach: private, reversal: reversible}
+  who_is:            {reach: private, reversal: reversible}
+  writing_style:     {reach: private, reversal: reversible}
+  my_commitments:    {reach: private, reversal: reversible}
+  spending_caps:     {reach: private, reversal: reversible}
+  followed_news:     {reach: private, reversal: reversible}
+  news_summary:      {reach: private, reversal: reversible}
+  weather:           {reach: private, reversal: reversible}
+  escalate:          {reach: private, reversal: reversible}
+
+  # -- the sandboxed browser, reading (core/browser/, security-model section
+  # 6). Free as read_page is: a page is visited, nothing of theirs goes with it
+  # -- the profile is empty, and the only typing allowed is a search box's
+  # (`driver.is_search_field`), the same exposure as a web_search query.
+  # Anything else typed is browse_submit, below.
+  browse_open:       {reach: private, reversal: reversible}
+  browse_read:       {reach: private, reversal: reversible}
+  browse_click:      {reach: private, reversal: reversible}
+  browse_scroll:     {reach: private, reversal: reversible}
+  browse_back:       {reach: private, reversal: reversible}
+  browse_screenshot: {reach: private, reversal: reversible}
+  browse_search:     {reach: private, reversal: reversible}
+  browse_close:      {reach: private, reversal: reversible}
+  # Their username and password typed, unseen, into a saved login's own sign-in
+  # page -- free because where it may happen is the driver's to refuse
+  # (`login_refusal`: https, the login's own domains, real password box), and
+  # the browser is only logged in to a login the user allowed (`browse_use_login`).
+  browse_login:      {reach: private, reversal: reversible}
+  # Files (core/browser/files.py): listing them, and a download quarantined
+  # on the laptop and read in the no-network analysis container.
+  browse_files:      {reach: private, reversal: reversible}
+  read_download:     {reach: private, reversal: reversible}
+  # LinkedIn, read-only, through their saved login (agent/toolset/linkedin.py,
+  # security-model section 6; the maintainer, 8 October 2026). Free as the logged-in
+  # browser's own reads are, and for the same reason: they send the driver
+  # open, scroll and read and nothing else, so there is no click and no typing
+  # to message, connect, follow, react, post, apply or save with, and the
+  # address is built from validated parts on www.linkedin.com alone. An `ask`
+  # login is still asked first (`browse_use_login`), and what is read is
+  # screened as every page is. Pinned by tests/unit/test_linkedin.py.
+  linkedin_profile:        {reach: private, reversal: reversible}
+  linkedin_search_people:  {reach: private, reversal: reversible}
+  linkedin_company:        {reach: private, reversal: reversible}
+  linkedin_jobs:           {reach: private, reversal: reversible}
+
+  # -- private writes with a real inverse ------------------------------------
+  remember:          {reach: private, reversal: reversible, undo: forget}
+  remind_me:         {reach: private, reversal: reversible, undo: cancel_reminder}
+  keep_checking:     {reach: private, reversal: reversible, undo: cancel_reminder}
+  cancel_reminder:   {reach: private, reversal: reversible}
+  # Routines the user sets by text (agent/routines.py). Making one is a row in their
+  # own database; what its runs may do outward is approved separately, on an
+  # `approve_routine` card, and checked by `core/monitor.routine_gate`.
+  create_routine:    {reach: private, reversal: reversible, undo: cancel_routine}
+  list_routines:     {reach: private, reversal: reversible}
+  pause_routine:     {reach: private, reversal: reversible}
+  cancel_routine:    {reach: private, reversal: reversible}
+  # Goals the user sets (agent/goals.py), likewise rows in their own database. A
+  # session changes its own plan and notes through `goal_update` and nothing
+  # else; what it may do outward is approved on an `approve_goal` card and
+  # checked by `core/monitor.goal_gate`.
+  start_goal:        {reach: private, reversal: reversible, undo: drop_goal}
+  goal_status:       {reach: private, reversal: reversible}
+  answer_goal:       {reach: private, reversal: reversible}
+  pause_goal:        {reach: private, reversal: reversible}
+  drop_goal:         {reach: private, reversal: reversible}
+  goal_update:       {reach: private, reversal: reversible}
+  commitment_done:   {reach: private, reversal: reversible}
+  # Which news topics the attention loop reads. A row in their own database,
+  # each the other's inverse.
+  follow_news:       {reach: private, reversal: reversible, undo: unfollow_news}
+  unfollow_news:     {reach: private, reversal: reversible, undo: follow_news}
+  add_task:          {reach: private, reversal: reversible, undo: complete_task}
+  complete_task:     {reach: private, reversal: reversible}
+  create_document:   {reach: private, reversal: reversible, undo: trash_file}
+  create_spreadsheet: {reach: private, reversal: reversible, undo: trash_file}
+  create_folder:     {reach: private, reversal: reversible, undo: trash_file}
+  create_slides:     {reach: private, reversal: reversible, undo: trash_file}
+  # Drive keeps trashed files for 30 days, so this genuinely reverses.
+  trash_file:        {reach: private, reversal: reversible}
+  # Archive/star/label all have an inverse the agent can call itself.
+  modify_email:      {reach: private, reversal: reversible}
+  # A draft is the whole point of drafting: nothing leaves the machine.
+  draft_email:       {reach: private, reversal: reversible, undo: delete_draft}
+  # Free only where the server deletes it on condition that it is as it was
+  # read; elsewhere a draft edited since could go unseen, so the user's yes,
+  # bound to what the card showed, is the condition (core/writes.py) --
+  # unless Jev, asked in the user's own conversation, is sure the card is
+  # not needed (core/lostupdate.py).
+  delete_draft:
+    reach: private
+    reversal: reversible
+    gate_when:
+      - arg: draft_id
+        when: unconditional
+        reach: private
+        reversal: irreversible
+        because: "this account cannot delete on condition that the draft is unchanged"
+
+  # -- queues something else already gates -----------------------------------
+  defer_to_background: {reach: private, reversal: reversible}
+  # A module build ends at the user's card, which is the approval: nothing
+  # it builds turns on without their yes in the app (agent/modbuild.py).
+  # Its spending is held to the day's cap, past which only the app allows it.
+  build_module:      {reach: private, reversal: reversible}
+  # A background job's lead managing its workers (agent/workers.py). Free
+  # because a worker can only do what is free, private and reversible, and
+  # every one of its calls still passes `actions.act` -- which refuses the
+  # rest, pinned by tests/gate/test_workers_stay_private.py.
+  # Skills (agent/skills.py): reading one or the list changes nothing;
+  # revoking one only takes guidance away, and is theirs to ask for.
+  use_skill:         {reach: private, reversal: reversible}
+  list_skills:       {reach: private, reversal: reversible}
+  revoke_skill:      {reach: private, reversal: reversible}
+  # The desk (5 October 2026): their notes, read; and a live conversation at
+  # their desk, which reaches only them, on their own speakers.
+  find_notes:        {reach: private, reversal: reversible}
+  talk_it_through:   {reach: private, reversal: reversible}
+  # Searches and reads the web, then writes an answer with no tools
+  # (agent/research.py): reading, like search_and_read.
+  research:          {reach: private, reversal: reversible}
+  # Notes the user asked for in their own words (agent/toolset/desk.py): text on the
+  # laptop, stopped when the user says, offered only in their own conversations.
+  # source="room" opens their microphone on the room, which a free tool must not
+  # do from a turn that read a mail: `desk.room_refusal` (agent/worker/desk.py)
+  # refuses it unless the turn is their own spoken one at the desk and their words
+  # ask for notes, pinned by tests/gate/test_desk.py (audit of 8 October
+  # 2026). source="laptop" -- what the laptop plays -- stays free.
+  take_notes:        {reach: private, reversal: reversible}
+  start_worker:      {reach: private, reversal: reversible}
+  # A clean-room browsing worker: reads pages in a sandboxed browser kept to
+  # the sites of pages the lead was shown, with nothing of theirs and no action
+  # it can take (agent/workers.py BROWSING_TOOLS), pinned by
+  # tests/gate/test_browsing_workers.py.
+  start_browsing_worker: {reach: private, reversal: reversible}
+  wait_for_workers:  {reach: private, reversal: reversible}
+  stop_worker:       {reach: private, reversal: reversible}
+  # A row in the failure ledger: their word on how it did. Changes nothing else.
+  note_feedback:     {reach: private, reversal: reversible}
+  # Reads the calendars they marked as due dates. Changes nothing anywhere.
+  due_dates: {reach: private, reversal: reversible}
+
+  # -- argument-dependent ----------------------------------------------------
+  create_event:
+    reach: private
+    reversal: reversible
+    undo: delete_event
+    gate_when:
+      - arg: attendees
+        when: non_empty
+        reach: outward
+        reversal: irreversible
+        because: "guests are emailed an invitation, and that cannot be unsent"
+
+  update_event:
+    reach: private
+    reversal: reversible
+    gate_when:
+      - arg: attendees
+        when: non_empty
+        reach: outward
+        reversal: irreversible
+        because: "moving an event with guests emails them the change"
+      # As for delete_draft: free only where the server changes it on
+      # condition that it is as it was read (core/writes.py), or where Jev
+      # judges the card unneeded (core/lostupdate.py).
+      - arg: event_id
+        when: unconditional
+        reach: private
+        reversal: irreversible
+        because: "this account cannot change an event on condition that it is unchanged"
+
+  run_code:
+    reach: private
+    reversal: reversible
+    gate_when:
+      - arg: network
+        when: true
+        reach: outward
+        reversal: irreversible
+        because: "code with a network can reach anything, including things that act"
+
+  # Overwrites cells with no API-level undo. Drive version history means a
+  # human can restore it, which is not the same as the agent being able to.
+  update_spreadsheet:
+    reach: private
+    reversal: irreversible
+    gate_when:
+      - arg: range_name
+        when: non_empty
+        reach: private
+        reversal: irreversible
+        because: "overwriting cells has no undo the agent can call"
+
+# ---------------------------------------------------------------------------
+# Gated: queued, and waits for them.
+# ---------------------------------------------------------------------------
+gated:
+  send_email:
+    reach: outward
+    reversal: irreversible
+    because: "a sent email cannot be unsent"
+    free_when:
+      - arg: to
+        when: self
+        reach: private
+        reversal: reversible
+        because: "mail to the user's own address is a note, not correspondence"
+
+  send_draft:
+    reach: outward
+    reversal: irreversible
+    because: "sending a draft is sending"
+
+  # The maintainer, 4 October 2026: approve a routine's targets once, and its runs act
+  # inside them without asking. The card shows every fixed target
+  # (`core/monitor.describe_envelope`); their yes carries the envelope's hash,
+  # and a routine whose envelope changes is outside it again.
+  approve_routine:
+    reach: outward
+    reversal: irreversible
+    because: "it lets a routine reach these people on its own, every time it runs"
+
+  # The same for a goal (agent/goals.py): its sessions reach these people
+  # without asking until it is done, dropped or past its deadline.
+  approve_goal:
+    reach: outward
+    reversal: irreversible
+    because: "it lets a goal reach these people on its own while it works"
+
+  delete_event:
+    reach: outward
+    reversal: irreversible
+    because: "deleting an event with guests sends them a cancellation"
+
+  # `tier: high` -- their word is not enough: the yes must carry the 6-digit
+  # code from their authenticator app, checked on the laptop (core/monitor.py).
+  # The maintainer, 1 October 2026: spending money, and calling anyone but
+  # them while Steve had a phone. Every other card keeps "YES MAPLE".
+  purchase:
+    reach: outward
+    reversal: irreversible
+    tier: high
+    spend_arg: amount_usd
+    because: "money"
+
+  # A spending cap changed in a conversation (agent/toolset/spending.py,
+  # and "RAISE 25" at the month's cap). The maintainer, 19 October 2026: it
+  # involves money, so it takes a yes. A raise lets Steve spend more, so it
+  # takes the high-risk yes; a lowering cannot cost money, but one the user
+  # never asked for would stop Steve, so it takes a plain one.
+  raise_spending_cap:
+    reach: private
+    reversal: reversible
+    tier: high
+    because: "money"
+
+  lower_spending_cap:
+    reach: private
+    reversal: reversible
+    because: "it can stop Steve until the cap resets"
+
+  # Typing into a page and pressing its button: the values go to the site as
+  # they are typed, and the button can book, post, sign up or agree to
+  # terms. The card shows the site, each field and its value, and the
+  # button, before a character reaches the page; the driver checks the page
+  # is still the one the user approved before carrying it out, and refuses
+  # anything that looks like a payment -- payments are not enabled.
+  browse_submit:
+    reach: outward
+    reversal: irreversible
+    because: "it sends what is typed to a website and presses its button"
+
+  # A saved login the user marked "ask": the agent may act as them on that site in
+  # this conversation, for half an hour (core/browser/vault.py).
+  browse_use_login:
+    reach: private
+    reversal: reversible
+    because: "it lets the agent use that site logged in as you"
+
+  # More of one site's links that came in what a conversation read, past the
+  # few it opens freely (agent/screening.py `spelled`): opened one after
+  # another, such links can spell out what it read.
+  allow_links:
+    reach: private
+    reversal: reversible
+    because: "opened one after another, such links can spell out what it read"
+
+  # A click in a logged-in browser that `core/browser/clicks.py` says needs
+  # them: logged in, one press can be the action itself.
+  browse_act:
+    reach: outward
+    reversal: irreversible
+    because: "logged in as you, this click can be the action itself"
+
+  # A file into a website: from their outbox, the quarantine or the agent's own
+  # artifacts only (`files.upload_source`), the same bytes the user approved.
+  browse_upload:
+    reach: outward
+    reversal: irreversible
+    because: "it sends a file to a website"
+
+  # A module's tool whose grants let it read the user's accounts, or change
+  # what its hosts hold (`core/lifecycle.needs_card`); and an action a
+  # module proposed through `ctx.act`, which its `perform` carries out on
+  # the yes (agent/modtools.py). A module's other tools are classified by
+  # their manifests, and run free: they can only look. Never waived by an
+  # envelope or a judge: a module is code the user did not write.
+  module.tool:
+    reach: outward
+    reversal: irreversible
+    because: "a module that can read your accounts, or change things elsewhere, runs it"
+
+  module.perform:
+    reach: outward
+    reversal: irreversible
+    because: "a module would act on this outside Steve"
+
+# ---------------------------------------------------------------------------
+# Ceilings. Approval does not override these -- that is what makes them
+# ceilings rather than defaults.
+# ---------------------------------------------------------------------------
+spend:
+  per_action_usd: 50.0
+  per_day_usd: 100.0
+  per_week_usd: 300.0

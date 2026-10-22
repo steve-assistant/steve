@@ -1,0 +1,61 @@
+{
+ "_about": "Ollama 0.40.3 serving tev1:4b on the laptop, 11 October 2026, asked by the decider with its own environment: the screen question about tests/gate/test_injection_screen.py ITEM, a part of 12,000 characters, and a model that is not there.",
+ "version": {
+  "version": "0.40.3"
+ },
+ "answer": {
+  "model": "tev1:4b",
+  "answers": {
+   "handling": {
+    "type": "choice",
+    "choice": "as_is",
+    "probabilities": {
+     "as_is": 0.9170133615191811,
+     "sanitize": 0.050806156314510846,
+     "ignore": 0.03218048216630803
+    },
+    "confidence": 0.6892282081559924
+   },
+   "targeting": {
+    "type": "noul",
+    "noul": 0.21054683531417773
+   }
+  },
+  "usage": {
+   "input_tokens": 739,
+   "output_tokens": 3
+  }
+ },
+ "ps": {
+  "models": [
+   {
+    "name": "tev1:4b",
+    "model": "tev1:4b",
+    "size": 4669109698,
+    "digest": "9b5bb969e46c4b776826d6f2d401e22893205693f172653af6254897255025b8",
+    "details": {
+     "parent_model": "",
+     "format": "gguf",
+     "family": "qwen35",
+     "families": [
+      "qwen35"
+     ],
+     "parameter_size": "4.2B",
+     "quantization_level": "Q8_0"
+    },
+    "expires_at": "2026-10-11T16:39:09.960312-04:00",
+    "size_vram": 4669109698,
+    "context_length": 2050,
+    "runner": "llamacpp"
+   }
+  ]
+ },
+ "too_long": {
+  "status": 400,
+  "body": "{\"error\":\"prompt 0 has 10352 tokens; expected 1–2050 (input is never truncated)\"}"
+ },
+ "missing_model": {
+  "status": 404,
+  "body": "{\"error\":\"model \\\"tev1:9b\\\" not found, try pulling it first\"}"
+ }
+}

@@ -1,0 +1,22 @@
+# 9 October 2026, morning: "hey Steve, stop" over a long answer came back
+# from Whisper as "I'll talk" and restarted the answer in a live call. In
+# the afternoon it was missed three times before it worked.
+scenario stop-long-answer-loud-room
+about the same, with laptop speakers loud beside the microphone
+room echo 0
+room drive 2
+length 45
+reply /history of tea/ 3.0 research: Tea was first drunk in China, where
+  legend dates it to nearly five thousand years ago, and by the Tang dynasty
+  it was a daily drink with a classic book of its own. Monks carried it to
+  Japan, where it grew into a ceremony. Dutch and Portuguese traders brought
+  it to Europe in the seventeenth century, and in Britain it became the
+  national drink, taken with milk and sugar. In the nineteenth century
+  plantations spread across India and Ceylon. Today it is the most widely
+  drunk beverage in the world after water.
+0.5      user: Hey Steve, tell me about the history of tea.
+voice+6  user!: Hey Steve, stop.
+expect cut-in <= 1.5
+expect silent-after <= 2.5
+expect no-live
+expect one-voice

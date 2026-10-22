@@ -1,0 +1,11 @@
+# Normalise to LF everywhere. The frozen-core manifest hashes files as they
+# sit on disk, so CRLF conversion would make policy.lock machine-specific and
+# every checkout would look like tampering.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.onnx binary
+*.wav binary
+*.ogg binary

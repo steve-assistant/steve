@@ -1,0 +1,57 @@
+{
+ "shape": "Brave Search API's web search reply, in the shape its documentation gives and tools/web.search read live until 12 October 2026, with fictional sites. Not a captured exchange: no Brave key was set when step 3's item 9 was built.",
+ "reply": {
+  "type": "search",
+  "query": {"original": "ramen near the station", "more_results_available": true},
+  "mixed": {"type": "mixed", "main": [{"type": "web", "index": 0, "all": false}]},
+  "web": {
+   "type": "search",
+   "family_friendly": true,
+   "results": [
+    {
+     "type": "search_result",
+     "title": "Noodle Bar &amp; Kitchen - <strong>Ramen</strong> by the Station",
+     "url": "https://noodles.example/station",
+     "is_source_local": false,
+     "is_source_both": false,
+     "description": "Open late. Our <strong>ramen</strong> broth simmers for 18 hours &amp; is served until midnight.",
+     "page_age": "2026-09-30T10:00:00",
+     "profile": {"name": "Noodles", "url": "https://noodles.example", "long_name": "noodles.example"},
+     "language": "en",
+     "family_friendly": true,
+     "meta_url": {"scheme": "https", "netloc": "noodles.example", "hostname": "noodles.example", "path": "› station"},
+     "age": "September 30, 2026"
+    },
+    {
+     "type": "search_result",
+     "title": "The ten best <strong>ramen</strong> spots in town",
+     "url": "https://guide.example/best-ramen",
+     "description": "From tonkotsu to shoyu: where to eat <strong>ramen</strong> this autumn.",
+     "language": "en",
+     "meta_url": {"scheme": "https", "netloc": "guide.example", "hostname": "guide.example", "path": "› best-ramen"}
+    },
+    {
+     "type": "search_result",
+     "title": "Noodle Bar &amp; Kitchen - <strong>Ramen</strong> by the Station",
+     "url": "https://noodles.example/station",
+     "description": "The same page, listed twice.",
+     "language": "en"
+    },
+    {
+     "type": "search_result",
+     "title": "Menu",
+     "url": "ftp://files.example/menu.pdf",
+     "description": "Not a web page.",
+     "language": "en"
+    },
+    {
+     "type": "search_result",
+     "title": "",
+     "url": "https://map.example/place/1234",
+     "description": "",
+     "language": "en"
+    }
+   ]
+  }
+ }
+}

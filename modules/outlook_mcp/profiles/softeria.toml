@@ -1,0 +1,188 @@
+# Softeria's ms-365-mcp-server (`@softeria/ms-365-mcp-server` on npm), as
+# its code stood at 0.166.0 on 14 October 2026: what each tool is called,
+# what it takes, and what it answers (docs/plan/spikes/s5-outlook-mcp.md).
+# Pinned at 0.160.0 (8 October): the newest release a week old when it was
+# installed, as Steve's rule for any server's version asks. Every tool this
+# profile calls is the same there, and so are the sign-in and the settings;
+# what changed after is attachment uploads, which it does not use.
+#
+# A profile maps each method of a class's provider onto one of the server's
+# tools: the tool's name, the arguments it is called with (`{name}` is a
+# value the engine fills in, the whole value where it is all a string
+# holds), and where each field of an item is in the tool's JSON answer
+# (`a.b` a key inside a key, `a[].b` the same key in each of a list). The
+# engine's docstring (`core/engines/mcp.py`) lists the methods and values.
+#
+# The server answers with Graph's own JSON, as text. Its tools take the
+# query options without their `$` (`select`, `filter`, `top`), the item's
+# id by name (`messageId`, `eventId`), and a write's content as `body`.
+# None takes a change key back, so no write here is conditional: an update
+# or a delete is a card every time, read again before and after.
+
+name = "Softeria's ms-365-mcp-server"
+server = "Microsoft365MCP"
+checked = "0.160.0"
+# Where a failed call's HTTP status is, in the tool's result.
+status = "_meta.http_status"
+
+[mail]
+items = "value"
+more = "@odata.nextLink"
+# Graph leaves the Message-ID and the change key out unless they are named.
+select = "id,internetMessageId,changeKey,conversationId,from,toRecipients,ccRecipients,subject,receivedDateTime,bodyPreview,isRead,isDraft,parentFolderId"
+full = "id,internetMessageId,changeKey,conversationId,from,toRecipients,ccRecipients,bccRecipients,subject,receivedDateTime,bodyPreview,body,isRead,isDraft,parentFolderId"
+
+[mail.fields]
+native_id = "id"
+ident = "internetMessageId"
+condition = "changeKey"
+thread = "conversationId"
+sender = "from.emailAddress.address"
+to = "toRecipients[].emailAddress.address"
+cc = "ccRecipients[].emailAddress.address"
+bcc = "bccRecipients[].emailAddress.address"
+subject = "subject"
+when = "receivedDateTime"
+snippet = "bodyPreview"
+body = { path = "body.content", html = "body.contentType" }
+unread = { path = "isRead", not = true }
+draft = "isDraft"
+folder = "parentFolderId"
+headers = "internetMessageHeaders"
+
+# Words to look for, in Microsoft's search syntax. Graph takes no date or
+# order beside a search: the engine checks both on its side.
+[mail.methods.search]
+tool = "list-mail-messages"
+args = { search = '"{kql}"', top = "{top}", select = "{select}" }
+
+# Everything since a moment, newest first.
+[mail.methods.recent]
+tool = "list-mail-messages"
+args = { filter = "receivedDateTime ge {since}", orderby = "receivedDateTime desc", top = "{top}", select = "{select}" }
+
+[mail.methods.inbox]
+tool = "list-mail-folder-messages"
+args = { mailFolderId = "inbox", filter = "receivedDateTime ge {since}", orderby = "receivedDateTime desc", top = "{top}", select = "{select}" }
+
+[mail.methods.sent]
+tool = "list-mail-folder-messages"
+args = { mailFolderId = "sentitems", filter = "receivedDateTime ge {since}", orderby = "receivedDateTime desc", top = "{top}", select = "{select}" }
+
+# The Drafts folder's messages and their change keys: what the write path
+# compares before and after a draft is sent or thrown away.
+[mail.methods.drafts]
+tool = "list-mail-folder-messages"
+args = { mailFolderId = "drafts", top = 1000, select = "id,internetMessageId,changeKey", fetchAllPages = true }
+
+[mail.methods.thread]
+tool = "list-mail-messages"
+args = { filter = "conversationId eq '{thread}'", top = "{top}", select = "{select}" }
+
+[mail.methods.fetch]
+tool = "get-mail-message"
+args = { messageId = "{id}", select = "{select}" }
+
+[mail.methods.headers]
+tool = "get-mail-message"
+args = { messageId = "{id}", select = "id,internetMessageId,internetMessageHeaders" }
+
+[mail.methods.make_draft]
+tool = "create-draft-email"
+args = { body = "{item}" }
+
+# A reply's draft, made from the message answered, so it stays in its
+# conversation; its recipients and text are set as asked.
+[mail.methods.reply_draft]
+tool = "create-reply-draft"
+args = { messageId = "{reply_to}", body = { message = "{item}" } }
+
+[mail.methods.send_draft]
+tool = "send-draft-message"
+args = { messageId = "{id}" }
+
+# Graph moves a deleted message to Deleted Items, under a new id.
+[mail.methods.delete]
+tool = "delete-mail-message"
+args = { messageId = "{id}" }
+
+[calendar]
+items = "value"
+more = "@odata.nextLink"
+# `uid` is shared by a series and each of its occurrences, as an iCalendar
+# UID is; `iCalUId` differs for each occurrence.
+select = "id,uid,changeKey,subject,start,end,isAllDay,location,bodyPreview,attendees,organizer,webLink,type,seriesMasterId,showAs,isCancelled,lastModifiedDateTime"
+
+[calendar.fields]
+native_id = "id"
+ident = "uid"
+condition = "changeKey"
+title = "subject"
+start = { path = "start.dateTime", zone = "start.timeZone" }
+end = { path = "end.dateTime", zone = "end.timeZone" }
+all_day = "isAllDay"
+location = "location.displayName"
+description = { path = "bodyPreview", write = "body.content", html = "body.contentType" }
+guests = { each = "attendees", email = "emailAddress.address", name = "emailAddress.name", response = "status.response" }
+organizer = "organizer.emailAddress.address"
+link = "webLink"
+recurring = { path = "type", not = "singleInstance" }
+series = "seriesMasterId"
+busy = { path = "showAs", not = "free" }
+cancelled = "isCancelled"
+updated = "lastModifiedDateTime"
+
+# Repeats expanded into their occurrences, by Graph.
+[calendar.methods.events]
+tool = "get-calendar-view"
+args = { startDateTime = "{start}", endDateTime = "{end}", top = "{top}", select = "{select}", fetchAllPages = true }
+
+# Every single event and series with its change key: what the write path
+# compares before and after a write.
+[calendar.methods.all]
+tool = "list-calendar-events"
+args = { top = 1000, select = "id,uid,changeKey", fetchAllPages = true }
+
+[calendar.methods.fetch]
+tool = "get-calendar-event"
+args = { eventId = "{id}", select = "{select}" }
+
+[calendar.methods.create]
+tool = "create-calendar-event"
+args = { body = "{item}" }
+
+[calendar.methods.update]
+tool = "update-calendar-event"
+args = { eventId = "{id}", body = "{item}" }
+
+[calendar.methods.delete]
+tool = "delete-calendar-event"
+args = { eventId = "{id}" }
+
+# The server as Steve installs and runs it, for the "Steve runs it" choice
+# (06-modules.md, section 7): in its own container, reaching Microsoft's
+# sign-in and Graph alone, its sign-in kept in its home. It speaks on its
+# stdio (no `--http`). Its key stays in a file beside its sign-in, since a
+# container cannot reach the Credential Manager, and it signs personal
+# accounts in at `consumers`, as Microsoft now requires.
+#
+# The release's reviewed lockfile and the installed tree's hash come from
+# one real install, made on 15 October 2026 as the registry stood when
+# 0.160.0 came out: 212 packages, 61 MB. `npm ci` from the lockfile made
+# the same tree again. A user's install is held to both.
+[package]
+package = "@softeria/ms-365-mcp-server@0.160.0"
+entry = "dist/index.js"
+lockfile = "softeria.package-lock.json"
+tree = "a6f246da48d7858e8708f224dc210835ae6163b813b0b79d07c9d403c3b8d491"
+hosts = ["login.microsoftonline.com", "graph.microsoft.com"]
+env = { MS365_MCP_TENANT_ID = "consumers", MS365_MCP_USE_KEYTAR = "0" }
+
+# `login` answers with MSAL's sentence, the page and the code, and does not
+# wait; `list-accounts` names each account the server holds by its email.
+[package.sign_in]
+page = "https://microsoft.com/devicelogin"
+code = "[A-Z0-9]{8,10}"
+tool = "login"
+whoami = "list-accounts"
+address = "accounts[].email"

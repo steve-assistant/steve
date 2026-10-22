@@ -1,0 +1,416 @@
+/* Setup's pages (ui/src/Setup.tsx): one question a page, on paper, centred
+   at the journal's measure (docs/design/back-pages.md, Onboarding and
+   Forms). Every value is a token's, so the themes, Reading, reduced motion
+   and contrast reach these pages with no case of their own. */
+
+/* The page scrolls inside its own paper: the body behind is still the old
+   screens' dark, and a page taller than the window showed it as a dark
+   strip where the scrollbar's track is. */
+.setup {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--face-text);
+  font-size: var(--size-body);
+  line-height: var(--line-body);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+  box-sizing: border-box;
+}
+
+/* Progress: a small outline diamond a page, filled once it is done; the
+   current one turns slowly (`turning`), or under reduced motion stands
+   drawn bolder. */
+.setup-progress {
+  display: flex;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0 0 var(--space-7);
+  padding: 0;
+}
+.setup-progress svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+.setup-progress path {
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: 1;
+}
+.setup-progress li.done path {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+.setup-progress li[aria-current="step"] path {
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+
+.setup-page {
+  width: 100%;
+  max-width: var(--measure);
+}
+
+.setup-hello {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.setup-hand {
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+/* The sign-in: Hello's page, its mark clear of the heading; the passphrase,
+   its hint and what went wrong in one column under it. */
+.signin > :first-child {
+  margin-bottom: var(--space-5);
+}
+.signin-body.typing {
+  width: 100%;
+  max-width: 26rem;
+  text-align: left;
+}
+
+.setup-question {
+  margin: 0 0 var(--space-3);
+  font-weight: normal;
+}
+/* A title's words one after another, then what follows it (Setup.tsx,
+   Words): each word's delay is set where it is drawn. The welcome's
+   mark draws itself in once. With Windows' animations off, all of it is
+   simply there. */
+@keyframes setup-word {
+  from {
+    opacity: 0;
+    translate: 0 0.15em;
+  }
+}
+.setup-word,
+.setup-follows {
+  animation: setup-word 240ms ease-out both;
+}
+.setup-word {
+  display: inline-block;
+  white-space: pre;
+}
+.setup-mark {
+  --draw-from: 100%;
+  --t-mark: 900ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .setup-word,
+  .setup-follows,
+  .setup-mark {
+    animation: none;
+  }
+}
+.setup-why {
+  color: var(--ink-soft);
+  margin: 0 0 var(--space-5);
+}
+.setup-why p {
+  margin: 0 0 var(--space-2);
+}
+
+/* A text input has no box: a strong underline, its label above. Focused,
+   the underline is ink and twice as thick. */
+.setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-4);
+}
+.setup-field .t-label {
+  color: var(--ink-soft);
+}
+.setup-field input {
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  padding: var(--space-1) 0;
+  outline: none;
+}
+.setup-field input:focus-visible {
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: -1px;
+}
+.setup-hint {
+  color: var(--ink-faint);
+  font-size: var(--size-small);
+  line-height: var(--line-small);
+}
+
+.setup-kept {
+  flex-direction: row;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.setup-kept .t-label {
+  width: 100%;
+}
+.setup-dots {
+  font-family: var(--face-data);
+  letter-spacing: 0.1em;
+}
+
+/* A number with bounds: in the data face, with − and + either side. */
+.setup-number > div {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.setup-number input {
+  width: 5ch;
+  text-align: center;
+  font-family: var(--face-data);
+  -moz-appearance: textfield;
+}
+.setup-number input::-webkit-inner-spin-button,
+.setup-number input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+.setup-number button {
+  font: inherit;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0 var(--space-2);
+}
+.setup-number button:disabled {
+  color: var(--ink-faint);
+  cursor: default;
+}
+
+/* A choice of a few: the options as words in a row, the chosen one
+   underlined. */
+.setup-choices {
+  display: flex;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-4);
+}
+.setup-choices button,
+.setup-presets button {
+  font: inherit;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: var(--space-1) 0;
+  cursor: pointer;
+  text-align: left;
+}
+.setup-choices button.chosen,
+.setup-presets button.chosen {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.setup-presets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-5);
+}
+.setup-presets button {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.setup-preset-name {
+  font-size: var(--size-title);
+  line-height: var(--line-title);
+}
+
+/* The main button is an ink block; every other is text, underlined on
+   hover. */
+.setup-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+.setup-continue {
+  font: inherit;
+  height: 36px;
+  padding: 0 var(--space-4);
+  background: var(--ink);
+  color: var(--paper);
+  border: 0;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.setup-continue:disabled {
+  background: var(--ink-faint);
+  cursor: default;
+}
+.setup-text {
+  font: inherit;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  padding: 0;
+  margin-left: var(--space-1);
+  cursor: pointer;
+  text-decoration: none;
+}
+.setup-text:hover:not(:disabled),
+.setup-text:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.setup-back {
+  margin-top: var(--space-6);
+}
+
+.setup-error {
+  color: var(--red-ink);
+  margin: 0 0 var(--space-3);
+}
+.setup-works {
+  color: var(--ink);
+  margin: 0 0 var(--space-3);
+}
+.setup-drive {
+  color: var(--ink);
+}
+.setup-down {
+  max-width: var(--measure);
+  color: var(--red-ink);
+  margin: 0 0 var(--space-5);
+}
+
+/* The panels the other pages already have (Signal's code, Telegram's
+   pairing, adding an account, the passphrase), until item 13 gives them
+   the new look: on a note, as the design puts Signal's code. */
+.setup-panel {
+  background: var(--note);
+  box-shadow: var(--lift-note);
+  border-radius: var(--r-note);
+  padding: var(--space-4);
+  margin: 0 0 var(--space-4);
+}
+
+/* Their classes, inside a panel, take the tokens. Their own colours were
+   made for the dark screens: on paper their small print was barely
+   there, and their inputs were the browser's own boxes, side by side. */
+.setup-panel .muted {
+  color: var(--ink-soft);
+}
+.setup-panel .small {
+  font-size: var(--size-small);
+  line-height: var(--line-small);
+}
+.setup-panel .warn-text {
+  color: var(--red-ink);
+}
+.setup-panel code {
+  font-family: var(--face-data);
+}
+.setup-panel input:not([type="checkbox"]):not([type="radio"]) {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  padding: var(--space-1) 0;
+  margin: 0 0 var(--space-3);
+  outline: none;
+}
+.setup-panel input:not([type="checkbox"]):not([type="radio"]):focus-visible {
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: calc(var(--space-3) - 1px);
+}
+.setup-panel button:not(.link-button) {
+  font: inherit;
+  height: 32px;
+  padding: 0 var(--space-3);
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.setup-panel button.primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.setup-panel button:disabled {
+  color: var(--ink-faint);
+  border-color: var(--rule);
+  background: transparent;
+  cursor: default;
+}
+/* Add account is a card on the old Accounts page; here the note is its card. */
+.setup-panel .item {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+.setup-panel .item-body {
+  padding: 0;
+  border-top: 0;
+}
+.setup-panel .answer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.setup-panel .answer-row input,
+.setup-panel .answer-row input:not([type="checkbox"]):not([type="radio"]):focus-visible {
+  flex: 1;
+  margin-bottom: 0;
+}
+.setup-panel .question {
+  background: var(--tint-yellow);
+  border-radius: var(--r-slip);
+  padding: var(--space-2) var(--space-3);
+  margin: var(--space-2) 0;
+}
+/* The old rule says !important, so this must too. */
+.setup-panel .link-button {
+  font: inherit !important;
+  font-size: var(--size-small) !important;
+  color: var(--ink-soft) !important;
+  padding: 0 !important;
+  margin: var(--space-2) 0;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+.setup-panel .item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* The privacy statement, shown whole on the first page: its own scroll, so
+   Start stays in reach below it. */
+.setup-privacy {
+  max-height: 40vh;
+  overflow-y: auto;
+  margin: 0 0 var(--space-5);
+  padding-right: var(--space-2);
+}
+.setup-privacy h3 {
+  font: inherit;
+  font-weight: 600;
+  margin: var(--space-3) 0 var(--space-1);
+}

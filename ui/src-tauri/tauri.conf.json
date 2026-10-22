@@ -1,0 +1,95 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Steve",
+  "mainBinaryName": "Steve",
+  "version": "0.1.0",
+  "identifier": "dev.steve.desktop",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Steve",
+        "dragDropEnabled": false,
+        "width": 1100,
+        "height": 760,
+        "minWidth": 420,
+        "minHeight": 560,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": false,
+        "focus": false
+      },
+      {
+        "label": "quickbar",
+        "title": "Steve quick bar",
+        "url": "index.html#quickbar",
+        "width": 640,
+        "height": 64,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "focus": false,
+        "shadow": true,
+        "center": true
+      },
+      {
+        "label": "deskcard",
+        "title": "Steve desk card",
+        "url": "index.html#deskcard",
+        "width": 88,
+        "height": 88,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "focusable": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "focus": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost http://127.0.0.1:* ws://127.0.0.1:*; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "licenseFile": "../../PRIVACY.md",
+    "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
+    "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "./windows/hooks.nsh"
+      }
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://github.com/steve-assistant/steve/releases/latest/download/latest.json"],
+      "requireSignedVersion": true,
+      "allowDowngrades": false,
+      "windows": {
+        "installMode": "passive"
+      },
+      "pubkey":"dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQ2QjIyMjdDNzUxRkU0QzcKUldUSDVCOTFmQ0t5MWhveUhqa0xBWGgrWFVuYzUzMGovL2QzSzkxYkNZK0hhQnp3V1VjTmF1angK"
+    }
+  }
+}

@@ -1,0 +1,325 @@
+/* Notes (StuckNotes.tsx): docs/design/notes.md, Anatomy and Where notes sit.
+   The surface, the lift, the tilt and the motion are foundations.css's
+   (`grain`, `lifted-note`, `note-arrives`, `note-answered`); this sets the
+   note's parts and where the notes go. */
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* In the margin: they can't scroll out of sight. */
+.notes[data-wide] {
+  position: sticky;
+  top: 0;
+}
+/* At the top of a narrower page: one strip, stuck to the top of the scroll,
+   the notes unfolding under it. */
+.notes:not([data-wide]) {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 0 16px;
+  background: var(--paper);
+}
+
+.notes-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 14px;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: var(--tint-red);
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.notes-strip .note-pin {
+  position: static;
+  flex: none;
+  margin: 0 2px;
+}
+.notes-strip-count {
+  flex: none;
+  font-weight: 600;
+}
+.notes-strip-first {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink-soft);
+}
+
+.notes-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px 4px 4px;
+}
+.notes:not([data-wide]) .notes-column {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 16px 8px 8px;
+}
+
+/* A pile: the top note as it is, and the ones under it cut to its size,
+   each 8px further down, so its edge shows under the one above. Stacked in
+   one grid cell instead, every note took the tallest one's height, and the
+   top note had a blank foot. */
+.notes-pile {
+  position: relative;
+  width: min(272px, 100%);
+  padding: 8px 4px calc(8px * (var(--pile) - 1) + 4px);
+}
+.notes-pile > .note {
+  z-index: calc(10 - var(--at, 0));
+}
+.notes-pile > .note + .note {
+  position: absolute;
+  top: 8px;
+  bottom: calc(8px * (var(--pile) - 1) + 4px);
+  left: 4px;
+  overflow: hidden;
+  translate: 0 calc(8px * var(--at, 0));
+}
+/* Clicking the edges below the top note, or its "+N", spreads them out. */
+.notes-spread {
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--r-note);
+  pointer-events: none;
+}
+.notes-spread::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: calc(8px * (var(--pile) - 1) + 4px);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.notes-more {
+  position: absolute;
+  top: 0;
+  right: -6px;
+  min-width: 26px;
+  padding: 1px 6px;
+  color: var(--paper);
+  background: var(--ink);
+  border-radius: 999px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------ a note */
+
+.note {
+  position: relative;
+  width: min(264px, 100%);
+  padding: 18px 16px 12px;
+  color: var(--ink);
+  background-color: var(--note);
+}
+.notes:not([data-wide]) .note {
+  width: 100%;
+}
+.note:focus-visible {
+  outline: 2px solid var(--ink-soft);
+  outline-offset: 3px;
+}
+/* The logo's red diamond, half above the top edge: the note's one colour. */
+.note-pin {
+  position: absolute;
+  top: -5px;
+  left: calc(50% - 3.5px);
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--red);
+  rotate: 45deg;
+}
+.note-kicker {
+  margin: 0 0 6px;
+  color: var(--ink-soft);
+}
+.note-text {
+  margin: 0;
+}
+.note-detail {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+}
+/* A card's lines as the phone shows them: To, Bcc and Subject each on its
+   own line, not run together into one. */
+.note-detail,
+.note-items li {
+  white-space: pre-line;
+}
+/* A grouped card's items, each with its own box on a yes card: a list on
+   the note, not a form's rows. */
+.note-items {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+}
+.note-items li + li {
+  margin-top: 4px;
+}
+.note-items .form-check {
+  gap: var(--space-2);
+  margin: 0;
+}
+.note-items .form-check-box {
+  margin-top: 2px;
+}
+
+.note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 12px;
+}
+.note-main {
+  position: relative;
+  min-width: 56px;
+  height: 32px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: var(--size-small);
+  color: var(--paper);
+  background: var(--ink);
+  border: none;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.note-main:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.note-main[data-ticked] {
+  opacity: 1;
+}
+.note-main[data-ticked] .note-main-label {
+  visibility: hidden;
+}
+.note-tick {
+  position: absolute;
+  inset: 6px 0;
+  width: 100%;
+  height: 20px;
+}
+.note-other {
+  min-height: 32px;
+  padding: 0 2px;
+  font: inherit;
+  font-size: var(--size-small);
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+}
+.note-other:hover:not(:disabled) {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.note-later {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.note-later .note-other {
+  min-height: 28px;
+}
+
+.note-code {
+  margin-top: 12px;
+}
+.note-passphrase {
+  display: block;
+  width: 100%;
+  padding: 4px 0;
+  font-family: var(--face-data);
+  color: var(--ink);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--ink-soft);
+  border-radius: 0;
+}
+.note-passphrase:focus {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+.note-code .note-actions {
+  margin-top: 10px;
+}
+.note-error {
+  margin: 8px 0 0;
+  color: var(--red-ink);
+}
+.note-log {
+  max-height: 160px;
+  margin: 10px 0 0;
+  padding: 8px;
+  overflow: auto;
+  font-size: var(--size-meta);
+  white-space: pre-wrap;
+  background: var(--paper-deep);
+  border-radius: var(--r-slip);
+}
+.note-meta {
+  margin: 12px 0 0;
+  color: var(--ink-faint);
+}
+.note-word {
+  cursor: help;
+}
+
+/* An expired note fades where it is; it was never answered. */
+@keyframes steve-note-fades {
+  to {
+    opacity: 0;
+  }
+}
+.note-fades {
+  animation: steve-note-fades var(--t-note-answered) linear both;
+}
+
+/* Heard, not seen. */
+.notes-said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Windows' contrast themes: a frame for the paper, no lift or tilt
+   (foundations.md; the tokens drop the grain, the shadow and the tilt). */
+@media (forced-colors: active) {
+  .note {
+    border: 1px solid CanvasText;
+  }
+  .note-main {
+    border: 1px solid ButtonText;
+  }
+  .note-pin {
+    forced-color-adjust: none;
+  }
+}

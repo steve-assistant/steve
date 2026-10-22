@@ -1,0 +1,127 @@
+/* The desk card (DeskCard.tsx, presence.md): the tile, and the card it
+   opens into, in a window that is transparent outside them.
+
+   The window is the card plus a 16px edge (`--desk-pad`, deskcard.rs
+   `PAD`), where the shadow and the note's edge are drawn. The design's
+   `lift-window` reaches 46px below what it lifts, and cut off at the
+   window's edge it ended in a hard line; the card's shadow here stays
+   inside 16px. The tile sits at the corner of the screen it is nearest
+   (`data-corner`), and the card opens away from it, so the tile doesn't
+   move when the card opens. */
+
+html.deskcard-window,
+html.deskcard-window body,
+html.deskcard-window #root {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.desk {
+  --desk-pad: 16px;
+  --desk-lift: 0 1px 2px rgb(13 28 52 / 0.12), 0 6px 12px -4px rgb(13 28 52 / 0.32);
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: var(--desk-pad);
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.desk[data-corner$="right"] { justify-content: flex-end; }
+.desk[data-corner^="bottom"] { align-items: flex-end; }
+
+/* Never shrunk to the window: opened inside the small window that held the
+   tile, the card shrank to fit it, and the window then grew in several
+   steps, one per size the page asked for. At its own size it overflows
+   towards the middle, and the window grows once. */
+.desk-card {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  border-radius: 12px;
+  cursor: default;
+}
+.desk[data-corner^="bottom"] .desk-card { align-items: flex-end; }
+.desk[data-corner$="right"] .desk-card { flex-direction: row-reverse; }
+
+.desk-card.open {
+  width: 320px;
+  min-height: 72px;
+  max-height: 132px;
+  background: var(--note);
+  box-shadow: var(--desk-lift);
+  box-sizing: border-box;
+}
+
+/* The tile: the mark on its rounded cream square, navy at night. Flush in
+   the card's corner when it opens, where it was. */
+.desk-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: var(--desk-lift);
+}
+/* Open, the tile is part of the card, in the card's colour: `--paper` and
+   `--note` differ, most in the dark theme, and the tile read as a patch. */
+.desk-card.open .desk-tile {
+  background: var(--note);
+  box-shadow: none;
+}
+
+.desk-lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  font-family: var(--face-text);
+  font-size: var(--size-small);
+  line-height: 1.3;
+  color: var(--ink);
+}
+.desk-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.desk-next,
+.desk-notes { color: var(--ink-soft); }
+.desk-notes.waiting { color: var(--ink); cursor: pointer; }
+.desk-notes.waiting:hover { text-decoration: underline; }
+.desk-gem { color: var(--red); }
+.desk-last {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--ink-faint);
+}
+
+/* The top note's edge, peeking from behind the tile or card while notes
+   wait, towards the middle of the screen and inside the window's edge. */
+.desk-peek {
+  position: absolute;
+  z-index: -1;
+  top: -7px;
+  right: -7px;
+  width: 34px;
+  height: 26px;
+  border-radius: var(--r-note);
+  background: var(--note);
+  box-shadow: var(--lift-note);
+  transform: rotate(7deg);
+}
+.desk[data-corner$="right"] .desk-peek { right: auto; left: -7px; transform: rotate(-7deg); }
+.desk[data-corner^="top"] .desk-peek { top: auto; bottom: -7px; }

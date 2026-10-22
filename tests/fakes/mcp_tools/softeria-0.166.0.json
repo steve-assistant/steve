@@ -1,0 +1,894 @@
+{
+  "about": "The mail and calendar tools of Softeria's ms-365-mcp-server 0.166.0 (and send-mail, which no profile maps), shaped as its code builds them: query options without their $, path parameters by name, a write's content as body. From the research of 14 October 2026, docs/plan/spikes/s5-outlook-mcp.md; not copied from a running server.",
+  "serverInfo": {
+    "name": "Microsoft365MCP",
+    "version": "0.166.0"
+  },
+  "tools": [
+    {
+      "name": "list-mail-messages",
+      "title": "list-mail-messages",
+      "description": "List messages in the signed-in user's mailbox.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "select": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Select properties to be returned"
+          },
+          "expand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Expand related entities"
+          },
+          "filter": {
+            "type": "string",
+            "description": "Filter items by property values"
+          },
+          "orderby": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Order items by property values"
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Show only the first n items"
+          },
+          "skip": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Skip the first n items"
+          },
+          "count": {
+            "type": "boolean",
+            "description": "Include count of items"
+          },
+          "search": {
+            "type": "string",
+            "description": "Search items by search phrases"
+          },
+          "fetchAllPages": {
+            "type": "boolean",
+            "description": "Automatically fetch all pages of results"
+          },
+          "skiptoken": {
+            "type": "string",
+            "description": "The page to continue from"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "list-mail-messages",
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "list-mail-folder-messages",
+      "title": "list-mail-folder-messages",
+      "description": "List the messages in a mail folder (inbox, sentitems, drafts or a folder's id).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mailFolderId": {
+            "type": "string",
+            "description": "Path parameter: mailFolderId"
+          },
+          "select": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Select properties to be returned"
+          },
+          "expand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Expand related entities"
+          },
+          "filter": {
+            "type": "string",
+            "description": "Filter items by property values"
+          },
+          "orderby": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Order items by property values"
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Show only the first n items"
+          },
+          "skip": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Skip the first n items"
+          },
+          "count": {
+            "type": "boolean",
+            "description": "Include count of items"
+          },
+          "search": {
+            "type": "string",
+            "description": "Search items by search phrases"
+          },
+          "fetchAllPages": {
+            "type": "boolean",
+            "description": "Automatically fetch all pages of results"
+          },
+          "skiptoken": {
+            "type": "string",
+            "description": "The page to continue from"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "mailFolderId"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "list-mail-folder-messages",
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get-mail-message",
+      "title": "get-mail-message",
+      "description": "Get one message by its id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "description": "Path parameter: messageId"
+          },
+          "select": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Select properties to be returned"
+          },
+          "expand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Expand related entities"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "messageId"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "get-mail-message",
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "create-draft-email",
+      "title": "create-draft-email",
+      "description": "Create a draft of a new message.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The request body"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "create-draft-email",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "create-reply-draft",
+      "title": "create-reply-draft",
+      "description": "Create a draft of a reply to a message.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "description": "Path parameter: messageId"
+          },
+          "body": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The request body"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "messageId"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "create-reply-draft",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "create-reply-all-draft",
+      "title": "create-reply-all-draft",
+      "description": "Create a draft of a reply to everyone on a message.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "description": "Path parameter: messageId"
+          },
+          "body": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The request body"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "messageId"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "create-reply-all-draft",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "send-draft-message",
+      "title": "send-draft-message",
+      "description": "Send a draft message.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "description": "Path parameter: messageId"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "messageId"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "send-draft-message",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "send-mail",
+      "title": "send-mail",
+      "description": "Send a new message at once.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The request body"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "send-mail",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "delete-mail-message",
+      "title": "delete-mail-message",
+      "description": "Delete a message: it moves to Deleted Items.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "description": "Path parameter: messageId"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "messageId"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "delete-mail-message",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "get-calendar-view",
+      "title": "get-calendar-view",
+      "description": "The events in a window of time, repeats expanded.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "startDateTime": {
+            "type": "string",
+            "description": "The start of the window, ISO 8601"
+          },
+          "endDateTime": {
+            "type": "string",
+            "description": "The end of the window, ISO 8601"
+          },
+          "select": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Select properties to be returned"
+          },
+          "expand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Expand related entities"
+          },
+          "filter": {
+            "type": "string",
+            "description": "Filter items by property values"
+          },
+          "orderby": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Order items by property values"
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Show only the first n items"
+          },
+          "skip": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Skip the first n items"
+          },
+          "count": {
+            "type": "boolean",
+            "description": "Include count of items"
+          },
+          "fetchAllPages": {
+            "type": "boolean",
+            "description": "Automatically fetch all pages of results"
+          },
+          "skiptoken": {
+            "type": "string",
+            "description": "The page to continue from"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA time zone for the times returned (Prefer: outlook.timezone)"
+          },
+          "expandExtendedProperties": {
+            "type": "boolean"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "startDateTime",
+          "endDateTime"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "get-calendar-view",
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "list-calendar-events",
+      "title": "list-calendar-events",
+      "description": "List the events of the user's calendar, series not expanded.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "select": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Select properties to be returned"
+          },
+          "expand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Expand related entities"
+          },
+          "filter": {
+            "type": "string",
+            "description": "Filter items by property values"
+          },
+          "orderby": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Order items by property values"
+          },
+          "top": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Show only the first n items"
+          },
+          "skip": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Skip the first n items"
+          },
+          "count": {
+            "type": "boolean",
+            "description": "Include count of items"
+          },
+          "fetchAllPages": {
+            "type": "boolean",
+            "description": "Automatically fetch all pages of results"
+          },
+          "skiptoken": {
+            "type": "string",
+            "description": "The page to continue from"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA time zone for the times returned (Prefer: outlook.timezone)"
+          },
+          "expandExtendedProperties": {
+            "type": "boolean"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "list-calendar-events",
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "get-calendar-event",
+      "title": "get-calendar-event",
+      "description": "Get one event by its id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "description": "Path parameter: eventId"
+          },
+          "select": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Select properties to be returned"
+          },
+          "expand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Expand related entities"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA time zone for the times returned (Prefer: outlook.timezone)"
+          },
+          "expandExtendedProperties": {
+            "type": "boolean"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "eventId"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "get-calendar-event",
+        "openWorldHint": true,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "create-calendar-event",
+      "title": "create-calendar-event",
+      "description": "Create an event in the user's calendar.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The request body"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "create-calendar-event",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "update-calendar-event",
+      "title": "update-calendar-event",
+      "description": "Update an event. Setting attendees replaces the whole list.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "description": "Path parameter: eventId"
+          },
+          "body": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "The request body"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "eventId",
+          "body"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "update-calendar-event",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "delete-calendar-event",
+      "title": "delete-calendar-event",
+      "description": "Delete an event.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "description": "Path parameter: eventId"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Confirm a destructive operation"
+          },
+          "includeHeaders": {
+            "type": "boolean",
+            "description": "Include response headers (including ETag) in the response metadata"
+          },
+          "excludeResponse": {
+            "type": "boolean",
+            "description": "Exclude the full response body and only return success or failure indication"
+          }
+        },
+        "required": [
+          "eventId"
+        ],
+        "additionalProperties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "delete-calendar-event",
+        "openWorldHint": true,
+        "destructiveHint": true
+      }
+    }
+  ]
+}

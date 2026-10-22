@@ -1,0 +1,167 @@
+/* The type roles, the hand, paper and motion of foundations.md, as
+   classes on the tokens (tokens.css).
+
+   Each takes every value from a token, so Reading, the night theme,
+   reduced motion and Windows' contrast themes reach it without a case of
+   its own. Moves use the `translate` and `rotate` properties, not
+   `transform`, so an arriving note can drop into the tilt it rests at
+   without the animation knowing the tilt. */
+
+.t-display {
+  font-family: var(--face-text);
+  font-size: var(--size-display);
+  line-height: var(--line-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variation-settings: "opsz" 72;
+}
+.t-title {
+  font-family: var(--face-text);
+  font-size: var(--size-title);
+  line-height: var(--line-title);
+  font-weight: 500;
+}
+.t-body {
+  font-family: var(--face-text);
+  font-size: var(--size-body);
+  line-height: var(--line-body);
+  font-weight: 400;
+}
+.t-body-user {
+  font-family: var(--face-text);
+  font-size: var(--size-body-user);
+  line-height: var(--line-body-user);
+  font-weight: 400;
+}
+.t-small {
+  font-family: var(--face-text);
+  font-size: var(--size-small);
+  line-height: var(--line-small);
+  font-weight: 400;
+}
+.t-label {
+  font-family: var(--face-text);
+  font-size: var(--size-label);
+  line-height: var(--line-label);
+  font-weight: 600;
+}
+.t-meta {
+  font-family: var(--face-data);
+  font-size: var(--size-meta);
+  line-height: var(--line-meta);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+.t-code {
+  font-family: var(--face-data);
+  font-size: var(--size-code);
+  line-height: var(--line-code);
+  font-weight: 400;
+}
+
+/* The hand: headings, kickers and annotations, never body text. */
+.hand-day {
+  font-family: var(--face-hand);
+  font-size: var(--size-hand-day);
+  line-height: var(--line-hand-day);
+  font-weight: var(--hand-weight);
+}
+.hand-kicker {
+  font-family: var(--face-hand);
+  font-size: var(--size-hand-kicker);
+  line-height: var(--line-hand-kicker);
+  font-weight: var(--hand-weight-strong);
+}
+.hand-note {
+  font-family: var(--face-hand);
+  font-size: var(--size-hand-note);
+  line-height: var(--line-hand-note);
+  font-weight: var(--hand-weight);
+}
+
+/* Paper. */
+.grain {
+  background-image: var(--grain);
+  background-size: 128px 128px;
+}
+.lifted-note {
+  box-shadow: var(--lift-note);
+  border-radius: var(--r-note);
+  rotate: calc(var(--tilt-max) * var(--tilt-of, 0));
+}
+.lifted-window {
+  box-shadow: var(--lift-window);
+  border-radius: var(--r-window);
+}
+
+/* Motion, foundations.md's table, one class per event. */
+@keyframes steve-arrive {
+  from {
+    opacity: 0;
+    translate: 0 var(--rise-entry);
+  }
+}
+.arrives {
+  animation: steve-arrive var(--t-entry) ease-out both;
+}
+
+@keyframes steve-window-opens {
+  from {
+    opacity: 0;
+    translate: 0 var(--rise-window);
+  }
+}
+.opens {
+  animation: steve-window-opens var(--t-window) ease-out both;
+}
+
+@keyframes steve-draw {
+  from {
+    opacity: 0;
+    clip-path: inset(0 var(--draw-from) 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.draws {
+  animation: steve-draw var(--t-mark) ease-in-out both;
+}
+
+@keyframes steve-note-arrives {
+  from {
+    opacity: 0;
+    translate: 0 calc(-1 * var(--drop-note));
+    rotate: calc(var(--tilt-max) * var(--tilt-of, 0) * var(--arrive-tilted));
+  }
+}
+.note-arrives {
+  animation: steve-note-arrives var(--t-note-arrive) var(--ease-note) both;
+}
+
+@keyframes steve-note-answered {
+  to {
+    opacity: 0;
+    translate: 0 calc(-1 * var(--peel-note));
+    rotate: calc(var(--tilt-max) * var(--tilt-of, 0) + var(--peel-tilt));
+  }
+}
+.note-answered {
+  animation: steve-note-answered var(--t-note-answered) ease-in both;
+}
+
+/* In progress: a quarter turn in 400ms of every 1.4s. A diamond turned
+   90 degrees is the same diamond, so the loop has no seam. */
+@keyframes steve-tick {
+  0% {
+    rotate: 0deg;
+  }
+  28.6%,
+  100% {
+    rotate: 90deg;
+  }
+}
+.turning {
+  animation: steve-tick var(--t-tick) ease-in-out infinite;
+  animation-play-state: var(--loops);
+}

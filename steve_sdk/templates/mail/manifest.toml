@@ -1,0 +1,43 @@
+# The mail template: a mail provider with a web API of its own. Copy
+# this folder to modules/<id>/ and fill each line marked FILL; provider.py
+# says what each method must return, steve_sdk/templates/__init__.py the rest.
+
+manifest_version = 1
+sdk = 1
+# FILL: the module's id ([a-z][a-z0-9_]*), the service as its users call
+# it, what an account of it gives, and how long setting one up takes.
+id = "example_mail"
+version = "1"
+label = "Example Mail"
+for = "Mail at Example, through its own API"
+effort = "About two minutes, with a token from Example's settings"
+tier = "sandbox"
+classes = ["mail"]
+code = "provider.py"
+# FILL: the address domains that pick this module, and every host
+# provider.py reaches.
+domains = ["mail.example"]
+hosts = ["api.example.com"]
+
+# FILL: the methods provider.py's writes use, on each host. Steve runs a
+# write with these and every read with GET alone, so a read cannot change
+# anything at the service.
+[methods]
+"api.example.com" = ["GET", "POST", "PATCH", "DELETE"]
+
+[mail]
+engine = "code"
+provider = "ExampleMail"
+
+[setup]
+steps = ["address", "guide", "fields", "test"]
+# FILL: the host and header the service takes its token in. Core fills the
+# token into that header, for that host alone; the provider never reads it.
+fields = [
+  { name = "token", type = "secret", label = "Your API token", bind = { host = "api.example.com", header = "Authorization", form = "Bearer {}" } },
+]
+
+# FILL: where the user makes the token, in their words.
+[[setup.guide]]
+text = "In Example's settings, make an API token that can read and write mail, and paste it below."
+link = "https://example.com/settings/tokens"

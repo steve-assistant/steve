@@ -1,0 +1,53 @@
+# A personal Outlook account (Outlook.com, Hotmail, Live, MSN), through an
+# MCP server on this computer that holds its sign-in: Outlook.com takes no
+# app passwords, and Graph from Steve itself would need an app registration
+# of Steve's own. Core's MCP engine speaks to the server; each profile under
+# profiles/ maps one server's tools onto the classes (05-connectors.md,
+# section 7). Either Steve installs the server and runs it in a container
+# of its own, which signs in by a code the user enters in their browser
+# (06-modules.md, section 7); or the user runs it and types its address.
+
+manifest_version = 1
+sdk = 1
+id = "outlook_mcp"
+version = "1"
+label = "Outlook.com"
+for = "Outlook.com, Hotmail, Live and MSN accounts"
+effort = "A few minutes, with the server running"
+tier = "backend"
+classes = ["mail", "calendar"]
+domains = ["outlook.com", "hotmail.com", "live.com", "msn.com"]
+
+[mail]
+engine = "mcp"
+profiles = ["profiles/softeria.toml"]
+path = "/mcp"
+
+[calendar]
+engine = "mcp"
+profiles = ["profiles/softeria.toml"]
+path = "/mcp"
+
+[setup]
+steps = ["address", "preset", "guide", "fields", "server_sign_in", "test", "pin"]
+fields = [
+  { name = "server", type = "host", label = "If you run the server: its address on this computer, as 127.0.0.1:port", optional = true },
+  { name = "token", type = "secret", label = "Its secret, if it takes one", optional = true },
+]
+
+[[setup.presets]]
+id = "steve"
+label = "Steve runs the server, held to Microsoft's sign-in and Graph"
+mail = { runs = "steve" }
+calendar = { runs = "steve" }
+
+[[setup.presets]]
+id = "yours"
+label = "I run the server on this computer"
+
+[[setup.guide]]
+text = "If you run it yourself: start Softeria's ms-365-mcp-server on this computer, signed in to this account, with --http 127.0.0.1 and a port, and type that address below. Any program you run could use that server too; Steve's own choice, where Steve runs it, keeps it to Steve."
+link = "https://github.com/Softeria/ms-365-mcp-server"
+
+[[setup.guide]]
+text = "Microsoft shows the sign-in as Softeria's app: the server signs in to your account with its maker's registration, not one of your own."

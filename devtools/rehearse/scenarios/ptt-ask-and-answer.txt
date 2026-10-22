@@ -1,0 +1,17 @@
+# Push-to-talk, the turn every v0.1 user takes: hold the key, ask, let go.
+# Section 1 of docs/plan/07-voice.md: the press to a live microphone at most
+# 150 ms, with the tick once it is live; the release to the first word at
+# most 2.5 s at P90, with OpenAI as fast as it is faked (keys.HEAR_S).
+scenario ptt-ask-and-answer
+about hold the key, ask the weather, let go, hear the answer
+length 10
+reply /weather/ 0.5: It is 64 and clear today, with no rain expected.
+0.5    key: press
++0.1   user: What is the weather today?
++0.3   key!: release
+expect heard ^what is the weather today
+expect asked weather
+expect transcribed == 1
+expect mic-live <= 0.15
+expect tick-live
+expect first-audio <= 2.5

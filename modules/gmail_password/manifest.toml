@@ -1,0 +1,56 @@
+# Gmail by app password (05-connectors.md, section 5): one password opens
+# the mailbox, through core's IMAP and SMTP engine, and the calendar,
+# through its CalDAV engine at Google's legacy address.
+manifest_version = 1
+sdk = 1
+id = "gmail_password"
+version = "1"
+label = "Gmail"
+for = "Mail and calendar from a Gmail address, with an app password"
+effort = "About two minutes"
+tier = "backend"
+domains = ["gmail.com", "googlemail.com"]
+classes = ["mail", "calendar"]
+
+[mail]
+engine = "imap"
+imap = "imap.gmail.com:993"
+smtp = "smtp.gmail.com:465"
+sent_copy = "server"          # Gmail files its own copy in Sent
+plus_addresses = true
+labels = true
+
+[calendar]
+engine = "caldav"
+# The legacy address is the one an app password opens (the one under
+# apidata.googleusercontent.com wants OAuth); it is the calendar itself.
+url = "https://www.google.com/calendar/dav/{address}/events/"
+
+[setup]
+steps = ["address", "guide", "fields", "classes", "test"]
+revoke = "https://myaccount.google.com/apppasswords"
+fields = [{ name = "app_password", type = "secret", label = "App password", form = "16 letters" }]
+
+[[setup.guide]]
+text = "2-Step Verification is on for this Google account."
+link = "https://myaccount.google.com/signinoptions/twosv"
+
+[[setup.guide]]
+text = "Make an app password, named Steve, and paste it below. It opens the whole mailbox and calendar; you can revoke it there at any time."
+link = "https://myaccount.google.com/apppasswords"
+
+[[setup.errors]]
+says = "Application-specific password required"
+tell = "That's your Google password, not an app password. Make an app password and paste that instead."
+
+[[setup.errors]]
+says = "Invalid credentials"
+tell = "Google refused that app password. Changing your Google password revokes app passwords, so you may need a new one."
+
+[[setup.errors]]
+says = "IMAP access is disabled"
+tell = "Your organisation's admin has turned this kind of sign-in off. Add the account through Google Cloud instead."
+
+[[setup.errors]]
+says = "not enabled for IMAP"
+tell = "IMAP is off for this mailbox. Turn it on in Gmail's settings, under Forwarding and POP/IMAP, then try again."

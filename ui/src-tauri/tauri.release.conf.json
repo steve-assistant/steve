@@ -1,0 +1,10 @@
+{
+  "bundle": {
+    "resources": {
+      "../../build/staging/backend/": "backend/",
+      "../../build/staging/runtime/": "runtime/",
+      "../../build/staging/manifest.json": "manifest.json",
+      "../../build/staging/manifest.json.sig": "manifest.json.sig"
+    }
+  }
+}

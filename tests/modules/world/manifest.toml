@@ -1,0 +1,29 @@
+# The evals' fake world (agent/autonomy_eval.py, agent/persona_eval.py): one
+# scenario's mail, calendar, files and tasks, read through the slot as any
+# account is. Under tests/, so it never ships; plugged in by the evals' fence.
+manifest_version = 1
+sdk = 1
+id = "world"
+version = "1"
+label = "The evals' world"
+for = "The yardstick and the persona eval, never a user"
+effort = "None"
+tier = "backend"
+classes = ["mail", "calendar", "files", "tasks"]
+code = "provider.py"
+
+[mail]
+engine = "code"
+provider = "WorldMail"
+
+[calendar]
+engine = "code"
+provider = "WorldCalendar"
+
+[files]
+engine = "code"
+provider = "WorldFiles"
+
+[tasks]
+engine = "code"
+provider = "WorldTasks"

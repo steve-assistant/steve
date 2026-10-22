@@ -1,0 +1,13 @@
+# 9 October 2026: two live calls stayed open for minutes after the user stopped
+# talking -- GPT-Live sends a frame every 100 ms, silence included, and the
+# desk counted every frame as its voice. Faint noise in the silent frames
+# must not hold a call open either.
+scenario quiet-closes-live
+about a live call the user stops talking to closes on its own, silent frames and all
+length 70
+live noise -60
+live says Sure, I'm listening. What's on your mind?
+0.5   user!: Hey Steve, let's talk live.
+expect live quiet|silent
+expect end-mode idle|follow
+expect one-voice

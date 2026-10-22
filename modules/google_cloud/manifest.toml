@@ -1,0 +1,60 @@
+# Google through the user's own client (05-connectors.md, section 5): Drive
+# and Docs, Tasks, a calendar with guests, and Gmail through its API. Its code
+# moved here in step 5's item 4f, as it was; item 9 made it an account like
+# any other: set up from here, signed in in the browser for its own classes,
+# and built by core's `code` engine from its context.
+manifest_version = 1
+sdk = 1
+id = "google_cloud"
+version = "1"
+label = "Google Cloud"
+for = "Drive and Docs, Tasks, a calendar with guests, and Gmail through Google's API"
+effort = "About fifteen minutes, in your own Google Cloud project"
+tier = "backend"
+classes = ["mail", "calendar", "files", "tasks"]
+code = "provider.py"
+libraries = ["googleapiclient", "google_auth_oauthlib", "google_auth_httplib2", "google", "httplib2",
+             "docx"]
+
+[setup]
+steps = ["address", "guide", "fields", "classes", "browser_sign_in", "test"]
+revoke = "https://myaccount.google.com/connections"
+fields = [{ name = "client", type = "file", label = "The OAuth client's file (JSON)" }]
+
+[[setup.guide]]
+text = "In Google Cloud's console, make a project for Steve, or choose one of yours."
+link = "https://console.cloud.google.com/projectcreate"
+
+[[setup.guide]]
+text = "Turn on the APIs for what Steve should have: Gmail, Google Calendar, Google Drive, Docs, Sheets and Slides, and Google Tasks."
+link = "https://console.cloud.google.com/apis/library"
+
+[[setup.guide]]
+text = "Set up the consent screen. For a gmail.com address choose External, and add yourself as a test user. For a work or school address, choose Internal."
+link = "https://console.cloud.google.com/auth/overview"
+
+[[setup.guide]]
+text = "Make an OAuth client of type Desktop app, download its JSON file, and choose it below. Steve keeps its id and secret in the Credential Manager, not the file."
+link = "https://console.cloud.google.com/auth/clients"
+
+[[setup.guide]]
+text = "A client left in Testing asks you to sign in again every 7 days. Publishing it ends that. Google then warns that the app is unverified: continue only if it names your own address as the developer."
+link = "https://console.cloud.google.com/auth/audience"
+
+[mail]
+engine = "code"
+provider = "GmailMail"
+plus_addresses = true
+mail_host = "gmail.googleapis.com"
+
+[calendar]
+engine = "code"
+provider = "GoogleCalendar"
+
+[files]
+engine = "code"
+provider = "GoogleDrive"
+
+[tasks]
+engine = "code"
+provider = "GoogleTasks"

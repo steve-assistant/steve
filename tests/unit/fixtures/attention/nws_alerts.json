@@ -1,0 +1,23 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "properties": {
+    "id": "urn:oid:2.49.0.1.840.0.e8b6eb8e3ea0784c510b3f1e1f21c671cc761aac.001.1",
+    "event": "Flood Watch",
+    "severity": "Severe",
+    "urgency": "Future",
+    "certainty": "Possible",
+    "headline": "Flood Watch issued September 24 at 2:17AM MDT until September 25 at 6:00AM MDT by NWS Midland/Odessa TX",
+    "description": "* WHAT...Flash flooding caused by excessive rainfall continues to be\npossible.\n\n* WHERE...Portions of southeast New Mexico, including the following\nareas, Central Lea, Eddy County Plains, Guadalupe Mountains of Eddy\nCounty and Northern Lea and southwest Texas, including the\nfollowing areas, Chinati Mountains, Davis Mountains, Davis\nMountains Foothills, Eastern Culberson, Guadalupe Mountains Above\n",
+    "instruction": "You should monitor later forecasts and be prepared to take action\nshould Flash Flood Warnings be issued.",
+    "onset": "2026-09-24T02:17:00-06:00",
+    "ends": "2026-09-25T06:00:00-06:00",
+    "expires": "2026-09-24T14:15:00-06:00",
+    "areaDesc": "Guadalupe Mountains of Eddy County; Eddy County Plains; Northern Lea County; Central Lea County; Guadalupe Mountains Above 7000 Feet; Guadalupe and Delaware Mountains; Van Horn and Highway 54 Corridor; Eastern Culberson County; Chinati Mountains; Marfa Plateau; Davis Mountains; Davis Mountains Foothills; Presidio Valley",
+    "status": "Actual",
+    "messageType": "Update"
+   }
+  }
+ ]
+}

@@ -1,0 +1,182 @@
+/* The quick bar (QuickBar.tsx, presence.md): a slip on `note`, in its own
+   small window, as tall as what it shows. Windows draws the window's
+   corners and shadow (`shadow` in tauri.conf.json); a shadow drawn here
+   would be cut off at the window's edge. */
+
+html.quickbar-window,
+html.quickbar-window body,
+html.quickbar-window #root {
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--note);
+}
+
+.quickbar {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 14px 18px 12px;
+  font-family: var(--face-text);
+  color: var(--ink);
+  background: var(--note);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-window);
+  box-sizing: border-box;
+}
+
+.quickbar-input {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.quickbar-input > :first-child {
+  flex: none;
+  margin-top: 4px;
+}
+.quickbar-input textarea {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--face-text);
+  font-size: 20px;
+  line-height: 32px;
+  field-sizing: content;
+  max-height: 160px;
+}
+/* Signed out: one line and the way to the app. */
+.quickbar-out {
+  align-items: center;
+}
+.quickbar-out > :first-child {
+  margin-top: 0;
+}
+.quickbar-out .quickbar-line {
+  flex: 1;
+  margin: 0;
+}
+.quickbar-input textarea::placeholder {
+  color: var(--ink-faint);
+}
+
+.quickbar-listening {
+  margin: 8px 0 0 36px;
+  color: var(--ink-soft);
+}
+
+.quickbar-exchange {
+  margin: 10px 0 0 36px;
+}
+.quickbar-asked {
+  margin: 0 0 4px;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+}
+.quickbar-answer {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.quickbar-answer p {
+  margin: 0 0 6px;
+}
+.quickbar-error {
+  color: var(--red);
+}
+
+/* The journal's working line: a turned square, turning, and what Steve is
+   doing (day.css `.sign`). */
+.quickbar-working {
+  position: relative;
+  margin: 8px 0 0 36px;
+  min-height: 22px;
+  color: var(--ink-soft);
+}
+.quickbar-sign {
+  position: absolute;
+  top: 0.55em;
+  left: -22px;
+  width: 7px;
+  height: 7px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ink-soft);
+  transform: rotate(45deg);
+}
+
+.quickbar-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.quickbar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  padding: 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.quickbar-note {
+  background: var(--paper-deep);
+  border-radius: var(--r-slip);
+}
+.quickbar-kicker {
+  flex: none;
+  color: var(--ink-soft);
+}
+.quickbar-line {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--size-small);
+}
+/* A note the bar asks a yes on is shown whole: its first line and each line
+   of its detail (To:, Cc:, Subject:), wrapped, none cut to the row. */
+.quickbar-whole {
+  align-items: flex-start;
+  padding-block: 8px;
+  white-space: normal;
+}
+.quickbar-whole .quickbar-line {
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+.quickbar-detail {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  white-space: pre-line;
+}
+.quickbar-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.quickbar-actions .note-main {
+  height: 28px;
+  min-width: 48px;
+}
+.quickbar-actions .note-other {
+  min-height: 28px;
+}
+.quickbar-next {
+  display: block;
+  line-height: 36px;
+  color: var(--ink-soft);
+}
+.quickbar-last {
+  display: block;
+  line-height: 36px;
+  color: var(--ink-faint);
+}

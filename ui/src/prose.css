@@ -1,0 +1,44 @@
+/* The hand's marks on Steve's words (Prose.tsx), and the quotes they mark.
+   Here and not in day.css: the quick bar draws its answers with Prose too,
+   and loads none of the day's styles. */
+
+.prose blockquote {
+  position: relative;
+  margin: 0 0 12px;
+  padding-left: 16px;
+}
+/* A quote past the reply's marks keeps a plain rule, so it still reads as
+   a quote. */
+.prose blockquote:not(.marked) {
+  border-left: 1px solid var(--ink-faint);
+  padding-left: 15px;
+}
+
+/* A marked bold is one box, so its mark is drawn round its words. */
+.prose strong.marked {
+  position: relative;
+  display: inline-block;
+}
+/* In the reply's own ink, not the pen's red: a red mark on Steve's own
+   words read as a correction. */
+.prose-underline,
+.prose-bracket {
+  position: absolute;
+  color: inherit;
+  pointer-events: none;
+}
+.prose-underline {
+  left: -2px;
+  bottom: -4px;
+  width: calc(100% + 4px);
+  height: 7px;
+}
+.prose-bracket {
+  left: 0;
+  top: 2px;
+  width: 9px;
+  height: calc(100% - 4px);
+}
+.prose-link-failed {
+  color: var(--ink-soft);
+}

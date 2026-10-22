@@ -1,0 +1,347 @@
+{
+ "captured": "OpenAI Responses, gpt-6-luna with the hosted web_search tool, 12 October 2026, through core.websearch._call: the request it sent and the answer, verbatim",
+ "request": {
+  "model": "gpt-6-luna",
+  "instructions": "Search the web once for the query. List the 5 most relevant pages, one line each: what the page says that answers the query, citing the page. No other text.",
+  "input": "how to descale an espresso machine",
+  "tools": [
+   {
+    "type": "web_search",
+    "search_context_size": "low"
+   }
+  ],
+  "tool_choice": "required",
+  "max_tool_calls": 1,
+  "include": [
+   "web_search_call.action.sources"
+  ],
+  "reasoning": {
+   "effort": "low"
+  },
+  "store": false,
+  "max_output_tokens": 2000
+ },
+ "answer": {
+  "id": "resp_0e737db45238ecc4016acd993b6df887d18b4ea862efadcca3",
+  "created_at": 1791859003.0,
+  "error": null,
+  "incomplete_details": null,
+  "instructions": "Search the web once for the query. List the 5 most relevant pages, one line each: what the page says that answers the query, citing the page. No other text.",
+  "metadata": {},
+  "model": "gpt-6-luna",
+  "object": "response",
+  "output": [
+   {
+    "id": "ws_0e737db45238ecc4016acd993c3ca487d1863a4b0578bcf714",
+    "action": {
+     "type": "search",
+     "queries": [
+      "how to descale espresso machine official manufacturer instructions",
+      "site:breville.com descale espresso machine instructions",
+      "site:keurig.com espresso machine descaling instructions"
+     ],
+     "query": "how to descale espresso machine official manufacturer instructions",
+     "sources": [
+      {
+       "type": "url",
+       "url": "https://www.breville.com/us/en/blog/coffee-and-espresso/how-to-clean-espresso-machine.html"
+      },
+      {
+       "type": "url",
+       "url": "https://www.breville.com/en-us/support/article/ka0QU000002WDFVYA4?product_code=BES500&title=Unable+to+descale+espresso+machine"
+      },
+      {
+       "type": "url",
+       "url": "https://assets.breville.com/Instruction-Booklets/ANZ/BES810_ANZ_IB_I21_FA_WEB.pdf"
+      },
+      {
+       "type": "url",
+       "url": "https://www.breville.com/inspiration/en-us/tutorials/the-oracle/cleaning-guides/how-to-perform-a-descale"
+      },
+      {
+       "type": "url",
+       "url": "https://assets.breville.com/BVE850/BVE850_USCM_IB_120V_A23_FA.pdf"
+      },
+      {
+       "type": "url",
+       "url": "https://www.breville.com/en-us/support/article/ka0QU000002IkT4YAK"
+      },
+      {
+       "type": "url",
+       "url": "https://www.keurig.com/medias/Descaling-Instructions.pdf?context=bWFzdGVyfGFjY2Vzc29yaWVzLXVzZXItZ3VpZGUtcGRmc3wyMjcyOTc1fGFwcGxpY2F0aW9uL3BkZnxhY2Nlc3Nvcmllcy11c2VyLWd1aWRlLXBkZnMvaDczL2hmMi8xNTI5NTk1ODcxMjM1MC5wZGZ8NzNjNjZiNjFkNzllM2YwMzAwYmE0NmJjNGE4ODRlYzY4ZTE3NTRkMTU0ZmRmYjFmOGQ3OTg4ZGQ2N2JlMGQ2Yg&msockid=29cb12e39f056ed231e704ae9ef66fbb"
+      },
+      {
+       "type": "url",
+       "url": "https://assets.breville.com/BES920/BES920_USCM_IB_X23_LR.pdf"
+      },
+      {
+       "type": "url",
+       "url": "https://www.breville.com/en-us/landing/oracle-dual-boiler"
+      },
+      {
+       "type": "url",
+       "url": "https://www.usa.philips.com/c-f/XC000021770/how-do-i-descale-my-philips-barista-brew-espresso-machine"
+      },
+      {
+       "type": "url",
+       "url": "https://www.usa.philips.com/c-f/XC000023756/how-to-descale-my-philips-caf%C3%A9-aromis-espresso-machine"
+      },
+      {
+       "type": "url",
+       "url": "https://www.bosch-home.com/us/owner-support/get-support/how-to-descale-your-countertop-coffee-machine"
+      },
+      {
+       "type": "url",
+       "url": "https://www.usa.philips.com/c-f/XC000005644/how-to-descale-my-saeco-odea-espresso-machine"
+      },
+      {
+       "type": "url",
+       "url": "https://www.nespresso.com/us/en/machine-assistance/vertuo-up"
+      },
+      {
+       "type": "url",
+       "url": "https://www.breville.com/content/dam/breville/au/en/assets/miscellaneous/instruction-manual/espresso/BES980-instruction-manual.pdf"
+      },
+      {
+       "type": "url",
+       "url": "https://products.geappliances.com/appliance/gea-support-search-content?contentId=000062021"
+      },
+      {
+       "type": "url",
+       "url": "https://www.breville.com/content/dam/breville/ca/assets/miscellaneous/instruction-manual/nespresso/BNE800-instruction-manual.pdf"
+      },
+      {
+       "type": "url",
+       "url": "https://producthelp.kitchenaid.com/Countertop_Appliances/Coffee_and_Espresso/Espresso/Fully_Automatic_Espresso/Cleaning/Descaling_the_Espresso_Machine"
+      },
+      {
+       "type": "url",
+       "url": "https://www.youtube.com/watch?v=4YESMoo4h2E"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/FellowProducts/comments/1vs3ge5/is_urnex_dezcal_safe_for_es1/"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/nespresso/comments/1tmk0q3/this_is_your_friendly_reminder_to_descale_those/"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/nespresso/comments/1750zuz"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/superautomatic/comments/1s14lcw/descaling_delonghi_magnifica_plus_nightmare/"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/Moccamaster/comments/16ty75w"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/nespresso/comments/1n58eq9/me_when_i_see_post_about_how_frequently_you/"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/IndiaCoffee/comments/1m20bnm"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/espresso/comments/15humiz"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/Coffee/comments/fdrq4j"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/espresso/comments/134naah"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/gaggiaclassic/comments/11qfxov"
+      },
+      {
+       "type": "url",
+       "url": "https://www.reddit.com/r/espresso/comments/1ce76sh/profitec_go_descaling/"
+      },
+      {
+       "type": "url",
+       "url": "https://www.breville.com/us/en/blog/coffee-and-espresso/how-to-clean-espresso-machine.html?utm_source=openai"
+      },
+      {
+       "type": "url",
+       "url": "https://www.breville.com/en-us/support/article/ka0QU000002WDFVYA4?product_code=BES500&title=Unable+to+descale+espresso+machine&utm_source=openai"
+      },
+      {
+       "type": "url",
+       "url": "https://www.usa.philips.com/c-f/XC000021770/how-do-i-descale-my-philips-barista-brew-espresso-machine?utm_source=openai"
+      },
+      {
+       "type": "url",
+       "url": "https://www.bosch-home.com/us/owner-support/get-support/how-to-descale-your-countertop-coffee-machine?utm_source=openai"
+      },
+      {
+       "type": "url",
+       "url": "https://producthelp.kitchenaid.com/Countertop_Appliances/Coffee_and_Espresso/Espresso/Fully_Automatic_Espresso/Cleaning/Descaling_the_Espresso_Machine?utm_source=openai"
+      }
+     ]
+    },
+    "status": "completed",
+    "type": "web_search_call"
+   },
+   {
+    "id": "rs_0e737db45238ecc4016acd993f737487d195c9c2727d2798a6",
+    "summary": [],
+    "type": "reasoning",
+    "content": [],
+    "encrypted_content": "gAAAAABqzZlBblPFzpLthxBthK4e_trOP6hKTuQKA2odi4VyEa8Kp49-78ebpZk0s3NYnDU6INCYdlX1TjQWo9s65cW8oGISiYDKUpviug4wLVuuxg9SZK_67fLprRzcARIQBbobmMS-7oiqcVSdW5B0Vof0A1hDTWmb5bZ0NeqcV76_Ek2Dx3I6pS_MQxcH0QJoILIILn3nLeDzn-gXaca3l7B5uBpQQf7yRxew18Q3LvA1Qh3-mP3JGfnIrXbF6-EQKCyAWwQjTC6IFotCaM-2yatwYcnImjcWRyORuwnWFRBXFgN_LMHdeV58vLi6oz9FrzGgAXma7F9B7WsueeGS9kVqOVw8wTL8z3F_bqw8EbMyAh9X0fodnuZ2cFs4e1e1SJAIo9byuqLpmhav1NmdRJvyJJy8AAHLX4znJhwLuSTE5EqUtxyz3s03cdj4McMjnsm7bvjEnJQYRAcTj6XjdQLXs3K_vwJIBg6-DfOjQ2CYqrrVE_nRm5MH1pa45uZs8nmZU6dZWDoYu2C3QuG_zdDQQ_cwH65Mfg-qrBKwhGIVt89Jsbf6u_s5SXHCU7CHIrZ6BEKigvxuofU9jnaSb-v7FtzrqExKac1kn5Y6NW0zRye3mIFCZvaTZUXebvU7UwKb6xwDGwpxv5w756-mDFK6Z8ObW0TlyH3lCuxpO1dvwcgW6ZVouh_-RlpIWdO-lDpdN7c_zDjAWdOAOH-BmwKO9L5kF_8vbbxtKZg8qtkYT2A4C3si8nzFqY4iz6b1BOjyXyNqwKQ043QMm7Du--ilWyfrXMX0kao2TmeIUAHV1ehCX3F7Myc6DVLpxNu4tpENon9pReJ2Ys7nS2kO5rOXpVSuDHEKA5Vfv2s7WupKqx6eHF7U0j5RpQzAI-QkxGozPwQe3HAsLq-XnflYSvDpp1kk48G_3bsEnLIGUG0_kGkRmPhfsHDv8icHkXYKXmI9eALHTc72B-agnZ9t8J4WBqMop1lVNaZy5eWpd8hkVnk8CVO5ezTwPVI0aXyEkad8wIXae5w6n14TFeMbNow0UiLc2OJYh2WywO6lpSGmtXZfhZdL7oPYvfPcFT0zS-h0JVhIzuQ9tAlef907zdJkBSA2JNSlTA3LKF2-4Wg0j7AVltZsVfzhFx-4UWpKeTXGUbHiV9I5OMPWmZ2auEgKQyB3qBEIi0y1gt5twBgVz1boLXDVAmZkeRcjZJpxLZj4GEbqpd2xfuZ9OZ0WPURFgoggODaSi3cTf5bW_MxWISk0laa01CHUv5rbvR30dtc1YZXGj8ridh4QY4V4VV8sGoSEtx2KATQZDbIkezrH0DIxDhnLHHT-krr7LAa8-3hquKRISQvXUdEDFKl9qZpyHpaGoUi6mxKdAQtrsxBfdSdFqtqh08FgB4XKdx-DhoMpzsTLWrW0jfIUwVCEjbHSztp8EZKDpWplMAhW941KTzwzlMeKy1lxJo1xNqwItfKfwEQ9-v9kyfjLw4ud-WlFyXdZMUJo6xIOITlqcTspMvzZtjXY79Rcnxljr3iP9k9aY17SzFZkdXnkka16m-9ULaSJCoBDgj81xjX5eDGXzIuurwpsP9l8HQ7HVC3eAlZ-skBNHG2ItPB5imZ8ax6t2E623p3HPX7ta0eJovo5th_41N7-unq8nN4dpDiHQtKq5R5oJ3WYOxRye9poIkCLq-HV4_l2Qx0xKj-S8d0LAH1suFNUH8lOsbCKb3mL4TfNVcmWk1BY8-ylYI02jangID1REJ2jhutmDD0UzJac6Pi-DGCsRLuIQqi-IvoPveGlT5bmN1JF5petqDib_DWd6NJ-c4N-QHttxLtqtV5d1hXvEzjuFl8pSbqz-dGe-OhclsqkE2yNPuvyW0Yh7UEMvrTWMiGT8Qni52Qj68EI6zj-jLPNe03cFmQLVaxKkjy4Eyor0ge8jCMLpLi3UdhTJpJGA5-vdscp-iPGTCGTyv47v0o=",
+    "status": null
+   },
+   {
+    "id": "msg_0e737db45238ecc4016acd993fd69087d19b89990cb8292e59",
+    "content": [
+     {
+      "annotations": [
+       {
+        "end_index": 315,
+        "start_index": 189,
+        "title": "How to Clean an Espresso Machine: A Step by Step Guide",
+        "type": "url_citation",
+        "url": "https://www.breville.com/us/en/blog/coffee-and-espresso/how-to-clean-espresso-machine.html?utm_source=openai"
+       },
+       {
+        "end_index": 701,
+        "start_index": 539,
+        "title": "Support Article | Breville Support",
+        "type": "url_citation",
+        "url": "https://www.breville.com/en-us/support/article/ka0QU000002WDFVYA4?product_code=BES500&title=Unable+to+descale+espresso+machine&utm_source=openai"
+       },
+       {
+        "end_index": 1015,
+        "start_index": 875,
+        "title": "How do I descale my Philips Barista Brew Espresso Machine? | Philips",
+        "type": "url_citation",
+        "url": "https://www.usa.philips.com/c-f/XC000021770/how-do-i-descale-my-philips-barista-brew-espresso-machine?utm_source=openai"
+       },
+       {
+        "end_index": 1283,
+        "start_index": 1144,
+        "title": "How to Clean and Descale Your Countertop Espresso Machine | Bosch Home Appliances",
+        "type": "url_citation",
+        "url": "https://www.bosch-home.com/us/owner-support/get-support/how-to-descale-your-countertop-coffee-machine?utm_source=openai"
+       },
+       {
+        "end_index": 1680,
+        "start_index": 1480,
+        "title": "Descaling the Espresso Machine - Product Help | KitchenAid",
+        "type": "url_citation",
+        "url": "https://producthelp.kitchenaid.com/Countertop_Appliances/Coffee_and_Espresso/Espresso/Fully_Automatic_Espresso/Cleaning/Descaling_the_Espresso_Machine?utm_source=openai"
+       }
+      ],
+      "text": "- **Breville: How to clean an espresso machine** — Remove the water filter, prepare descaler as directed, run it through the brew head and outlets, then flush the machine with fresh water. ([breville.com](https://www.breville.com/us/en/blog/coffee-and-espresso/how-to-clean-espresso-machine.html?utm_source=openai))\n- **Breville Support: Unable to descale an espresso machine** — Use a compatible descaler, follow your model’s descale cycle, and complete the full fresh-water rinse; Breville says not to use vinegar on the models covered. ([breville.com](https://www.breville.com/en-us/support/article/ka0QU000002WDFVYA4?product_code=BES500&title=Unable+to+descale+espresso+machine&utm_source=openai))\n- **Philips: Descale the Barista Brew** — Fill the tank with Philips espresso-machine descaler and water to the marked level, then follow the machine’s descaling procedure. ([usa.philips.com](https://www.usa.philips.com/c-f/XC000021770/how-do-i-descale-my-philips-barista-brew-espresso-machine?utm_source=openai))\n- **Bosch: Descale a countertop coffee machine** — Use the machine’s appropriate descaling program and follow its instructions. ([bosch-home.com](https://www.bosch-home.com/us/owner-support/get-support/how-to-descale-your-countertop-coffee-machine?utm_source=openai))\n- **KitchenAid: Descale a fully automatic espresso machine** — Run the on-screen descaling program and use a descaler recommended for fully automatic machines; KitchenAid says not to use vinegar. ([producthelp.kitchenaid.com](https://producthelp.kitchenaid.com/Countertop_Appliances/Coffee_and_Espresso/Espresso/Fully_Automatic_Espresso/Cleaning/Descaling_the_Espresso_Machine?utm_source=openai))",
+      "type": "output_text",
+      "logprobs": []
+     }
+    ],
+    "role": "assistant",
+    "status": "completed",
+    "type": "message",
+    "phase": "final_answer"
+   }
+  ],
+  "parallel_tool_calls": true,
+  "temperature": 1.0,
+  "tool_choice": "required",
+  "tools": [
+   {
+    "type": "web_search",
+    "external_web_access": null,
+    "filters": null,
+    "search_context_size": "low",
+    "user_location": {
+     "city": null,
+     "country": "US",
+     "region": null,
+     "timezone": null,
+     "type": "approximate"
+    },
+    "return_token_budget": "default",
+    "search_content_types": [
+     "text"
+    ]
+   }
+  ],
+  "top_p": 0.98,
+  "background": false,
+  "completed_at": 1791859009.0,
+  "conversation": null,
+  "max_output_tokens": 2000,
+  "max_tool_calls": 1,
+  "moderation": null,
+  "previous_response_id": null,
+  "prompt": null,
+  "prompt_cache_diagnostics": null,
+  "prompt_cache_key": null,
+  "prompt_cache_options": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+   "context": "all_turns",
+   "effort": "low",
+   "generate_summary": null,
+   "mode": "standard",
+   "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "status": "completed",
+  "text": {
+   "format": {
+    "type": "text"
+   },
+   "verbosity": "medium"
+  },
+  "top_logprobs": 0,
+  "truncation": "disabled",
+  "usage": {
+   "input_tokens": 12759,
+   "input_tokens_details": {
+    "cache_write_tokens": 11,
+    "cached_tokens": 4353
+   },
+   "output_tokens": 376,
+   "output_tokens_details": {
+    "reasoning_tokens": 102
+   },
+   "total_tokens": 13135
+  },
+  "user": null,
+  "access_programs": null,
+  "billing": {
+   "payer": "developer"
+  },
+  "frequency_penalty": 0.0,
+  "presence_penalty": 0.0,
+  "store": false,
+  "tool_usage": {
+   "image_gen": {
+    "input_tokens": 0,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 0
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 0
+    },
+    "total_tokens": 0
+   },
+   "web_search": {
+    "num_requests": 1
+   }
+  }
+ },
+ "first_description": "Breville: How to clean an espresso machine — Remove the water filter, prepare descaler as directed, run it through the brew head and outlets, then flush the machine with fresh water."
+}

@@ -1,0 +1,460 @@
+/* The back pages' forms and tables (docs/design/back-pages.md, Forms and
+   Tables and figures), for Form.tsx's controls and for the native ones of
+   the views moved in from the tabs (Accounts, Extensions, Browser logins,
+   Spend, Activity), which keep their markup and take this look inside a
+   back page. Every colour, face and size is a token (tokens.css). */
+
+.back-body {
+  font-family: var(--face-text);
+  font-size: var(--size-small);
+  line-height: var(--line-small);
+}
+
+/* ------------------------------------------------------------ sections */
+
+.form-page {
+  padding: 0 0 var(--space-7);
+}
+.form-section {
+  margin: 0 0 var(--space-6);
+}
+.form-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.form-title,
+.back-body .panel h3 {
+  margin: 0 0 var(--space-1);
+  font-family: var(--face-text);
+  font-size: var(--size-title);
+  line-height: var(--line-title);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+.form-why {
+  margin: 0 0 var(--space-4);
+  color: var(--ink-soft);
+}
+
+/* ------------------------------------------------------------ fields */
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-4);
+}
+.form-label {
+  font-size: var(--size-label);
+  line-height: var(--line-label);
+  color: var(--ink-soft);
+}
+.form-hint {
+  font-size: var(--size-label);
+  line-height: var(--line-label);
+  color: var(--ink-faint);
+}
+.form-error {
+  color: var(--red-ink);
+}
+/* A risk said before a step, plainly: ruled at its left in red ink. */
+.form-warning {
+  margin: 0 0 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--red-ink);
+  color: var(--ink);
+}
+
+/* A text input has no box: a strong underline, its label above. Focused,
+   the underline is ink and twice as thick. */
+.form-input,
+.form-select,
+.back-body .panel input:not([type="checkbox"], [type="radio"], [type="range"]),
+.back-body .panel select,
+.back-body .panel textarea {
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  padding: var(--space-1) 0;
+  outline: none;
+}
+.back-body .panel textarea {
+  border: 1px solid var(--rule-strong);
+  padding: var(--space-2);
+}
+.form-input:focus-visible,
+.form-select:focus-visible,
+.back-body .panel input:not([type="checkbox"], [type="radio"], [type="range"]):focus-visible,
+.back-body .panel select:focus-visible {
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: -1px;
+}
+.form-select option {
+  background: var(--note);
+  color: var(--ink);
+}
+.form-time {
+  width: 9ch;
+  font-family: var(--face-data);
+}
+
+/* A number with bounds: in the data face, with − and + either side. */
+.form-number > div {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.form-number input {
+  width: 7ch;
+  text-align: center;
+  font-family: var(--face-data);
+}
+.form-number button {
+  font: inherit;
+  font-size: var(--size-body);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: var(--ink);
+  cursor: pointer;
+  min-width: 28px;
+  min-height: 28px;
+}
+.form-number button:disabled {
+  color: var(--ink-faint);
+  cursor: default;
+}
+
+/* A choice of a few: the options as words in a row, the chosen one
+   underlined. */
+.form-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+.form-choices button {
+  font: inherit;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: var(--space-1) 0;
+  cursor: pointer;
+}
+.form-choices button.chosen {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* A checkbox is a drawn square, checked with a drawn check: a switch is a
+   phone's control, a tick is paper's. The real box stays, unseen, for the
+   keyboard and the screen reader. */
+.form-check {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  cursor: pointer;
+}
+.form-check input {
+  position: absolute;
+  opacity: 0;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+}
+.form-check-box {
+  position: relative;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-note);
+}
+/* The check fills the inside of the box, centred, drawn with the box's own
+   line, so the two read as one drawing (Check, in Form.tsx). */
+.form-check-mark {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.form-check input:disabled + .form-check-box .form-check-mark {
+  stroke: var(--ink-faint);
+}
+.form-check input:focus-visible + .form-check-box {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+.form-check input:disabled + .form-check-box {
+  border-color: var(--ink-faint);
+}
+.form-check-text {
+  display: flex;
+  flex-direction: column;
+}
+/* In a line: an account's On, the kinds an account may use, an address. */
+.form-check.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+.form-check.inline .form-check-box,
+.form-check.inline input {
+  margin-top: 0;
+}
+
+.form-knob {
+  margin: 0 0 var(--space-2);
+}
+.form-knob .form-field {
+  margin-bottom: var(--space-1);
+}
+.form-knob-foot {
+  display: flex;
+  gap: var(--space-3);
+  min-height: var(--line-label);
+  margin-bottom: var(--space-3);
+  font-size: var(--size-label);
+}
+
+/* "Saved", with a drawn check, beside what was changed; it fades. */
+.form-said {
+  font-size: var(--size-label);
+  line-height: var(--line-label);
+}
+.form-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--ink-soft);
+  animation: form-fade 4s ease-in forwards;
+}
+.form-saved-mark {
+  width: 14px;
+  height: 14px;
+}
+@keyframes form-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .form-saved {
+    animation: none;
+  }
+}
+
+/* A page's line for what its last change did, in place of the toasts. */
+.page-said {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-1) 0;
+  background: var(--paper);
+}
+/* Nothing said, it takes no room; its live region stays for the screen
+   reader, so the line is never :empty. */
+.page-said:not(:has(.form-saved, .form-error)) {
+  margin: 0;
+  padding: 0;
+}
+
+/* ------------------------------------------------------------ buttons */
+
+/* The main button is an ink block; every other is text, underlined on
+   hover. Destructive is red ink, with a second step. */
+.form-main,
+.back-body .panel button.primary {
+  font: inherit;
+  height: 36px;
+  padding: 0 var(--space-4);
+  background: var(--ink);
+  color: var(--paper);
+  border: 0;
+  border-radius: var(--r-slip);
+  cursor: pointer;
+}
+.form-main:disabled,
+.back-body .panel button.primary:disabled {
+  background: var(--ink-faint);
+  opacity: 1;
+  cursor: default;
+}
+.form-quiet,
+.form-danger,
+.back-body .panel button:is(.danger, .form-danger),
+.back-body .panel button:not(.primary, .chip, .item-head, .danger, .form-danger, .form-choices button, .form-number button) {
+  font: inherit;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: var(--space-1) 0;
+  margin-right: var(--space-3);
+  cursor: pointer;
+  text-decoration: none;
+}
+.form-quiet {
+  color: var(--ink-soft);
+}
+.form-quiet:hover:not(:disabled),
+.form-danger:hover:not(:disabled),
+.back-body .panel button:not(.primary, .chip, .item-head):hover:not(:disabled) {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  border-color: transparent;
+}
+/* Destructive buttons are left out of the rule above, which outranked
+   this one and drew every Forget and Remove in plain ink. */
+.form-danger,
+.back-body .panel button:is(.danger, .form-danger) {
+  color: var(--red-ink);
+  background: none;
+}
+.form-quiet:disabled,
+.form-danger:disabled,
+.back-body .panel button:is(.danger, .form-danger):disabled {
+  color: var(--ink-faint);
+  cursor: default;
+}
+.form-asking {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+}
+.form-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+}
+
+/* ------------------------------------------------------------ tables */
+
+/* Rows between hairlines, no zebra and no outer box; figures in the data
+   face, right-aligned and tabular. */
+.form-table,
+.back-body .panel table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 0;
+}
+.form-table th,
+.form-table td,
+.back-body .panel th,
+.back-body .panel td {
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: baseline;
+  background: none;
+}
+.form-table th,
+.back-body .panel th {
+  font-size: var(--size-label);
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.form-figure {
+  font-family: var(--face-data);
+  font-size: var(--size-code);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.form-log {
+  margin: 0;
+  padding: var(--space-3);
+  max-height: 22em;
+  overflow: auto;
+  font-family: var(--face-data);
+  font-size: var(--size-meta);
+  line-height: var(--line-meta);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--slip);
+  border-radius: var(--r-slip);
+}
+
+/* A code the user types elsewhere (an MCP server's sign-in, Accounts):
+   large, in the data face, easy to select whole. */
+.server-code {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+}
+.server-code-text {
+  font-family: var(--face-data);
+  font-size: var(--size-display);
+  line-height: var(--line-display);
+  letter-spacing: 0.12em;
+  user-select: all;
+}
+
+/* A list of things held, each with its actions (What Steve knows). */
+.form-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.form-list > li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.form-list-meta {
+  font-size: var(--size-label);
+  color: var(--ink-faint);
+}
+/* A fact: what it is about, as a label, beside what it says. */
+.knows-fact {
+  display: grid;
+  grid-template-columns: 9em minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+}
+.knows-attribute {
+  font-size: var(--size-label);
+  line-height: var(--line-label);
+  color: var(--ink-soft);
+}
+
+@media (forced-colors: active) {
+  .form-check-box {
+    border-color: CanvasText;
+  }
+  .form-check-mark {
+    stroke: CanvasText;
+  }
+  .form-main {
+    border: 1px solid ButtonText;
+  }
+}

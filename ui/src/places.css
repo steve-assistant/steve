@@ -1,0 +1,37 @@
+/* Coming up and Call notes (Places.tsx): a list of when and what. */
+.places-page .place-row {
+  display: grid;
+  grid-template-columns: 10em minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+}
+/* A reminder done today: faint, and struck through by hand. */
+/* `start`: a grid item stretches to its column, and the strike with it,
+   past the words into the empty row. */
+.place-struck {
+  position: relative;
+  justify-self: start;
+  color: var(--ink-faint);
+  text-decoration: none;
+}
+.place-strike {
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  width: calc(100% + 4px);
+  height: 8px;
+  margin-top: -4px;
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+/* A call note is a row to press: the whole row, as plain as the rest. */
+.back-body .panel.places-page button.place-row {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+.places-page button.place-row:hover > span:last-child {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

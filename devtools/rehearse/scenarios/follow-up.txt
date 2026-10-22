@@ -1,0 +1,13 @@
+# Decision C (9 October 2026): the back-and-forth is the local follow-up
+# window -- a question right after an answer needs no wake word.
+scenario follow-up
+about a follow-up asked inside the window, with no wake word
+length 35
+reply /weather today/ 1.5: It's 64 and clear today.
+reply /tomorrow/ 1.5: Tomorrow looks cloudy, with a high of 61.
+0.5       user: Hey Steve, what's the weather today?
+quiet+1   user!: And tomorrow?
+expect asked tomorrow
+expect first-audio <= 6
+expect no-live
+expect one-voice

@@ -1,0 +1,14 @@
+# 9 October 2026, 17:29: "let's talk live" as a follow-up failed twice
+# (GPT-Live was never told to speak; one call's end reason leaked into the
+# next), then worked. It opens by name only, and speaks once.
+scenario talk-live
+about "let's talk live" as a follow-up opens one live voice, which answers
+length 60
+reply /weather/ 1.5: It's 64 and clear today.
+live says Sure. Let's go through your week. What would you like to start with?
+0.5       user: Hey Steve, what's the weather?
+quiet+1   user!: Let's talk live about my week.
+expect live-voice >= 1
+expect first-audio <= 6
+expect live quiet|silent
+expect one-voice
