@@ -137,13 +137,65 @@ def test_the_webview2_runtime_is_installed_before_the_tests_that_start_the_app()
     """The runner's Windows Server image has Edge and no WebView2 Runtime,
     which Windows 11 carries: each test that started the app waited for a
     webview that never came (CI's first runs, 22 October 2026). Microsoft's
-    installer runs only once Windows has found it signed by Microsoft."""
+    installer runs only once Windows has found it signed by Microsoft. It
+    starts first, and the tests wait for it to end: run in its turn, it
+    took a minute of each run that the job's setup and build now cover."""
     for job in APP_BUILT:
         runs = _runs(job)
         [installed] = [i for i, run in enumerate(runs) if "MicrosoftEdgeWebview2Setup" in run]
+        assert JOBS[job]["steps"][0].get("run") == runs[installed], job
         assert "Get-AuthenticodeSignature" in runs[installed], job
         assert runs[installed].index("throw") < runs[installed].index("Start-Process"), job
-        assert installed < next(i for i, run in enumerate(runs) if "pytest" in run), job
+        [waited] = [i for i, run in enumerate(runs) if "Wait-Process" in run]
+        assert "webview2-setup.pid" in runs[installed] and "webview2-setup.pid" in runs[waited], job
+        assert waited < next(i for i, run in enumerate(runs) if "pytest" in run), job
+
+
+def _from_outside_ui() -> set[str]:
+    """The files outside ui/ that the app's build reads: the screens'
+    imports and the shell's `include_str!`s, by their paths."""
+    ui = paths.SOURCE / "ui"
+    named = re.compile(r'from "(\.{1,2}/[^"?]+)|include_(?:str|bytes)!\("([^"]+)"')
+    outside = set()
+    for source in [*(ui / "src").rglob("*.ts*"), *(ui / "src-tauri" / "src").rglob("*.rs")]:
+        for match in named.finditer(source.read_text(encoding="utf-8")):
+            path = (source.parent / (match[1] or match[2])).resolve()
+            if not path.is_relative_to(ui.resolve()):
+                outside.add(path.relative_to(paths.SOURCE.resolve()).as_posix())
+    return outside
+
+
+def test_a_kept_app_is_the_one_its_sources_and_the_rigs_arguments_build():
+    """A round that changed only the backend or the tests built the same
+    app again: four of a focus run's fifteen minutes (22 October 2026).
+    Kept, it is found by everything its build reads, ui/, the files the
+    build takes from outside it, and the windows' arguments; a key short of
+    one would test an app built from other code. A failed run, as a fix's
+    runs mostly are, keeps its build too."""
+    assert _from_outside_ui() == {"PRIVACY.md"}
+    missed, kept = "steps.app.outputs.cache-hit != 'true'", "steps.app.outputs.cache-hit == 'true'"
+    for job in ("nightly", "focus"):
+        steps = JOBS[job]["steps"]
+
+        def at(found, steps=steps) -> int:
+            [i] = [i for i, step in enumerate(steps) if found(step)]
+            return i
+
+        config = at(lambda s: s.get("id") == "config")
+        restore = at(lambda s: s.get("uses", "").startswith("actions/cache/restore@"))
+        build = at(lambda s: "cargo build" in s.get("run", ""))
+        save = at(lambda s: s.get("uses", "").startswith("actions/cache/save@"))
+        touched = at(lambda s: s.get("if") == kept)
+        tests = at(lambda s: "pytest" in s.get("run", ""))
+        assert config < restore < build < save < tests and restore < touched < tests, job
+        assert "GITHUB_OUTPUT" in steps[config]["run"], job
+        assert steps[restore]["with"] == {
+            "path": "ui/src-tauri/target/debug/app.exe",
+            "key": "app-${{ steps.config.outputs.hash }}-${{ hashFiles('ui/**', 'PRIVACY.md') }}"}
+        assert steps[save]["with"] == {"path": "ui/src-tauri/target/debug/app.exe",
+                                       "key": "${{ steps.app.outputs.cache-primary-key }}"}
+        assert steps[build]["if"] == steps[save]["if"] == missed, job
+        assert "touch src-tauri/target/debug/app.exe" in steps[touched]["run"], job
 
 
 def test_the_apps_windows_are_built_with_the_rigs_arguments_as_their_own():
@@ -298,7 +350,7 @@ def test_each_action_is_pinned_to_a_commit_and_checkout_keeps_no_token():
     actions = [step for step in steps if "uses" in step]
     assert actions
     for step in actions:
-        assert re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", step["uses"]), step["uses"]
+        assert re.fullmatch(r"[\w.-]+/[\w.-]+(/[\w.-]+)*@[0-9a-f]{40}", step["uses"]), step["uses"]
     for step in actions:
         if step["uses"].startswith("actions/checkout@"):
             assert step["with"]["persist-credentials"] is False

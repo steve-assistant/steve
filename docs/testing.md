@@ -683,6 +683,11 @@ with read access to the repository and no secrets.
 - **Each night, or by hand:** the end-to-end tier and the walks, on fakes
   only. A private repository's schedule runs nothing, since its runner
   minutes are counted; there these run by hand.
+- **A fix's loop, by hand:** `gh workflow run ci.yml -f tests="<tests>"`
+  runs only the tests named. The app's build is kept between runs under
+  the hash of what it is built from, so a round that changes only the
+  backend or the tests does not build it again. Name the tests the round
+  is about: the walks run one at a time, and each adds its minutes.
 - **By hand:** the installer's run of `devtools/sandbox_check.py` on the
   runner itself, a clean Windows thrown away after the job. The job makes an
   update key for its run (`build --pubkey`), so the release key never leaves
@@ -690,9 +695,9 @@ with read access to the repository and no secrets.
   Sandbox (`STEVE_RIG_STAYS_UP` keeps the runner up for the report).
 
 Nothing that spends on a model runs in CI. The live smoke and the
-yardstick's real run are the maintainer's. The workflow has not yet run, as
-the repository has no remote. `tests/unit/test_ci_workflow.py` reads it as
-GitHub would, so a job or flag can't drift from the suite before then.
+yardstick's real run are the maintainer's. `tests/unit/test_ci_workflow.py`
+reads the workflow as GitHub would, so a job or flag can't drift from the
+suite.
 
 ## What tests each feature
 

@@ -53,6 +53,8 @@ EDGE = (Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"))
 # Where the app's own pages are, in a release build and a developer's alike
 # (Tauri's custom protocol, as WebView2 serves it).
 APP_ORIGIN = "http://tauri.localhost/"
+# Where a page's calls to the app's shell go (Tauri's IPC, as WebView2 serves it).
+SHELL_IPC = "http://ipc.localhost/"
 
 # For Edge and the app's WebView2 alike. Chromium never sends loopback
 # (`localhost`, `*.localhost`, 127/8, [::1]) to a proxy, and the app's own
@@ -103,6 +105,7 @@ def build_config() -> str:
     return json.dumps({"app": {"windows": windows}})
 
 STARTS_WITHIN_S = 60  # the app: its webview, then its backend
+QUERYABLE_MS = 5_000  # Playwright's first look for an element in a page (`Desktop._queryable`)
 
 
 def forget_port(folder: Path) -> None:
@@ -547,6 +550,8 @@ class Desktop:
     browser: object
     data: Path
     webview: Path
+    # When the app was started, on `time.monotonic`'s clock.
+    began: float
     # What the app's pages did while the test drove them, for its failure.
     seen: list[str] = field(default_factory=list)
 
@@ -616,11 +621,35 @@ class Desktop:
                     hash_ = page.url.rpartition("#")[2] if "#" in page.url else ""
                     if hash_ in ("quickbar", "deskcard"):
                         if hash_ == label:
-                            return page
+                            return self._queryable(page, label)
                     elif label == "main":
-                        return page
+                        return self._queryable(page, label)
             self._wait(0.1)
         raise TimeoutError(f"the app showed no {label} window")
+
+    def _queryable(self, page, label: str):
+        """The page, once Playwright can look for elements in it.
+
+        Playwright looks for elements in a world of its own in each page:
+        made for the document there as it attaches, and by a script it
+        registers then for each document after. A page whose navigation
+        commits while it attaches gets neither, and every wait for an
+        element there runs out its limit, while `evaluate`, in the page's
+        own world, reads it. On CI (22 October 2026) a walk's sign-in made
+        29 waits for a "Welcome back" its window showed. A reload makes the
+        document again, under the script registered by then."""
+        from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
+        try:
+            page.locator(":root").wait_for(state="attached", timeout=QUERYABLE_MS)
+        except PlaywrightTimeout:
+            said = f"the {label} page answered no query in {QUERYABLE_MS / 1000:.0f} s: reloaded"
+            self.seen.append(f"{time.monotonic() - self.began:6.1f} s  {said}")
+            # And on a run that passes, so how often it happens shows.
+            warnings.warn(said, stacklevel=3)
+            page.reload()
+            page.locator(":root").wait_for(state="attached", timeout=QUERYABLE_MS)
+        return page
 
     def _wait(self, seconds: float) -> None:
         """A pause in which the browser's news comes in. Playwright's sync
@@ -658,12 +687,12 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
             # what it said as it did, with its output thrown away.
             raise TimeoutError(f"{late}\n{_unstarted(process, printed, data, webview)}") from late
         browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")
-        app = Desktop(process, browser, data, webview)
+        app = Desktop(process, browser, data, webview, began)
 
         def noted(what: str, page) -> None:
             app.seen.append(f"{time.monotonic() - began:6.1f} s  {what}: {page.url}")
 
-        def sent(request, how: str) -> None:
+        def sent(request, how: str, wrong: bool = False) -> None:
             # Playwright's waits and clicks first wait out a navigation the
             # main frame has begun and not ended. On CI (22 October 2026)
             # the stranger's walk waited 90 s for a heading that was on the
@@ -671,8 +700,11 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
             # And each change the page asked of the backend: on CI the same
             # day, Start on setup's last page left the page where it was,
             # and nothing said whether its request was refused, or failed,
-            # or never answered.
-            if request.is_navigation_request() or request.method != "GET":
+            # or never answered. Not the calls to the app's shell, unless
+            # one fails: its windows ask several times a second whether
+            # they are shown, and in the next run those buried the rest.
+            if (wrong or request.is_navigation_request()
+                    or (request.method != "GET" and not request.url.startswith(SHELL_IPC))):
                 app.seen.append(f"{time.monotonic() - began:6.1f} s  {request.method} {how}: "
                                 f"{request.url[:120]}")
 
@@ -682,8 +714,8 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
             page.on("framenavigated", lambda frame: frame == page.main_frame and noted(
                 "committed", page))
             page.on("request", lambda r: sent(r, "asked"))
-            page.on("response", lambda r: sent(r.request, f"answered {r.status}"))
-            page.on("requestfailed", lambda r: sent(r, f"failed ({r.failure})"))
+            page.on("response", lambda r: sent(r.request, f"answered {r.status}", r.status >= 400))
+            page.on("requestfailed", lambda r: sent(r, f"failed ({r.failure})", True))
 
         for context in browser.contexts:
             context.on("page", lambda p: (noted("opened", p), watch(p)))
