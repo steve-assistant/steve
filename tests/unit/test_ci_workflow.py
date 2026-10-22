@@ -16,7 +16,7 @@ import shlex
 import yaml
 
 from core import paths
-from devtools import check
+from devtools import check, package
 
 WORKFLOW = paths.SOURCE / ".github" / "workflows" / "ci.yml"
 TEXT = WORKFLOW.read_text(encoding="utf-8")
@@ -126,6 +126,20 @@ def test_ci_reads_the_repository_and_nothing_more_and_never_spends():
     assert not re.search(r"(?<![.\w])secrets\.", TEXT)
     for never in ("live_smoke", "autonomy_eval", "OPENAI_API_KEY", "OPENROUTER_API_KEY"):
         assert never not in TEXT, never
+
+
+def test_ci_and_every_checkout_run_the_python_the_installer_carries():
+    """`requires-python` is only a floor, so uv took the newest Python on
+    the runner. CI's first run, on 22 October 2026, got 3.15: the reflect
+    extra's spaCy pulls in `blis`, which had no wheel for it, and building
+    it from source failed. The jobs that did install were testing a Python
+    no install runs. `.python-version`, which every `uv sync` reads, names
+    the installer's interpreter's minor version, and no job overrides it."""
+    pinned = (paths.SOURCE / ".python-version").read_text(encoding="utf-8").strip()
+    shipped = package.INTERPRETER.version.split("+")[0]
+    assert pinned == ".".join(shipped.split(".")[:2]), (pinned, shipped)
+    for override in ("python-version", "UV_PYTHON", "--python"):
+        assert override not in TEXT, override
 
 
 def test_each_action_is_pinned_to_a_commit_and_checkout_keeps_no_token():
