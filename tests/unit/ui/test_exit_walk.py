@@ -257,10 +257,15 @@ def test_every_setting_and_the_windows_size_survive_a_restart_of_the_app_and_bac
                 _move(page, setting)
             moved[name] = _read(page)
 
-        # Resized by Windows, as a drag would, not by the app's own call.
+        # Resized by Windows, as a drag would, not by the app's own call, to
+        # a size that fits the screen: the app fits a kept size to the work
+        # area as it starts, and on CI's 1024 by 720 one a window left 781
+        # tall came back 720 (22 October 2026).
         opened = _size(page)
         hwnd = rig.window(app.process.pid)
-        until(lambda: user32.SetWindowPos(hwnd, 0, 0, 0, 1000, 820, 0x0002 | 0x0004 | 0x0010))
+        wide, tall = _work_area()
+        until(lambda: user32.SetWindowPos(hwnd, 0, 0, 0, min(1000, wide), min(820, tall),
+                                          0x0002 | 0x0004 | 0x0010))
         # Kept in logical pixels, a fraction at some scales; the page's are whole.
         until(lambda: _size(page)[0] < opened[0] and _kept_width(app) is not None
                and abs(_kept_width(app) - _size(page)[0]) < 1,
@@ -290,13 +295,19 @@ def _sizes(app, page) -> str:
     (ui/src-tauri/src/windowsize.rs `read`). On CI (22 October 2026) the
     restarted window's size missed the one left, and the wait said only
     that it had timed out."""
-    area = (ctypes.c_long * 4)()
-    user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(area), 0)  # SPI_GETWORKAREA
     try:
         kept = (app.data / "window.json").read_text(encoding="utf-8")
     except OSError:
         kept = "nothing"
-    return f"the page {_size(page)}, kept {kept}, the work area {list(area)}"
+    return f"the page {_size(page)}, kept {kept}, the work area {_work_area()}"
+
+
+def _work_area() -> tuple[int, int]:
+    """The screen's work area, its width and height, in this process's
+    pixels, as SetWindowPos takes them from it."""
+    area = (ctypes.c_long * 4)()
+    user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(area), 0)  # SPI_GETWORKAREA
+    return area[2] - area[0], area[3] - area[1]
 
 
 def _kept_width(app) -> float | None:
