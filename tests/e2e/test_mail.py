@@ -22,7 +22,7 @@ import json
 
 import pytest
 
-from tests.e2e.backend import Backend, running, until
+from tests.e2e.backend import running, until
 from tests.fakes.jev import FakeJev
 from tests.fakes.openai import FakeOpenAI, Rule
 from tests.fakes.world import World, world
@@ -95,11 +95,6 @@ def drafts(made: World, subject: str) -> list[email.message.EmailMessage]:
             if stored.message["Subject"] == subject]
 
 
-def action(steve: Backend, note: dict) -> str:
-    return next(a["status"] for a in steve.get("/control/activity").json()["items"]
-                if a["kind"] == "action" and a["id"] == note["action_id"])
-
-
 async def test_a_message_is_read_from_the_server_and_summarised(steve):
     """The summary is said only once `read_email` has handed the model the
     message's body, read from the server by IMAP: the script answers the
@@ -126,7 +121,7 @@ async def test_a_reply_waits_in_drafts_on_a_card_naming_its_recipient_and_goes_o
 
     assert steve.decide(note, True).json()["ok"]
 
-    assert until(lambda: action(steve, note) == "done"), steve.logs()
+    assert until(lambda: steve.action(note) == "done"), f"{steve.action(note)}\n{steve.logs()}"
     [reply] = sent(made, "theo@example.com")
     assert reply["In-Reply-To"] == CHOIR["message_id"]
     assert [s.recipients for s in made.smtp.sent] == [["theo@example.com"]]
@@ -146,6 +141,6 @@ async def test_a_yes_to_part_of_a_card_sends_that_part_and_nothing_else(steve):
 
     assert steve.decide(note, True, only=[1]).json()["ok"]
 
-    assert until(lambda: action(steve, note) == "done"), steve.logs()
+    assert until(lambda: steve.action(note) == "done"), f"{steve.action(note)}\n{steve.logs()}"
     assert [m["Subject"] for m in sent(made, "iris@example.com")] == ["Plot fees"]
     assert not [m for m in sent(made, "theo@example.com") if m["Subject"] == "Seed order"]

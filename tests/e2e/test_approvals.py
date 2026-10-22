@@ -63,12 +63,6 @@ async def test_a_yes_in_the_app_runs_the_card_once_the_hold_is_over(steve):
     assert until(lambda: status(steve, "Week ahead") == "active"), steve.logs()
 
 
-def action(steve: Backend, note: dict) -> str:
-    """The card's action's status, as the app's activity page has it."""
-    return next(a["status"] for a in steve.get("/control/activity").json()["items"]
-                if a["kind"] == "action" and a["id"] == note["action_id"])
-
-
 async def test_a_no_during_the_hold_undoes_the_yes(steve):
     """The hold exists for this: a yes given by mistake can be taken back
     before anything irreversible happens. A no to a card already said yes
@@ -77,13 +71,13 @@ async def test_a_no_during_the_hold_undoes_the_yes(steve):
     assert said["type"] == "reply", steve.logs()
     note = steve.card("Garden log")
     assert steve.decide(note, True).json()["ok"]
-    assert until(lambda: action(steve, note) == "executing"), steve.logs()
+    assert until(lambda: steve.action(note) == "executing"), f"{steve.action(note)}\n{steve.logs()}"
 
     undone = steve.decide(note, False).json()
 
     assert undone["ok"] and undone["undone"], undone
     assert not until(lambda: status(steve, "Garden log") == "active", within=4)
-    assert action(steve, note) == "undone"
+    assert steve.action(note) == "undone"
     assert status(steve, "Garden log") is None  # ended, so no longer listed
 
 

@@ -74,7 +74,13 @@ def test_a_stranger_goes_from_a_fresh_install_to_a_first_answer_and_a_first_yes(
         page.get_by_role("button", name="Keep this key").click()
 
         _on(page, "How much may Steve spend a month?")
-        page.get_by_role("button", name="Continue").click()
+        # The name step reads the profile kept so far as it opens, and puts it
+        # in the form when it comes, over anything typed before then
+        # (ui/src/Setup.tsx `Name`). On CI's slow backend the walk typed
+        # first and its name was wiped (22 October 2026), so it waits.
+        with page.expect_request_finished(
+                lambda r: r.method == "GET" and r.url.endswith("/control/profile")):
+            page.get_by_role("button", name="Continue").click()
 
         _on(page, "What should Steve call you?")
         page.get_by_label("Your name").fill("Maya Lindqvist")

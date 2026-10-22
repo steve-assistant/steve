@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from tests.e2e.backend import Backend, running, until
-from tests.e2e.test_mail import ASK_READ, CHOIR, ROTA, SUMMARY, action, drafts, first_id, sent
+from tests.e2e.test_mail import ASK_READ, CHOIR, ROTA, SUMMARY, drafts, first_id, sent
 from tests.fakes.jev import FakeJev
 from tests.fakes.openai import FakeOpenAI, Rule
 from tests.fakes.world import world
@@ -120,7 +120,8 @@ async def test_a_send_the_server_refuses_on_the_yes_is_said_plainly_and_kept_in_
     made.smtp.refuse = REFUSED
     try:
         assert steve.decide(note, True).json()["ok"]
-        assert until(lambda: action(steve, note) == "failed"), steve.logs()
+        assert until(lambda: steve.action(note) == "failed"), (
+            f"{steve.action(note)}\n{steve.logs()}")
     finally:
         made.smtp.refuse = ""
 

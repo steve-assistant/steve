@@ -151,23 +151,54 @@ def test_what_the_real_app_leaves_on_disk_is_scanned_for_the_passphrase_and_its_
     ]
 
 
-def test_a_webview_folder_still_held_names_each_process_naming_it_and_its_parent(tmp_path):
-    """On CI the scan found the webview's lock files held 10 s after the
-    app's job had ended, and said only that it could not read them. Which
-    process held them, and who started it, is the fix's first question."""
-    folder = tmp_path / "webview"
-    assert rig._holding(folder) == ["no running process names the webview's folder"]
+HOLD = ("import msvcrt, sys, time; f = open(sys.argv[1], 'r+b'); "
+        "msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1); print('held', flush=True); "
+        "time.sleep(60)")
 
-    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)",
-                              f"--user-data-dir={folder / 'EBWebView'}"])
+
+@contextlib.contextmanager
+def _held_open(path: Path):
+    """A child that holds a byte of `path` locked, as a browser holds its
+    profile's lock files, until the block ends."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"x")
+    child = subprocess.Popen([sys.executable, "-c", HOLD, str(path)], stdout=subprocess.PIPE)
     try:
-        said = rig._holding(folder)
+        assert child.stdout.readline().strip() == b"held"
+        yield child
     finally:
         child.kill()
         child.wait(10)
-    assert said and all(line.startswith("still running: python") for line in said)
-    assert any(f" {child.pid}, " in line and f"from python.exe {os.getpid()}" in line
-               for line in said)
+        child.stdout.close()
+
+
+def test_a_webview_file_still_held_names_each_process_holding_it_and_its_parent(tmp_path):
+    """On CI the scan found the webview's lock files held 10 s after the
+    app's job had ended, and said only that it could not read them; then,
+    once, that no process named the folder. Which process holds them, asked
+    of Windows itself, and who started it, is the fix's first question."""
+    folder = tmp_path / "webview"
+    lock = folder / "EBWebView" / "LOCK"
+    assert rig._holding(folder, []) == ["no process holds a file there or names the folder"]
+
+    with _held_open(lock) as child:
+        said = rig._holding(folder, [lock])
+    assert any(line.startswith("holds a file: python.exe ") for line in said), said
+    assert any(f" {child.pid} (no --type), " in line and f"from python.exe {os.getpid()}" in line
+               for line in said), said
+
+
+def test_a_webview_process_left_holding_its_folder_is_ended_and_the_scan_made_again(tmp_path):
+    """Once on CI a WebView2 process outlived the job that ended the app,
+    its parent gone, and the folder was still held past the scan's wait.
+    The rig ends such a process, as the job should have, and scans again;
+    a warning says which, so the escape is seen though the test passes."""
+    data, webview = tmp_path / "data", tmp_path / "webview"
+    data.mkdir()
+    with _held_open(webview / "EBWebView" / "LOCK") as child:
+        with pytest.warns(UserWarning, match=r"outlived its job; the rig ended .*python\.exe"):
+            assert rig.left_behind(data, webview, within=0.5, stray="python.exe") == []
+        assert child.wait(10) is not None
 
 
 def test_a_tests_app_shows_its_window_and_page_behind_the_one_in_use(playwright, tmp_path):

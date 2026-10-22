@@ -47,6 +47,18 @@ class Backend:
     def headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.token}"}
 
+    def action(self, card: dict) -> str:
+        """The card's action's status, as the app's activity page has it, or
+        what the route answered instead. Three tests read the answer blindly,
+        and on CI's busy runner one without `items` (the supervisor's own
+        error, its worker out of reach for a moment) stopped a wait with a
+        KeyError that hid it (22 October 2026)."""
+        reply = self.get("/control/activity")
+        if reply.status_code != 200:
+            return f"answered {reply.status_code}: {reply.text[:300]}"
+        return next(a["status"] for a in reply.json()["items"]
+                    if a["kind"] == "action" and a["id"] == card["action_id"])
+
     def get(self, path: str, **kwargs) -> httpx.Response:
         return httpx.get(self.base + path, headers=self.headers, timeout=30,
                          verify=localapi.tls(), **kwargs)

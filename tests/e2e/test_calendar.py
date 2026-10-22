@@ -80,11 +80,6 @@ def steve(fenced):
         yield backend
 
 
-def action(steve: Backend, note: dict) -> str:
-    return next(a["status"] for a in steve.get("/control/activity").json()["items"]
-                if a["kind"] == "action" and a["id"] == note["action_id"])
-
-
 def told(steve: Backend, tool: str) -> str:
     """What the last call of `tool` handed the model."""
     return [text for name, text in steve.world.openai.results if name == tool][-1]
@@ -146,7 +141,7 @@ async def test_an_event_is_deleted_only_on_yes_and_only_that_one(steve):
 
     assert steve.decide(note, True).json()["ok"]
 
-    assert until(lambda: action(steve, note) == "done"), steve.logs()
+    assert until(lambda: steve.action(note) == "done"), f"{steve.action(note)}\n{steve.logs()}"
     after = cal.snapshot("calendar")
     assert set(before) - set(after) == {DENTIST["uid"]}
     assert after == {k: v for k, v in before.items() if k != DENTIST["uid"]}

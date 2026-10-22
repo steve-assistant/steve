@@ -357,8 +357,11 @@ except OSError as error:
             assert connection.client_pid == process.pid
             assert connection.stream.read(64) == b"hello from the container"
             connection.stream.write(b"hello from the broker")
-            connection.close()
+            # Heard before the close: closing disconnects the pipe, which drops
+            # a reply not yet read (core/sandbox/pipe.py `Stream.close`). On
+            # CI's busy runner the child read after it (22 October 2026).
             said = json.loads(process.stdout.readline())
+            connection.close()
         assert said == {"opened": True, "reply": "hello from the broker"}
         refused = run(walls, child, held.name, container=other)
         assert refused.said == {"opened": False, "error": EACCES}, refused

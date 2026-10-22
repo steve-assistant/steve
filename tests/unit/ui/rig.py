@@ -36,6 +36,7 @@ import shutil
 import subprocess
 import sys
 import time
+import warnings
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -597,13 +598,36 @@ def _unstarted(process: subprocess.Popen, printed: Path, data: Path, webview: Pa
 STAND_IN_KEY = "test-openai_api_key"
 
 
-def left_behind(data: Path, webview: Path, within: float = 10.0) -> list[str]:
+def left_behind(data: Path, webview: Path, within: float = 10.0,
+                stray: str = "msedgewebview2.exe") -> list[str]:
     """The passphrase typed into the app and the key its backend was given,
     in what they left on disk once they had gone: the data folder, with the
     shell's own log, and WebView2's folder, its cache, storage and form
     data. The end-to-end scan read neither the shell's log nor WebView2's
     folder until step 11's audit. A file the webview's last processes still
-    hold as they end is read again, for `within` seconds."""
+    hold as they end is read again, for `within` seconds.
+
+    On CI (22 October 2026) a walk's webview files were still held after
+    that, once by a WebView2 process whose parent had gone: one that had
+    outlived the job that ended the app. A process named `stray` that holds
+    a file there, or names the folder, is the app's own: it is ended, as the
+    job should have, the scan made again, and a warning says which."""
+    left = _scanned(data, webview, within)
+    held = _held(webview, left)
+    if not held:
+        return left
+    ended = _ended(webview, held, stray)
+    if ended:
+        left = _scanned(data, webview, within)
+        held = _held(webview, left)
+        if not held:
+            warnings.warn(f"the app's webview outlived its job; the rig ended {ended}",
+                          stacklevel=2)
+            return left
+    return [*left, *(f"ended {process}" for process in ended), *_holding(webview, held)]
+
+
+def _scanned(data: Path, webview: Path, within: float) -> list[str]:
     from tests.fakes import world
     from tests.unit.ui import walk
 
@@ -612,34 +636,110 @@ def left_behind(data: Path, webview: Path, within: float = 10.0) -> list[str]:
     while True:
         left = [*world.found_in(data, watched, "the data folder"),
                 *world.found_in(webview, watched, "the webview's folder")]
-        held = any(line.startswith("could not read") for line in left)
-        if not held:
+        if time.monotonic() > deadline or not any(
+                line.startswith("could not read") for line in left):
             return left
-        if time.monotonic() > deadline:
-            return [*left, *_holding(webview)]
         time.sleep(0.2)
 
 
-def _holding(folder: Path) -> list[str]:
-    """The processes still naming `folder` on their command line, as
-    WebView2's name their user data folder, with their parents. On CI's
-    first walks to their end (22 October 2026) four of five found the
-    webview's lock files held 10 s after the app's job had ended, and the
-    failure did not say by whom."""
+UNREAD = "could not read the webview's folder ("
+
+
+def _held(webview: Path, left: list[str]) -> list[Path]:
+    return [webview / line[len(UNREAD):-1] for line in left if line.startswith(UNREAD)]
+
+
+def _ended(folder: Path, held: list[Path], stray: str) -> list[str]:
+    """Ends each process named `stray` that holds one of `held` or names
+    `folder`, and says each as it was."""
     import psutil
 
+    ended = []
+    for pid in _holders(folder, held):
+        with contextlib.suppress(psutil.Error):
+            process = psutil.Process(pid)
+            if process.name().lower() == stray:
+                ended.append(_described(pid))
+                process.kill()
+                process.wait(10)
+    return ended
+
+
+def _holding(folder: Path, held: list[Path]) -> list[str]:
+    """Each process that holds one of `held` open or names `folder` on its
+    command line, as WebView2's name their user data folder: who kept the
+    files the scan could not read, which a failure said nothing of."""
+    said = [f"{how}: {_described(pid)}" for pid, how in _holders(folder, held).items()]
+    return said or ["no process holds a file there or names the folder"]
+
+
+def _holders(folder: Path, held: list[Path]) -> dict[int, str]:
+    import psutil
+
+    holders = dict.fromkeys(_lockers(held), "holds a file")
     named = str(folder).lower()
-    now = time.time()
-    said = []
-    for process in psutil.process_iter(["pid", "ppid", "name", "cmdline", "create_time"]):
-        info = process.info
-        if named not in " ".join(info["cmdline"] or []).lower():
-            continue
-        try:
-            parent = psutil.Process(info["ppid"]).name()
-        except psutil.Error:
-            parent = "gone"
-        age = f"{now - info['create_time']:.0f} s old" if info["create_time"] else "age unknown"
-        said.append(f"still running: {info['name']} {info['pid']}, {age}, "
-                    f"from {parent} {info['ppid']}")
-    return said or ["no running process names the webview's folder"]
+    for process in psutil.process_iter(["cmdline"]):
+        if named in " ".join(process.info["cmdline"] or []).lower():
+            holders.setdefault(process.pid, "names the folder")
+    return holders
+
+
+def _described(pid: int) -> str:
+    """A process by name, pid, WebView2's kind of process (`--type`; none
+    is the browser's own), age and parent, or that its command line could
+    not be read, as a process still ending has none."""
+    import psutil
+
+    try:
+        process = psutil.Process(pid)
+        name, ppid, born = process.name(), process.ppid(), process.create_time()
+    except psutil.Error:
+        return f"pid {pid}, gone"
+    try:
+        kind = next((arg.split("=", 1)[1] for arg in process.cmdline()
+                     if arg.startswith("--type=")), "no --type")
+    except psutil.Error:
+        kind = "command line unreadable"
+    try:
+        parent = f"{psutil.Process(ppid).name()} {ppid}"
+    except psutil.Error:
+        parent = f"gone {ppid}"
+    return f"{name} {pid} ({kind}), {time.time() - born:.0f} s old, from {parent}"
+
+
+def _lockers(paths: list[Path]) -> list[int]:
+    """The processes Windows' Restart Manager says hold any of `paths` open,
+    whatever their command line says."""
+    import ctypes
+    from ctypes import wintypes
+
+    class Unique(ctypes.Structure):
+        _fields_ = [("pid", wintypes.DWORD), ("started", wintypes.FILETIME)]
+
+    class Info(ctypes.Structure):
+        _fields_ = [("process", Unique), ("app", wintypes.WCHAR * 256),
+                    ("service", wintypes.WCHAR * 64), ("kind", ctypes.c_int),
+                    ("status", wintypes.ULONG), ("session", wintypes.DWORD),
+                    ("restartable", wintypes.BOOL)]
+
+    if not paths:
+        return []
+    rm = ctypes.WinDLL("rstrtmgr")
+    session, key = wintypes.DWORD(), ctypes.create_unicode_buffer(33)
+    if rm.RmStartSession(ctypes.byref(session), 0, key):
+        return []
+    try:
+        names = (wintypes.LPCWSTR * len(paths))(*(str(p) for p in paths))
+        if rm.RmRegisterResources(session, len(paths), names, 0, None, 0, None):
+            return []
+        needed, count, reasons = wintypes.UINT(), wintypes.UINT(0), wintypes.DWORD()
+        rm.RmGetList(session, ctypes.byref(needed), ctypes.byref(count), None,
+                     ctypes.byref(reasons))
+        found = (Info * needed.value)()
+        count = wintypes.UINT(needed.value)
+        if needed.value and rm.RmGetList(session, ctypes.byref(needed), ctypes.byref(count),
+                                         found, ctypes.byref(reasons)):
+            return []
+        return [info.process.pid for info in found[:count.value]]
+    finally:
+        rm.RmEndSession(session)
