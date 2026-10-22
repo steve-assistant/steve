@@ -817,3 +817,23 @@ async def test_a_run_of_their_agents_own_pings_is_not_graded(store, spy_judge):
 
     assert result is None and "prompt" not in spy_judge
     assert session_id not in reflect.unreflected(store)
+
+
+def test_redactions_email_check_reads_the_bundled_suffix_list_and_fetches_nothing(monkeypatch):
+    """presidio checks each email it finds with `tldextract.extract`, whose
+    extractor fetched the public-suffix list from publicsuffix.org on first
+    use. CI's first run with the reflect extra (22 October 2026) failed every
+    email redaction at the test fences; outside them, each reflection would
+    have told a third party it was running. The redactor points that
+    extractor at the bundled list before presidio loads."""
+    import tldextract
+    import tldextract.tldextract as tld
+
+    from agent import redact
+
+    monkeypatch.setattr(tld, "TLD_EXTRACTOR", tld.TLD_EXTRACTOR)
+    redact._offline_suffixes()
+
+    assert tld.TLD_EXTRACTOR.suffix_list_urls == ()
+    found = tldextract.extract("mail.example.co.uk")
+    assert (found.subdomain, found.domain, found.suffix) == ("mail", "example", "co.uk")

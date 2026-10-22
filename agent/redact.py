@@ -140,6 +140,19 @@ def _secret_recogniser():
     )
 
 
+def _offline_suffixes() -> None:
+    """Point tldextract's shared extractor at the public-suffix list it
+    bundles. presidio's email check calls `tldextract.extract`, whose
+    extractor fetches the list from publicsuffix.org on first use: each
+    reflection would have told a third party that Steve was redacting, and
+    under the test fences it raised instead, failing every email
+    redaction. `core/browser/vault.py` builds its own extractor the same
+    way; this one replaces the module's, which presidio reads at each call."""
+    import tldextract.tldextract as tld
+
+    tld.TLD_EXTRACTOR = tld.TLDExtract(suffix_list_urls=(), cache_dir=None)
+
+
 def _get_analyzer():
     """Load the NER pipeline, or reuse it while it is loaded. Takes a few
     seconds and holds a spaCy model; `release_if_idle` lets it go."""
@@ -151,6 +164,7 @@ def _get_analyzer():
         if _analyzer is None:
             from presidio_analyzer import AnalyzerEngine
 
+            _offline_suffixes()
             engine = AnalyzerEngine()
             engine.registry.add_recognizer(_street_address_recogniser())
             engine.registry.add_recognizer(_secret_recogniser())
