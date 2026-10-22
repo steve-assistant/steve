@@ -263,7 +263,8 @@ def test_every_setting_and_the_windows_size_survive_a_restart_of_the_app_and_bac
         until(lambda: user32.SetWindowPos(hwnd, 0, 0, 0, 1000, 820, 0x0002 | 0x0004 | 0x0010))
         # Kept in logical pixels, a fraction at some scales; the page's are whole.
         until(lambda: _size(page)[0] < opened[0] and _kept_width(app) is not None
-               and abs(_kept_width(app) - _size(page)[0]) < 1)
+               and abs(_kept_width(app) - _size(page)[0]) < 1,
+              said=lambda: _sizes(app, page))
         sized = _size(page)
 
     with fake_openai(monkeypatch), rig.desktop_app(tmp_path, playwright) as app:
@@ -271,7 +272,8 @@ def test_every_setting_and_the_windows_size_survive_a_restart_of_the_app_and_bac
         # Not still signed in: the session was the ended app's, in its memory.
         sign_in(page)
         page.locator("nav.sidebar").wait_for(timeout=WAIT_MS)
-        until(lambda: all(abs(a - b) <= 1 for a, b in zip(_size(page), sized, strict=True)))
+        until(lambda: all(abs(a - b) <= 1 for a, b in zip(_size(page), sized, strict=True)),
+              said=lambda: f"left at {sized}; {_sizes(app, page)}")
         for name in pages:
             _page(page, name)
             assert _read(page) == moved[name], name
@@ -280,6 +282,21 @@ def test_every_setting_and_the_windows_size_survive_a_restart_of_the_app_and_bac
         unmoved = {k for k, v in moved[name].items()
                    if v == before[name][k] and k not in ONLY_OFF}
         assert not unmoved, (name, unmoved)
+
+
+def _sizes(app, page) -> str:
+    """The sizes a failed wait saw: the page's, the one kept, and the
+    screen's work area, to which the app fits a kept size as it starts
+    (ui/src-tauri/src/windowsize.rs `read`). On CI (22 October 2026) the
+    restarted window's size missed the one left, and the wait said only
+    that it had timed out."""
+    area = (ctypes.c_long * 4)()
+    user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(area), 0)  # SPI_GETWORKAREA
+    try:
+        kept = (app.data / "window.json").read_text(encoding="utf-8")
+    except OSError:
+        kept = "nothing"
+    return f"the page {_size(page)}, kept {kept}, the work area {list(area)}"
 
 
 def _kept_width(app) -> float | None:

@@ -26,11 +26,13 @@ STARTED_MS = 90_000
 PASSPHRASE = "blue kettle at dawn"
 
 
-def until(check, within: float = 30.0):
+def until(check, within: float = 30.0, said=None):
+    """Waits for `check`; on the deadline, says what `said` reads then: a
+    bare timeout on CI left only a guess at what had been seen."""
     deadline = time.monotonic() + within
     while not check():
         if time.monotonic() > deadline:
-            raise TimeoutError("not within the time")
+            raise TimeoutError("not within the time" + (f": {said()}" if said else ""))
         time.sleep(0.1)
 
 
