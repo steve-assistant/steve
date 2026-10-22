@@ -23,7 +23,11 @@ run again to learn what it said. The maintainer: "fail 2 of them for fake reason
    files: "run `python -m core.policy --write-lock` once the change is final"
    -- not a four-minute run to fail the same three tests (`--skip-lock` while a
    frozen file is still being edited).
-3. The tests the change names, with the repository-wide checks
+3. CI's secrets step (`SECRETS_HOOK`) on the files the change touches. A
+   value known to be no secret is recorded with its line, and an edit above
+   it moves it: the hook rewrites `.secrets.baseline`, to commit with the
+   change, instead of CI failing on it half an hour later.
+4. The tests the change names, with the repository-wide checks
    (devtools/affected.py), not the ones that start real processes unless
    `--processes` asks for them. A commit is checked with them: from
    13 October 2026 the whole suite runs once per series of commits, not
@@ -34,12 +38,12 @@ run again to learn what it said. The maintainer: "fail 2 of them for fake reason
    and the run goes on; the run's own limits (`LIMIT_S`) are a backstop.
    Every run names its slowest tests (`SLOW_S`), and the command that says
    where the slowest one's time went.
-4. The shell's own tests, `cargo test --lib` in `ui/src-tauri/`, when the
+5. The shell's own tests, `cargo test --lib` in `ui/src-tauri/`, when the
    change touches a file there, and always with `--full`. Until 19 October
    2026 they ran nowhere: the sign-in's idle tests were run by hand, once.
-5. `--full`: everything under tests/, nothing deselected -- the final gate --
+6. `--full`: everything under tests/, nothing deselected -- the final gate --
    with no pytest cache written into the tree.
-6. Anything pytest failed is run again, alone, one process. It fails alone: a real
+7. Anything pytest failed is run again, alone, one process. It fails alone: a real
    failure. It passes alone: it was the load, or another test; said so, not
    hidden, and not blamed on the change. Exit 0 clean, 1 a real failure, 2
    only load-sensitive ones.
@@ -84,6 +88,11 @@ LIMIT_S = {"affected": 600, "whole": 1200, "alone": 600, "rust": 1200}
 SHELL = "ui/src-tauri/"
 RUST_TESTS = ("cargo", "test", "--lib", "--manifest-path", SHELL + "Cargo.toml",
               "--features", "tauri/custom-protocol")
+# CI's secrets step, as its check job runs it over every tracked file
+# (.github/workflows/ci.yml).
+BASELINE = ".secrets.baseline"
+SECRETS_HOOK = ("uvx", "--from", "detect-secrets==1.5.0", "detect-secrets-hook",
+                "--baseline", BASELINE)
 RUST_RESULT = re.compile(r"^test result: \w+\. (\d+) passed; (\d+) failed", re.M)
 RUST_FAILED = re.compile(r"^test (\S+) \.\.\. FAILED", re.M)
 # A test's own frame in a stack that `devtools.stuck` printed:
@@ -244,6 +253,39 @@ class Check:
                  "then `python -m core.policy` to see \"frozen core intact\"")
         return False
 
+    def secrets(self, changed: list[str]) -> bool:
+        """CI's secrets step on the files the change touches. The baseline
+        records the line of each value known to be no secret, and an edit
+        above one moves it: twice on 22 October 2026 CI's check job rewrote
+        the baseline, failed and kept nothing, half an hour a round. A file
+        whose lines did not change cannot move a value, so these files are
+        enough. The baseline the hook rewrites here stays, LF as every file
+        in the repository, to be committed with the change."""
+        files = [f for f in changed if f != BASELINE and (self.root / f).is_file()]
+        if not files:
+            self.say("secrets        ok (no file to scan)")
+            return True
+        started = self.clock()
+        try:
+            done = self._run([*SECRETS_HOOK, *files], timeout=300)
+        except FileNotFoundError:
+            self.say("secrets        skipped: no `uvx` on PATH (it comes with uv); CI will run it")
+            return True
+        if done.returncode == 0:
+            self.say(f"secrets        ok ({self.clock() - started:.0f} s)")
+            return True
+        baseline = self.root / BASELINE
+        with contextlib.suppress(OSError):
+            written = baseline.read_bytes()
+            if b"\r\n" in written:
+                baseline.write_bytes(written.replace(b"\r\n", b"\n"))
+        self.say("secrets        FAILED")
+        for line in _said(done).splitlines()[:30]:
+            self.say(f"  {line}")
+        self.say(f"  a moved line: {BASELINE} is rewritten, so commit it with the change; "
+                 "a new value: remove it, or mark a test's fake `# pragma: allowlist secret`")
+        return False
+
     def rust(self) -> bool:
         """The shell's tests. Its pages must be built first: the features the
         app is built with embed them, and a missing `ui/dist` is said, not
@@ -379,6 +421,8 @@ class Check:
         if not self.lock(skip_lock):
             return 1
         chosen = self.select_tests(self.root, self.base)
+        if not self.secrets(chosen.changed):
+            return 1
         named = sorted(f for f, why in chosen.tests.items() if why != ["repo-wide check"])
         self.say(f"affected       {len(chosen.tests)} test files: {len(named)} name the change, "
                  f"{len(chosen.tests) - len(named)} repo-wide checks")

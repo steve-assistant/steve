@@ -12,6 +12,7 @@ from __future__ import annotations
 import contextlib
 import os
 import re
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -148,6 +149,25 @@ def test_what_the_real_app_leaves_on_disk_is_scanned_for_the_passphrase_and_its_
         "the passphrase in the webview's folder (EBWebView/Default/Web Data)",
         "the stand-in key in the data folder (logs/app.log)",
     ]
+
+
+def test_a_webview_folder_still_held_names_each_process_naming_it_and_its_parent(tmp_path):
+    """On CI the scan found the webview's lock files held 10 s after the
+    app's job had ended, and said only that it could not read them. Which
+    process held them, and who started it, is the fix's first question."""
+    folder = tmp_path / "webview"
+    assert rig._holding(folder) == ["no running process names the webview's folder"]
+
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)",
+                              f"--user-data-dir={folder / 'EBWebView'}"])
+    try:
+        said = rig._holding(folder)
+    finally:
+        child.kill()
+        child.wait(10)
+    assert said and all(line.startswith("still running: python") for line in said)
+    assert any(f" {child.pid}, " in line and f"from python.exe {os.getpid()}" in line
+               for line in said)
 
 
 def test_a_tests_app_shows_its_window_and_page_behind_the_one_in_use(playwright, tmp_path):

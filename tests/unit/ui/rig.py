@@ -612,7 +612,34 @@ def left_behind(data: Path, webview: Path, within: float = 10.0) -> list[str]:
     while True:
         left = [*world.found_in(data, watched, "the data folder"),
                 *world.found_in(webview, watched, "the webview's folder")]
-        if time.monotonic() > deadline or not any(
-                line.startswith("could not read") for line in left):
+        held = any(line.startswith("could not read") for line in left)
+        if not held:
             return left
+        if time.monotonic() > deadline:
+            return [*left, *_holding(webview)]
         time.sleep(0.2)
+
+
+def _holding(folder: Path) -> list[str]:
+    """The processes still naming `folder` on their command line, as
+    WebView2's name their user data folder, with their parents. On CI's
+    first walks to their end (22 October 2026) four of five found the
+    webview's lock files held 10 s after the app's job had ended, and the
+    failure did not say by whom."""
+    import psutil
+
+    named = str(folder).lower()
+    now = time.time()
+    said = []
+    for process in psutil.process_iter(["pid", "ppid", "name", "cmdline", "create_time"]):
+        info = process.info
+        if named not in " ".join(info["cmdline"] or []).lower():
+            continue
+        try:
+            parent = psutil.Process(info["ppid"]).name()
+        except psutil.Error:
+            parent = "gone"
+        age = f"{now - info['create_time']:.0f} s old" if info["create_time"] else "age unknown"
+        said.append(f"still running: {info['name']} {info['pid']}, {age}, "
+                    f"from {parent} {info['ppid']}")
+    return said or ["no running process names the webview's folder"]

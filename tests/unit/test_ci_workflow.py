@@ -192,6 +192,14 @@ def test_each_push_runs_the_shells_rust_tests_as_the_check_does():
     assert next(i for i, run in enumerate(runs) if "cargo build" in run) < rust
 
 
+def test_ci_scans_for_secrets_with_the_checks_own_command():
+    """The check runs CI's secrets step on a change's files (devtools/check.py
+    `SECRETS_HOOK`): a different version or baseline here would pass what
+    CI then fails."""
+    [scan] = [run for run in _runs("check") if "detect-secrets-hook" in run]
+    assert " ".join(check.SECRETS_HOOK) in scan
+
+
 def test_every_npm_install_in_ci_skips_the_audit_call():
     """npm's call to the audit endpoint it is retiring took 5 to 7 minutes
     of each install of the app's 33 packages on the runner, more than the

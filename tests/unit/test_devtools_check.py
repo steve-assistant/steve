@@ -33,9 +33,12 @@ class _Machine:
     file it is asked for. `alone` is what a test does when run by itself."""
 
     def __init__(self, *, lint="", suite=None, alone=None, silent=False, hang=False,
-                 hang_stderr=None, exit_code=None, stuck=None, cargo=("", 0)):
+                 hang_stderr=None, exit_code=None, stuck=None, cargo=("", 0), secrets=("", 0),
+                 rewrites=None):
         self.lint, self.suite, self.alone = lint, suite or _junit(), alone or {}
         self.cargo = cargo  # what `cargo test` prints, and its exit code
+        self.secrets = secrets  # what the secrets hook prints, and its exit code
+        self.rewrites = rewrites  # the baseline the hook writes, CRLF as on Windows
         self.silent, self.hang, self.exit_code = silent, hang, exit_code
         self.hang_stderr, self.stuck = hang_stderr, stuck  # stuck: (node, its stacks)
         self.argv: list[list[str]] = []
@@ -48,6 +51,11 @@ class _Machine:
         self.timeouts.append(kwargs["timeout"])
         if argv[0] == "cargo":
             return subprocess.CompletedProcess(argv, self.cargo[1], self.cargo[0], "")
+        if argv[0] == "uvx":
+            if self.rewrites:
+                path, text = self.rewrites
+                path.write_bytes(text.replace("\n", "\r\n").encode())
+            return subprocess.CompletedProcess(argv, self.secrets[1], self.secrets[0], "")
         if self.stuck:  # as devtools.stuck leaves a stuck test's stacks
             folder = Path(next(a for a in argv if a.startswith("stuck_dir=")).split("=", 1)[1])
             folder.mkdir(parents=True, exist_ok=True)
@@ -125,6 +133,55 @@ def test_the_lock_may_be_set_aside_while_a_frozen_file_is_still_being_edited(tre
 
     assert code == 0
     assert any("skipped" in line for line in said)
+
+
+def test_the_secrets_step_scans_the_files_the_change_left_with_cis_command_before_any_test(tree):
+    """CI scans every tracked file; a value's line moves only in a file
+    that changed, so those are enough here, and a gone file or the
+    baseline itself is no file to scan."""
+    machine, said = _Machine(suite=_junit(passed=[("tests.unit.test_a", "test_x")])), []
+
+    code = _check(tree, machine, said, changed=["tests/unit/test_a.py", "gone.py",
+                                                check.BASELINE]).run()
+
+    assert code == 0
+    assert machine.argv[1] == [*check.SECRETS_HOOK, "tests/unit/test_a.py"]
+    assert "pytest" in machine.argv[2]
+
+
+def test_a_moved_secret_line_stops_the_run_and_leaves_the_rewritten_baseline_to_commit_in_lf(
+        tree):
+    """Twice on 22 October 2026 CI's check job failed half an hour after a
+    push because an edit moved a known value's line. The hook rewrites the
+    baseline here instead, with Windows' line ends, which the repository's
+    hygiene test refuses."""
+    baseline = tree / check.BASELINE
+    machine = _Machine(secrets=("The baseline file was updated.\n", 3),
+                       rewrites=(baseline, '{\n  "line_number": 233\n}\n'))
+    said: list[str] = []
+
+    code = _check(tree, machine, said, changed=["tests/unit/test_a.py"]).run()
+
+    assert code == 1
+    assert not any("pytest" in argv for argv in machine.argv)
+    assert baseline.read_bytes() == b'{\n  "line_number": 233\n}\n'
+    assert "secrets        FAILED" in said and "  The baseline file was updated." in said
+    assert any("commit it with the change" in line for line in said)
+
+
+def test_a_machine_without_uvx_is_told_ci_will_scan_and_its_tests_still_run(tree):
+    class _NoUvx(_Machine):
+        def __call__(self, argv, **kwargs):
+            if argv[0] == "uvx":
+                raise FileNotFoundError(argv[0])
+            return super().__call__(argv, **kwargs)
+
+    machine, said = _NoUvx(suite=_junit(passed=[("tests.unit.test_a", "test_x")])), []
+
+    code = _check(tree, machine, said, changed=["tests/unit/test_a.py"]).run()
+
+    assert code == 0
+    assert any(line.startswith("secrets        skipped") for line in said)
 
 
 def test_the_quick_run_leaves_out_the_process_tests_and_the_full_run_leaves_nothing_out(tree):
