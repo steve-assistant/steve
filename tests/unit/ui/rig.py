@@ -191,11 +191,14 @@ def _end(held, process: subprocess.Popen, folder: Path | None, within: float = 3
                       f"still naming {folder} after that: {naming}", stacklevel=3)
 
 
-def _end_naming(folder: Path, within: float = 10.0) -> list[str]:
+def _end_naming(folder: Path, within: float = 60.0) -> list[str]:
     """Ends each process but this one that names `folder` on its command
-    line, until none does or `within` seconds pass; says those left, and
-    why the last try to end each failed. On CI (22 October 2026) three
-    WebView2 renderers outlived 10 s of tries, and nothing said why."""
+    line, and waits for each to be gone, until none is left or `within`
+    seconds pass; says those left, and why the last try to end each
+    failed. On CI (22 October 2026) WebView2 processes ended without an
+    error were still there 10 s later, holding the webview's caches, and
+    gone a few seconds after: Windows ends a process once its threads
+    leave whatever the kernel holds them in."""
     import psutil
 
     deadline = time.monotonic() + within
@@ -205,12 +208,18 @@ def _end_naming(folder: Path, within: float = 10.0) -> list[str]:
         if not named or time.monotonic() > deadline:
             return [f"{_described(pid)}, {refused.get(pid, 'ended without an error')}"
                     for pid in named]
+        ending = []
         for pid in named:
             try:
-                psutil.Process(pid).kill()
+                process = psutil.Process(pid)
+                process.kill()
+                ending.append(process)
             except psutil.Error as error:
                 refused[pid] = f"not ended: {type(error).__name__}"
-        time.sleep(0.2)
+        if ending:
+            psutil.wait_procs(ending, timeout=max(0.2, min(5.0, deadline - time.monotonic())))
+        else:
+            time.sleep(0.2)
 
 
 class _Accounting(ctypes.Structure):

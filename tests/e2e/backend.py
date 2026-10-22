@@ -113,13 +113,33 @@ class Backend:
             if value in self.log.read_text(encoding="utf-8", errors="replace")]
 
     def logs(self) -> str:
-        """The supervisor's output and the end of each log in the data
-        folder, for a failure's message."""
-        parts = [f"--- {self.log.name}", self.log.read_text(encoding="utf-8", errors="replace")]
+        """What the backend says now (`asked`), the supervisor's output and
+        the end of each log in the data folder, for a failure's message."""
+        parts = [*self.asked(), f"--- {self.log.name}",
+                 self.log.read_text(encoding="utf-8", errors="replace")]
         for path in sorted((self.data / "logs").glob("*.log")):
             text = path.read_text(encoding="utf-8", errors="replace")
             parts += [f"--- {path.name}", text[-6000:]]
         return "\n".join(parts)
+
+    def asked(self) -> list[str]:
+        """The supervisor's state and each channel's, as the worker gives
+        them now, each with 5 s to answer: a channel stuck starting reads
+        "starting", a worker that answers nothing times out. On CI (22
+        October 2026) scenarios waited 60 s for Signal or Telegram to
+        listen, and the logs said nothing after the worker took up its
+        duties."""
+        said = []
+        for path in ("/_sup/status", "/signal/status", "/telegram/status"):
+            began = time.monotonic()
+            try:
+                answer = httpx.get(self.base + path, headers=self.headers, timeout=5)
+                said.append(f"{path}: {answer.status_code} {answer.text[:300]}"
+                            f" ({time.monotonic() - began:.1f} s)")
+            except httpx.HTTPError as error:
+                said.append(f"{path}: {type(error).__name__} after"
+                            f" {time.monotonic() - began:.1f} s")
+        return said
 
 
 def until(holds: Callable[[], bool], *, within: float = 20) -> bool:
