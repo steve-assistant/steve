@@ -60,9 +60,14 @@ def test_the_browser_resolves_nothing_itself():
     assert _flag(sandbox.browser_args("s1", OWNER, BROWSER_ID), "--dns") == "127.0.0.1"
 
 
-@pytest.mark.parametrize("args", [sandbox.browser_args("s1", OWNER, BROWSER_ID),
-                                  sandbox.gate_args("s1", OWNER, GATE_ID)])
-def test_both_containers_are_locked_down(args):
+@pytest.mark.parametrize("container", ["browser", "gate"])
+def test_both_containers_are_locked_down(container):
+    # Built here, not in the parametrize: at import the fences have given no
+    # data folder yet, so the install id the labels carry was made in the
+    # checkout's own, and two of CI's workers importing at once on a fresh
+    # checkout read it half-made (22 October 2026).
+    args = (sandbox.browser_args("s1", OWNER, BROWSER_ID) if container == "browser"
+            else sandbox.gate_args("s1", OWNER, GATE_ID))
     assert "--read-only" in args and "--rm" in args
     assert _flag(args, "--cap-drop") == "ALL"
     assert _flag(args, "--security-opt") == "no-new-privileges"
