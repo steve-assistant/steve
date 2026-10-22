@@ -58,7 +58,12 @@ def arrived(steve: Backend, words: str) -> list[str]:
 
 
 def said_on_the_page(steve: Backend) -> str | None:
-    return steve.get("/telegram/status").json()["bridge"].get("error")
+    # A reply without `bridge` is the supervisor's, not the page's: CI's
+    # runner once got one mid-test (22 October 2026), and a KeyError said
+    # neither what came back nor what the backend logged.
+    status = steve.get("/telegram/status")
+    assert status.status_code == 200, (status.status_code, status.text, steve.logs())
+    return status.json()["bridge"].get("error")
 
 
 def test_a_reply_telegram_rate_limits_waits_the_time_it_names_and_arrives_once(steve):
