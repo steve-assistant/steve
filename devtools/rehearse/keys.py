@@ -24,10 +24,12 @@ was still being written passed it (review of steps 7 to 9, findings 1 and
 - **the speakers** play it on the clock, and are silenced when stopped.
 
 It needs no model, no device and no network, so the unit tests rehearse
-every push-to-talk scenario (tests/unit/test_rehearse.py) -- at a quarter of
-the scenario's pace (`pace`), every wait and every length scaled, and the
-seconds the checks measure scaled back: at its own pace each took five to
-seven seconds of the suite.
+every push-to-talk scenario (tests/unit/test_rehearse.py), at the
+scenario's own pace. `pace` scales every wait and length, and the seconds
+the checks measure back, but not the worker's own time to answer a key: at
+a quarter pace, tried to save the suite about 30 seconds, 40 ms to open the
+microphone on a busy computer read as 160, over the 150 a scenario allows,
+and the first word was lost (CI and the laptop, 22 October 2026).
 """
 
 from __future__ import annotations

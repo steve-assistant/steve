@@ -145,6 +145,22 @@ def test_the_webview2_runtime_is_installed_before_the_tests_that_start_the_app()
         assert installed < next(i for i, run in enumerate(runs) if "pytest" in run), job
 
 
+def test_the_apps_webview_takes_the_rigs_arguments_by_machine_policy_before_the_tests():
+    """On the runner everything runs elevated, and an elevated WebView2
+    ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: every test that started
+    the app waited 60 s for a debugging port never asked for (22 October
+    2026). Machine policy it honours, written from the rig's own arguments
+    so the two can't drift."""
+    for job in APP_BUILT:
+        runs = _runs(job)
+        installed = next(i for i, run in enumerate(runs) if "MicrosoftEdgeWebview2Setup" in run)
+        [policy] = [i for i, run in enumerate(runs) if "AdditionalBrowserArguments" in run]
+        assert "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge\\WebView2\\" in runs[policy], job
+        assert "from tests.unit.ui.rig import WEBVIEW_ARGS" in runs[policy], job
+        assert '-Name "app.exe"' in runs[policy], job
+        assert installed < policy < next(i for i, run in enumerate(runs) if "pytest" in run), job
+
+
 def test_each_push_runs_the_shells_rust_tests_as_the_check_does():
     """The shell's tests ran nowhere until 19 October 2026. CI runs the
     check's own command, after the build whose crates it reuses."""

@@ -80,8 +80,9 @@ async def test_every_push_to_talk_scenario_passes_on_core_with_openai_faked(name
     """Push-to-talk is the turn every v0.1 user takes, and the room rig
     cannot rehearse it: its scenarios run here, through the worker's own
     socket as the app sends the keys, with OpenAI faked at its two calls
-    and nothing else loaded."""
-    result = await keys.rehearse(cli.available()[name], tmp=tmp_path, pace=0.25)
+    and nothing else loaded. At their own pace: a faster one multiplies the
+    worker's own time to answer, and failed on busy computers."""
+    result = await keys.rehearse(cli.available()[name], tmp=tmp_path)
 
     assert result.passed, keys.report(result)
 

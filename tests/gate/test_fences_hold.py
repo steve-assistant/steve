@@ -170,8 +170,13 @@ def test_a_door_in_changeable_code_that_moved_is_reported_and_the_others_stay_sh
 
     monkeypatch.delattr(fetch, "_get")
 
-    gone = fences.live_services(monkeypatch, tmp_path, "a gate test", "here")
+    # A folder inside tmp_path, as the conftest's: the fenced Python is made
+    # two folders above it, in the worker's own folder. Given tmp_path
+    # itself, it was made in the run's, which every worker shares, and two
+    # workers' builds of it raced on CI (22 October 2026).
+    gone = fences.live_services(monkeypatch, tmp_path / "fenced", "a gate test", "here")
 
+    assert Path(sys.executable).is_relative_to(tmp_path.parent)
     assert gone == ["agent.attention.fetch._get"]
     with pytest.raises(RuntimeError, match="live OpenAI's model list"):
         models_scout._get("https://models.example/v1/models")
@@ -187,7 +192,7 @@ def test_a_door_in_frozen_code_that_moved_is_an_error_not_a_skip(monkeypatch, tm
     monkeypatch.delattr(decide, "_post")
 
     with pytest.raises(AttributeError):
-        fences.live_services(monkeypatch, tmp_path, "a gate test", "here")
+        fences.live_services(monkeypatch, tmp_path / "fenced", "a gate test", "here")
 
 
 def test_a_gate_test_reaches_no_real_credential_manager():
@@ -322,7 +327,7 @@ def test_a_provider_door_that_moved_is_reported_not_an_error(monkeypatch, tmp_pa
     monkeypatch.delattr(modules.google_cloud, "common", raising=False)
     monkeypatch.setitem(sys.modules, "modules.google_cloud.common", None)
 
-    gone = fences.live_services(monkeypatch, tmp_path, "a gate test", "here")
+    gone = fences.live_services(monkeypatch, tmp_path / "fenced", "a gate test", "here")
 
     assert "modules.google_cloud.auth._HELD" in gone
     assert "modules.google_cloud.common.build" in gone

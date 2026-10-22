@@ -285,6 +285,13 @@ function Find-Control([string]$Name, [int]$Seconds, [int]$Owner = 0) {
 
 function Press([string]$Name, [int]$Seconds = 60, [int]$Owner = 0) {
   $control = Find-Control $Name $Seconds $Owner
+  # A button drawn but not yet enabled refuses Invoke: on CI's runner the
+  # rig found the uninstaller's 'Uninstall' greyed out, and pressed it.
+  $deadline = (Get-Date).AddSeconds($Seconds)
+  while (-not $control.Current.IsEnabled) {
+    if ((Get-Date) -ge $deadline) { throw "'$Name' was still disabled after $Seconds s" }
+    Start-Sleep -Milliseconds 250
+  }
   $toggle = $null
   if ($control.TryGetCurrentPattern([Windows.Automation.TogglePattern]::Pattern, [ref]$toggle)) {
     $toggle.Toggle()

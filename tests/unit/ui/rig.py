@@ -77,6 +77,14 @@ ON_SCREEN = (
     "CalculateNativeWinOcclusion",
 )
 
+# The app's WebView2 in a test: a debugging port of the system's choosing,
+# and the two above. The rig gives them as WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS,
+# which WebView2 ignores in a process running elevated, as everything on CI's
+# runner does: there every test that started the app waited for a port never
+# asked for (22 October 2026). So CI writes this into WebView2's machine
+# policy for app.exe, which it honours (.github/workflows/ci.yml).
+WEBVIEW_ARGS = subprocess.list2cmdline(["--remote-debugging-port=0", *LOOPBACK_ONLY, *ON_SCREEN])
+
 STARTS_WITHIN_S = 60  # the app: its webview, then its backend
 
 
@@ -491,8 +499,7 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
     exe = built_app()
     data, webview = Path(os.environ["STEVE_DATA_DIR"]), folder / "webview"
     env = dict(os.environ, STEVE_PYTHON=sys.executable, WEBVIEW2_USER_DATA_FOLDER=str(webview),
-               WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=subprocess.list2cmdline(
-                   ["--remote-debugging-port=0", *LOOPBACK_ONLY, *ON_SCREEN]))
+               WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=WEBVIEW_ARGS)
     forget_port(webview)
     began = time.monotonic()
     printed = folder / "app.out"

@@ -170,6 +170,18 @@ jobs:
           Start-Process $setup -ArgumentList "/silent", "/install" -Wait
           (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
 
+      # WebView2 ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS in a process
+      # running elevated, as everything on the runner does, and honours its
+      # machine policy. The arguments are the rig's (tests/unit/ui/rig.py).
+      - name: WebView2 takes the tests' arguments
+        shell: pwsh
+        run: |
+          $flags = uv run --no-sync python -c "from tests.unit.ui.rig import WEBVIEW_ARGS; print(WEBVIEW_ARGS)"
+          $key = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments"
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name "app.exe" -Value $flags -PropertyType String -Force | Out-Null
+          (Get-ItemProperty -Path $key)."app.exe"
+
       - name: Tests
         run: uv run --no-sync pytest tests/unit/ui -q -n 4 --dist loadgroup -p no:cacheprovider --durations=15 --ignore=tests/unit/ui/test_app_walks.py --ignore=tests/unit/ui/test_exit_walk.py
 
@@ -285,6 +297,18 @@ jobs:
           Start-Process $setup -ArgumentList "/silent", "/install" -Wait
           (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
 
+      # WebView2 ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS in a process
+      # running elevated, as everything on the runner does, and honours its
+      # machine policy. The arguments are the rig's (tests/unit/ui/rig.py).
+      - name: WebView2 takes the tests' arguments
+        shell: pwsh
+        run: |
+          $flags = uv run --no-sync python -c "from tests.unit.ui.rig import WEBVIEW_ARGS; print(WEBVIEW_ARGS)"
+          $key = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments"
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name "app.exe" -Value $flags -PropertyType String -Force | Out-Null
+          (Get-ItemProperty -Path $key)."app.exe"
+
       # Unbuilt, the worker says modules cannot run here, and the extension's
       # end-to-end test waits for an answer that never comes.
       - name: Build the module runtime
@@ -344,6 +368,18 @@ jobs:
           if ($signed.Status -ne "Valid" -or $signed.SignerCertificate.Subject -notmatch "O=Microsoft Corporation") { throw "not signed by Microsoft: $($signed.Status) $($signed.SignerCertificate.Subject)" }
           Start-Process $setup -ArgumentList "/silent", "/install" -Wait
           (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
+
+      # WebView2 ignores WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS in a process
+      # running elevated, as everything on the runner does, and honours its
+      # machine policy. The arguments are the rig's (tests/unit/ui/rig.py).
+      - name: WebView2 takes the tests' arguments
+        shell: pwsh
+        run: |
+          $flags = uv run --no-sync python -c "from tests.unit.ui.rig import WEBVIEW_ARGS; print(WEBVIEW_ARGS)"
+          $key = "HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments"
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name "app.exe" -Value $flags -PropertyType String -Force | Out-Null
+          (Get-ItemProperty -Path $key)."app.exe"
 
       - name: Build the module runtime
         run: uv run --no-sync python -m core.sandbox build
