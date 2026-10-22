@@ -99,8 +99,12 @@ def test_a_test_that_ends_the_run_itself_is_not_a_pass(tmp_path, trials):
     assert not ran.ok and testrun.UNSEALED in ran.said
 
     passed = testrun.run("walls", _module(tmp_path / "passes", test_tool=PASSES))
-    # The seal's line is taken out: what is shown ends as pytest ended it.
-    assert passed.ok and re.fullmatch(r"1 passed in [0-9.]+s", passed.said.splitlines()[-1])
+    # The seal's line is taken out: what is shown is pytest's, then stderr's.
+    # Not "ends with pytest's line": CI's runner, with the checkout on D:,
+    # has Python warn on stderr that it can't find its own real location.
+    said = [line.strip() for line in passed.said.splitlines()]
+    assert passed.ok and any(re.fullmatch(r"1 passed in [0-9.]+s", line) for line in said)
+    assert not any(re.fullmatch(r"[0-9a-f]{32} \d+", line) for line in said), passed.said
 
 
 def test_a_modules_tests_run_where_the_container_may_not_open_nul(tmp_path):

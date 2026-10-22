@@ -156,11 +156,26 @@ def test_each_push_runs_the_shells_rust_tests_as_the_check_does():
     assert next(i for i, run in enumerate(runs) if "cargo build" in run) < rust
 
 
+def test_every_npm_install_in_ci_skips_the_audit_call():
+    """npm's call to the audit endpoint it is retiring took 5 to 7 minutes
+    of each install of the app's 33 packages on the runner, more than the
+    app's whole Rust build from the cache (22 October 2026)."""
+    installs = [command for job in JOBS for run in _runs(job)
+                for command in re.split(r"&&|\n", run) if "npm ci" in command]
+    assert installs
+    for command in installs:
+        argv = shlex.split(command)
+        assert argv[:2] == ["npm", "ci"] and {"--no-audit", "--no-fund"} <= set(argv), command
+
+
 def test_pushes_run_the_suite_nights_run_the_rest_and_the_rest_runs_by_hand():
     """A dispatch with tests named runs those alone (the focus job), so a
-    fix's loop on CI takes minutes, not a whole run's half hour."""
+    fix's loop on CI takes minutes, not a whole run's half hour. Only
+    main's pushes run the suite, so a fix tried on a branch of its own
+    neither runs every job nor cancels main's run."""
     on = DOC.get("on", DOC.get(True))  # PyYAML reads the bare `on` as true
     assert set(on) == {"push", "pull_request", "schedule", "workflow_dispatch"}
+    assert on["push"] == {"branches": ["main"]}
     pushes = "github.event_name == 'push' || github.event_name == 'pull_request'"
     for job in PUSHED + ("ui",):
         assert JOBS[job]["if"] == pushes, job

@@ -537,8 +537,8 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
 
 def _unstarted(process: subprocess.Popen, printed: Path, data: Path, webview: Path) -> str:
     """What an app whose webview never came up left to go on: whether it is
-    still running, what the webview wrote in its folder, what the app
-    printed, and the end of each log it wrote."""
+    still running, what the webview wrote in its folder, how its browser
+    was started, what the app printed, and the end of each log it wrote."""
     code = process.poll()
     lines = ["the app is " + ("running" if code is None else f"gone, exit code {code}")]
     # On CI's runner (22 October 2026) the app ran, its page reached the
@@ -549,6 +549,20 @@ def _unstarted(process: subprocess.Popen, printed: Path, data: Path, webview: Pa
                      for pattern in ("*", "*/*") for path in webview.glob(pattern))
     lines.append(f"--- the webview's folder, two levels down: {len(written)} entries\n"
                  + "\n".join(written[:40]))
+    # And whether the debugging port reached the webview at all: its
+    # browser process's command line names it if it did. On CI the folder
+    # held a profile and no port file.
+    browsers = []
+    with contextlib.suppress(Exception):
+        import psutil
+
+        for child in psutil.Process(process.pid).children(recursive=True):
+            with contextlib.suppress(Exception):
+                line = subprocess.list2cmdline(child.cmdline())
+                # The browser, not its renderers, nor the backend's Pythons.
+                if "webview" in child.name().lower() and "--type=" not in line:
+                    browsers.append(f"{child.name()}: {line[:2000]}")
+    lines.append("--- the app's browser processes\n" + ("\n".join(browsers) or "none found"))
     logs = [printed, *sorted((data / "logs").glob("*.log"))]
     for log in logs:
         with contextlib.suppress(OSError):

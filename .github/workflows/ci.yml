@@ -9,10 +9,19 @@
 # need: `check` neither the app nor the module runtime, `gate` the runtime,
 # `app` the app and its webview. As one job it took 28 minutes, 7 of them
 # building the app before the first test (22 October 2026).
+#
+# Every `npm ci` skips its audit: on the runner, npm's call to the audit
+# endpoint it is retiring took 5 to 7 minutes of each install of 33
+# packages (22 October 2026).
 name: ci
 
 on:
+  # Only main's pushes run the suite. A fix for what only the runner shows
+  # is pushed to a branch of its own, which runs nothing until the focus
+  # job is dispatched there on the failing tests: minutes, where a push to
+  # main runs every job and cancels main's run before it.
   push:
+    branches: [main]
   pull_request:
   # Nightly, the tiers that start the whole backend or the app's window.
   schedule:
@@ -139,7 +148,7 @@ jobs:
       - name: Build the app
         shell: bash
         run: |
-          cd ui && npm ci && npm run build
+          cd ui && npm ci --no-audit --no-fund && npm run build
           cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
 
       # The shell's own tests, built with the app's features so they reuse
@@ -217,7 +226,7 @@ jobs:
           cache-dependency-path: ui/package-lock.json
 
       - name: Install
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Typecheck
         run: npx tsc -b
@@ -262,7 +271,7 @@ jobs:
       - name: Build the app
         shell: bash
         run: |
-          cd ui && npm ci && npm run build
+          cd ui && npm ci --no-audit --no-fund && npm run build
           cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
 
       # As in the app job above.
@@ -322,7 +331,7 @@ jobs:
       - name: Build the app
         shell: bash
         run: |
-          cd ui && npm ci && npm run build
+          cd ui && npm ci --no-audit --no-fund && npm run build
           cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
 
       # As in the app job above.
@@ -395,7 +404,7 @@ jobs:
       - name: A key for this run
         working-directory: ui
         run: |
-          npm ci
+          npm ci --no-audit --no-fund
           npx tauri signer generate --ci -w "$env:RUNNER_TEMP\update.key"
 
       - name: Build two installers a patch apart
