@@ -250,7 +250,11 @@ def test_the_title_bar_takes_the_colour_of_the_theme_shown(screen):
     """Left alone, Windows paints the title bar its own white or black over
     the cream page. It follows Windows' theme, and the one chosen in
     Settings over it."""
-    page = screen(_backend())
+    # Dark from before the page loads. Turned dark once it had loaded, two
+    # CI runs (22 October 2026) saw "ink" and then "paper" told, with the
+    # media dark and no theme chosen by the time it was asked: a switch
+    # made while the page starts can be read both ways during it.
+    page = screen(_backend(), before=lambda page: page.emulate_media(color_scheme="dark"))
 
     # One CI run (22 October 2026) waited 15 s for "ink" and said no more.
     def said() -> str:
@@ -258,7 +262,6 @@ def test_the_title_bar_takes_the_colour_of_the_theme_shown(screen):
         chosen = page.evaluate("document.documentElement.dataset.theme")
         return f"set_caption {_calls(page, 'set_caption')}, dark media {dark}, chosen {chosen!r}"
 
-    page.emulate_media(color_scheme="dark")
     page.locator("nav.sidebar").wait_for(timeout=15_000)
     _until(lambda: _calls(page, "set_caption")[-1:] == [{"theme": "ink"}], said=said)
     page.emulate_media(color_scheme="light")

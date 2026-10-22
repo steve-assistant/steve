@@ -252,6 +252,29 @@ def test_a_contained_process_is_in_its_job_before_it_runs_and_runs_once_it_is(mo
     assert said.strip() == b"ran"
 
 
+def test_a_contained_browser_ends_the_processes_naming_its_folder_outside_its_job(tmp_path):
+    """A Chromium browser in a job can start a helper outside it: on CI (22
+    October 2026) Edge's identity_helper.exe, and WebView2 browsers and
+    renderers after their app's job had emptied, still held the profile's
+    files through the scan that came next. Each names the profile on its
+    command line, so the block's end ends what names it, in the job or not."""
+    folder = tmp_path / "profile"
+    folder.mkdir()
+    sibling = tmp_path / "profile2"
+    sleep = [sys.executable, "-c", "import time; time.sleep(60)"]
+    outside = subprocess.Popen([*sleep, f"--user-data-dir={folder}"])
+    other = subprocess.Popen([*sleep, f"--user-data-dir={sibling}"])
+    try:
+        with rig.contained([sys.executable, "-c", "pass"], folder=folder):
+            pass
+        assert outside.wait(10) is not None
+        assert other.poll() is None, "a process naming another folder was ended"
+    finally:
+        for process in (outside, other):
+            process.kill()
+            process.wait(10)
+
+
 def test_a_tests_app_shows_its_window_and_page_behind_the_one_in_use(playwright, tmp_path):
     """Started by a process in the background, the app took the foreground
     anyway: Windows refuses it, so tao presses and releases Alt to get it

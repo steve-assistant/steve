@@ -128,18 +128,16 @@ def devtools_port(folder: Path, within: float) -> int:
 
 
 @contextlib.contextmanager
-def contained(command: list[str], **popen) -> Iterator[subprocess.Popen]:
+def contained(command: list[str], *, folder: Path | None = None,
+              **popen) -> Iterator[subprocess.Popen]:
     """A process in a kill-on-close job from its start, ended with the job
-    (and so with everything it started) when the block ends.
+    (and so with everything it started) when the block ends, and with
+    every process naming `folder`, the browser profile it was given, that
+    a browser started outside the job (`_end`).
 
     It starts suspended, and runs only once it is in the job. Started
     running and put in the job after `Popen` returned, as it was until 22
-    October 2026, it could start a process in between that stayed outside.
-
-    The block's end waits for the job to hold no process, not only for
-    the first: on CI's busy runner WebView2 browsers and their helpers
-    were still running seconds after their app's job was ended, holding
-    its webview folder through the scan that came next (`_end`)."""
+    October 2026, it could start a process in between that stayed outside."""
     import psutil
 
     from core.sandbox import job, win32
@@ -163,33 +161,50 @@ def contained(command: list[str], **popen) -> Iterator[subprocess.Popen]:
     try:
         yield process
     finally:
-        _end(held, process)
+        _end(held, process, folder)
 
 
-def _end(held, process: subprocess.Popen, within: float = 30.0) -> None:
+def _end(held, process: subprocess.Popen, folder: Path | None, within: float = 30.0) -> None:
     """Ends the job and waits, up to `within` seconds, until it holds no
-    process. A warning says how long that took if it was over 2 s, what
-    was still in the job after `within`, and any process the app started
-    that was never in it, so CI's summary says which it was."""
-    import psutil
+    process; then ends each process still naming `folder`, the profile
+    the browser was given, as every Chromium process does on its command
+    line (`--user-data-dir`), and waits for those too.
 
-    members = set(_job_members(held.handle))
-    outside = []
-    with contextlib.suppress(psutil.Error):
-        outside = [_described(child.pid)
-                   for child in psutil.Process(process.pid).children(recursive=True)
-                   if child.pid not in members]
+    A Chromium browser in a job can start a helper outside it. On CI (22
+    October 2026) Edge's identity_helper.exe, started by an msedge.exe the
+    job held, was never in it; and after the app's job had ended, with
+    nothing left in it, WebView2 browsers and renderers still named the
+    app's webview folder and held its files through the scan that came
+    next. So the folder, not the job alone, says what is the test's to end.
+    A warning says what was still in the job after `within`, or still
+    naming the folder after that."""
     began = time.monotonic()
     held.terminate(1)
     while _job_active(held.handle) and time.monotonic() - began < within:
         time.sleep(0.1)
-    took = time.monotonic() - began
     left = [_described(pid) for pid in _job_members(held.handle)]
     held.close()
     process.wait(10)
-    if took > 2 or left or outside:
-        warnings.warn(f"the app's job took {took:.1f} s to end; still in it {left}; "
-                      f"started outside it {outside}", stacklevel=3)
+    naming = _end_naming(folder) if folder else []
+    if left or naming:
+        warnings.warn(f"still in the job {within:.0f} s after it was ended: {left}; "
+                      f"still naming {folder} after that: {naming}", stacklevel=3)
+
+
+def _end_naming(folder: Path, within: float = 10.0) -> list[str]:
+    """Ends each process but this one that names `folder` on its command
+    line, until none does or `within` seconds pass; says those left."""
+    import psutil
+
+    deadline = time.monotonic() + within
+    while True:
+        named = [pid for pid in _naming(folder) if pid != os.getpid()]
+        if not named or time.monotonic() > deadline:
+            return [_described(pid) for pid in named]
+        for pid in named:
+            with contextlib.suppress(psutil.Error):
+                psutil.Process(pid).kill()
+        time.sleep(0.2)
 
 
 class _Accounting(ctypes.Structure):
@@ -236,7 +251,8 @@ def edge(profile: Path, playwright) -> Iterator:
                f"--user-data-dir={profile}", "--no-first-run", "--no-default-browser-check",
                *LOOPBACK_ONLY, "about:blank"]
     forget_port(profile)
-    with contained(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL):
+    with contained(command, folder=profile, stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL):
         browser = playwright.chromium.connect_over_cdp(
             f"http://127.0.0.1:{devtools_port(profile, 30)}")
         try:
@@ -499,8 +515,14 @@ def screen_free() -> bool:
 ON_SCREEN_ASKED = """async () => {
   const ask = (cmd) => window.__TAURI_INTERNALS__.invoke(`plugin:window|${cmd}`, {label: "main"})
     .catch((e) => String(e));
+  // Playwright's waits for a visible element poll on animation frames: a
+  // page that draws none can show a heading that such a wait never sees.
+  const frame = await new Promise((done) => {
+    const late = setTimeout(() => done("none in 2 s"), 2000);
+    requestAnimationFrame(() => { clearTimeout(late); done("drawn"); });
+  });
   return {visibility: document.visibilityState, visible: await ask("is_visible"),
-          minimized: await ask("is_minimized")};
+          minimized: await ask("is_minimized"), frame, size: `${innerWidth}x${innerHeight}`};
 }"""
 
 
@@ -608,7 +630,7 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
     began = time.monotonic()
     printed = folder / "app.out"
     with (printed.open("wb") as out,
-          contained([str(exe)], env=env, cwd=folder, stdout=out,
+          contained([str(exe)], folder=webview, env=env, cwd=folder, stdout=out,
                     stderr=subprocess.STDOUT) as process):
         try:
             port = devtools_port(webview, STARTS_WITHIN_S)
@@ -790,14 +812,21 @@ def _code(error: OSError) -> str:
 
 
 def _holders(folder: Path, held: list[Path]) -> dict[int, str]:
+    holders = dict.fromkeys(_lockers(held), "holds a file")
+    for pid in _naming(folder):
+        holders.setdefault(pid, "names the folder")
+    return holders
+
+
+def _naming(folder: Path) -> list[int]:
+    """Each process with an argument that is `folder` or a path in it, and
+    not a sibling that starts with the same name (`profile2`)."""
     import psutil
 
-    holders = dict.fromkeys(_lockers(held), "holds a file")
     named = str(folder).lower()
-    for process in psutil.process_iter(["cmdline"]):
-        if named in " ".join(process.info["cmdline"] or []).lower():
-            holders.setdefault(process.pid, "names the folder")
-    return holders
+    return [process.pid for process in psutil.process_iter(["cmdline"])
+            if any(arg.lower().endswith(named) or named + os.sep in arg.lower()
+                   for arg in process.info["cmdline"] or [])]
 
 
 def _described(pid: int) -> str:
