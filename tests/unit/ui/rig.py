@@ -505,7 +505,7 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
             # On CI's first nightly run (22 October 2026) five walks said
             # only that no port came: not whether the app had ended, nor
             # what it said as it did, with its output thrown away.
-            raise TimeoutError(f"{late}\n{_unstarted(process, printed, data)}") from late
+            raise TimeoutError(f"{late}\n{_unstarted(process, printed, data, webview)}") from late
         browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")
         app = Desktop(process, browser, data, webview)
 
@@ -535,11 +535,20 @@ def desktop_app(folder: Path, playwright) -> Iterator[Desktop]:
     assert not left, f"secrets the app left on disk: {left}"
 
 
-def _unstarted(process: subprocess.Popen, printed: Path, data: Path) -> str:
+def _unstarted(process: subprocess.Popen, printed: Path, data: Path, webview: Path) -> str:
     """What an app whose webview never came up left to go on: whether it is
-    still running, what it printed, and the end of each log it wrote."""
+    still running, what the webview wrote in its folder, what the app
+    printed, and the end of each log it wrote."""
     code = process.poll()
     lines = ["the app is " + ("running" if code is None else f"gone, exit code {code}")]
+    # On CI's runner (22 October 2026) the app ran, its page reached the
+    # backend, and still no port file came: an empty folder says the
+    # webview kept its profile elsewhere, a profile without the file that
+    # it never took the debugging port.
+    written = sorted(path.relative_to(webview).as_posix()
+                     for pattern in ("*", "*/*") for path in webview.glob(pattern))
+    lines.append(f"--- the webview's folder, two levels down: {len(written)} entries\n"
+                 + "\n".join(written[:40]))
     logs = [printed, *sorted((data / "logs").glob("*.log"))]
     for log in logs:
         with contextlib.suppress(OSError):

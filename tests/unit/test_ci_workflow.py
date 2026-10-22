@@ -1,11 +1,10 @@
 """CI's workflow (.github/workflows/ci.yml), read rather than run.
 
-The repository has no remote until step 12, so nothing has ever run the
-workflow; a job or flag that drifted from the suite it drives would be
-found only at the first push, or, for the nightly and installer jobs, the
-first night or the first time someone thought to try. These read the
-workflow as GitHub would and hold it to what the suite and the
-maintainer's rules need.
+A job or flag that drifts from the suite it drives is found only when CI
+runs it: a push's jobs within half an hour, the nightly and installer jobs
+at night or when someone thinks to dispatch them. These read the workflow
+as GitHub would and hold it to what the suite and the maintainer's rules
+need.
 """
 
 from __future__ import annotations
@@ -25,6 +24,14 @@ JOBS = DOC["jobs"]
 # The tier that starts the whole backend per test, run each night, and not
 # on every push.
 E2E = "tests/e2e"
+# A push's suite, split three ways so each job builds only what its tests
+# need.
+PUSHED = ("check", "gate", "app")
+# Every job that runs the suite or part of it; focus runs the tests named.
+SUITE = PUSHED + ("nightly", "focus")
+# The jobs whose tests start the app, and those whose tests run modules.
+APP_BUILT = ("app", "nightly", "focus")
+RUNTIME_BUILT = ("gate", "nightly", "focus")
 
 
 def _runs(job: str) -> list[str]:
@@ -36,36 +43,78 @@ def _pytest(job: str) -> list[str]:
     return shlex.split(line)
 
 
-def _app_walks() -> set[str]:
-    """The files of the app's walks: those whose tests share the `app`
-    xdist group, as each drives the one real window."""
-    marked = re.compile(r'^pytestmark = .*xdist_group\("app"\)', re.MULTILINE)
-    found = set()
-    for path in (paths.SOURCE / "tests").rglob("test_*.py"):
-        if marked.search(path.read_text(encoding="utf-8")):
-            found.add(path.relative_to(paths.SOURCE).as_posix())
-    return found
+def _test_files() -> set[str]:
+    return {path.relative_to(paths.SOURCE).as_posix()
+            for path in (paths.SOURCE / "tests").rglob("test_*.py")}
 
 
-def test_every_pytest_run_in_ci_deals_tests_out_by_group_as_the_check_does():
+def _selected(job: str) -> set[str]:
+    """The test files a job's pytest line collects: those under its paths,
+    less those under its `--ignore`s."""
+    argv = _pytest(job)
+    roots = [arg.rstrip("/") for arg in argv if arg.startswith("tests")]
+    ignored = [arg.removeprefix("--ignore=").rstrip("/") for arg in argv
+               if arg.startswith("--ignore=")]
+
+    def under(name: str, prefix: str) -> bool:
+        return name == prefix or name.startswith(prefix + "/")
+
+    return {name for name in _test_files()
+            if any(under(name, root) for root in roots)
+            and not any(under(name, gone) for gone in ignored)}
+
+
+def _marked(group: str) -> set[str]:
+    """The test files whose tests share an xdist group: `ui` for the
+    screens, `app` for the walks, each driving the one real window."""
+    marked = re.compile(rf'^pytestmark = .*xdist_group\("{group}"\)', re.MULTILINE)
+    return {name for name in _test_files()
+            if marked.search((paths.SOURCE / name).read_text(encoding="utf-8"))}
+
+
+def test_every_pytest_run_in_ci_deals_tests_out_by_group_on_the_runners_four_cores():
     """Without loadgroup, xdist starts a module's supervisor on every worker
     that runs one of its tests, and the screens' and the supervisors'
-    groups are no longer kept apart."""
-    for job in ("check", "nightly"):
+    groups are no longer kept apart. Four workers, where the laptop's check
+    takes three to leave room for what else runs there: the runner has four
+    cores and nothing else on them."""
+    for job in SUITE:
         argv = _pytest(job)
         assert argv[argv.index("--dist") + 1] == check.DIST, job
-        assert argv[argv.index("-n") + 1] == "3", job
+        assert argv[argv.index("-n") + 1] == "4", job
+
+
+def test_every_test_file_runs_in_one_job_of_a_push_or_in_the_nightly_job():
+    """A file left out of every job would never run in CI; one in two would
+    run twice, and a push's suite was split into jobs to save its time."""
+    jobs = PUSHED + ("nightly",)
+    for i, one in enumerate(jobs):
+        for other in jobs[i + 1:]:
+            assert not _selected(one) & _selected(other), (one, other)
+    assert set().union(*map(_selected, jobs)) == _test_files()
+
+
+def test_the_nightly_job_runs_the_end_to_end_tier_and_the_walks_and_nothing_else():
+    """The tiers too slow for every push: each end-to-end test starts the
+    whole backend, each walk drives the app's window through a day."""
+    e2e = {name for name in _test_files() if name.startswith(E2E + "/")}
+    assert _marked("app")
+    assert _selected("nightly") == e2e | _marked("app")
 
 
 def test_the_app_is_built_before_the_tests_that_start_it():
     """Unbuilt, the app's tests skip, and CI passes without having opened
     the window once."""
-    for job in ("check", "nightly"):
+    for job in APP_BUILT:
         runs = _runs(job)
         built = next(i for i, run in enumerate(runs) if "cargo build" in run)
         assert "npm run build" in runs[built], job
         assert "--features tauri/custom-protocol" in runs[built], job
         assert built < next(i for i, run in enumerate(runs) if "pytest" in run), job
+    starts_the_app = _marked("ui") | _marked("app")
+    assert starts_the_app
+    for job in set(PUSHED + ("nightly",)) - set(APP_BUILT):
+        assert not _selected(job) & starts_the_app, job
 
 
 def test_the_module_runtime_is_built_before_the_tests_that_run_modules():
@@ -73,10 +122,14 @@ def test_the_module_runtime_is_built_before_the_tests_that_run_modules():
     the extension's end-to-end test waited for an answer that never came:
     CI's first runs, 22 October 2026. The suite had run only on the
     maintainer's laptop, where the runtime had been built long before."""
-    for job in ("check", "nightly"):
+    for job in RUNTIME_BUILT:
         runs = _runs(job)
         built = next(i for i, run in enumerate(runs) if "python -m core.sandbox build" in run)
         assert built < next(i for i, run in enumerate(runs) if "pytest" in run), job
+    runs_modules = {name for name in _test_files()
+                    if name.startswith(("tests/gate/", E2E + "/"))}
+    for job in set(PUSHED + ("nightly",)) - set(RUNTIME_BUILT):
+        assert not _selected(job) & runs_modules, job
 
 
 def test_the_webview2_runtime_is_installed_before_the_tests_that_start_the_app():
@@ -84,7 +137,7 @@ def test_the_webview2_runtime_is_installed_before_the_tests_that_start_the_app()
     which Windows 11 carries: each test that started the app waited for a
     webview that never came (CI's first runs, 22 October 2026). Microsoft's
     installer runs only once Windows has found it signed by Microsoft."""
-    for job in ("check", "nightly"):
+    for job in APP_BUILT:
         runs = _runs(job)
         [installed] = [i for i, run in enumerate(runs) if "MicrosoftEdgeWebview2Setup" in run]
         assert "Get-AuthenticodeSignature" in runs[installed], job
@@ -95,7 +148,7 @@ def test_the_webview2_runtime_is_installed_before_the_tests_that_start_the_app()
 def test_each_push_runs_the_shells_rust_tests_as_the_check_does():
     """The shell's tests ran nowhere until 19 October 2026. CI runs the
     check's own command, after the build whose crates it reuses."""
-    runs = _runs("check")
+    runs = _runs("app")
     [rust] = [i for i, run in enumerate(runs) if "cargo test" in run]
     argv = shlex.split(runs[rust])
     assert argv[:len(check.RUST_TESTS)] == list(check.RUST_TESTS)
@@ -103,25 +156,32 @@ def test_each_push_runs_the_shells_rust_tests_as_the_check_does():
     assert next(i for i, run in enumerate(runs) if "cargo build" in run) < rust
 
 
-def test_the_nightly_job_runs_exactly_what_each_push_leaves_out():
-    """A walk or end-to-end file left out of both would never run in CI; one
-    in both would double a push's time for nothing."""
-    pushed = _pytest("check")
-    left_out = {arg.removeprefix("--ignore=") for arg in pushed if arg.startswith("--ignore=")}
-    nightly = {arg for arg in _pytest("nightly")[1:] if arg.startswith("tests")}
-
-    assert left_out == nightly == {E2E} | _app_walks()
-    assert "tests/" in pushed
-
-
-def test_pushes_run_the_suite_nights_run_the_rest_and_the_installer_only_by_hand():
+def test_pushes_run_the_suite_nights_run_the_rest_and_the_rest_runs_by_hand():
+    """A dispatch with tests named runs those alone (the focus job), so a
+    fix's loop on CI takes minutes, not a whole run's half hour."""
     on = DOC.get("on", DOC.get(True))  # PyYAML reads the bare `on` as true
     assert set(on) == {"push", "pull_request", "schedule", "workflow_dispatch"}
     pushes = "github.event_name == 'push' || github.event_name == 'pull_request'"
-    assert JOBS["check"]["if"] == JOBS["ui"]["if"] == pushes
-    assert JOBS["nightly"]["if"] == ("github.event_name == 'schedule'"
-                                     " || github.event_name == 'workflow_dispatch'")
-    assert JOBS["installer"]["if"] == "github.event_name == 'workflow_dispatch'"
+    for job in PUSHED + ("ui",):
+        assert JOBS[job]["if"] == pushes, job
+    unnamed = "!inputs.tests"
+    assert JOBS["nightly"]["if"] == ("(github.event_name == 'schedule'"
+                                     " || github.event_name == 'workflow_dispatch')"
+                                     f" && {unnamed}")
+    assert JOBS["installer"]["if"] == f"github.event_name == 'workflow_dispatch' && {unnamed}"
+    assert JOBS["reflection"]["if"] == f"${{{{ {unnamed} }}}}"
+    assert JOBS["focus"]["if"] == "github.event_name == 'workflow_dispatch' && inputs.tests != ''"
+
+
+def test_no_step_has_an_expression_pasted_into_its_script():
+    """GitHub pastes an expression's value into the script before the shell
+    reads it, so the focus job's test names, typed by whoever dispatches,
+    would run as commands. They reach the script through its environment."""
+    for name, job in JOBS.items():
+        for step in job["steps"]:
+            assert "${{" not in step.get("run", ""), (name, step.get("name"))
+    [named] = [step for step in JOBS["focus"]["steps"] if "pytest" in step.get("run", "")]
+    assert named["env"] == {"TESTS": "${{ inputs.tests }}"}
 
 
 def test_the_installer_job_signs_with_a_key_made_for_its_run_and_the_rig_stays_up():
@@ -180,3 +240,15 @@ def test_each_action_is_pinned_to_a_commit_and_checkout_keeps_no_token():
     for step in actions:
         if step["uses"].startswith("actions/checkout@"):
             assert step["with"]["persist-credentials"] is False
+
+
+def test_the_rust_cache_is_shared_by_the_jobs_that_build_alike_and_kept_on_failure():
+    """By default each job kept its own cache, saved only when the job
+    passed. CI had never passed, so every run built every crate: 7 of the
+    check job's 28 minutes (22 October 2026)."""
+    for job in APP_BUILT + ("installer",):
+        [cache] = [step for step in JOBS[job]["steps"]
+                   if step.get("uses", "").startswith("Swatinem/rust-cache@")]
+        assert cache["with"]["cache-on-failure"] is True, job
+        expected = "release" if job == "installer" else "app"
+        assert cache["with"]["shared-key"] == expected, job

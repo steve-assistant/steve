@@ -1,8 +1,14 @@
 # Lint, secrets and the suite, on the platform Steve ships for; the desktop
 # app's types and lint; each night the end-to-end tier and the app's walks;
-# and, by hand, the installer's run on a clean Windows.
+# and, by hand, the installer's run on a clean Windows, or only the tests
+# named (the focus job).
 # tests/unit/test_ci_workflow.py reads this file: a job or flag changed here
 # without it fails there.
+#
+# A push's suite is three jobs at once, each building only what its tests
+# need: `check` neither the app nor the module runtime, `gate` the runtime,
+# `app` the app and its webview. As one job it took 28 minutes, 7 of them
+# building the app before the first test (22 October 2026).
 name: ci
 
 on:
@@ -12,9 +18,21 @@ on:
   schedule:
     - cron: "17 6 * * *"
   workflow_dispatch:
+    inputs:
+      tests:
+        description: "Only these tests (paths or node ids, space-separated), on a runner with everything built. Empty: the nightly, installer and reflection jobs."
+        type: string
+        default: ""
 
 permissions:
   contents: read
+
+# A newer push to a branch makes the older push's run moot: it is cancelled.
+# Every other run has a group of its own, so a dispatched run never waits
+# behind another.
+concurrency:
+  group: ${{ github.event_name == 'push' && format('push-{0}', github.ref) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   check:
@@ -46,17 +64,77 @@ jobs:
         shell: bash
         run: git ls-files -z | xargs -0 uvx --from detect-secrets==1.5.0 detect-secrets-hook --baseline .secrets.baseline  # pragma: allowlist secret
 
+      # loadgroup keeps each xdist_group (the screens, the supervisors, the
+      # end-to-end files) on one worker, as devtools.check does. Four
+      # workers, where the laptop's check takes three: the runner has four
+      # cores and nothing else on them. The module sandbox's tests run in
+      # the gate job, the app's in the app job, the end-to-end tier and the
+      # walks each night.
+      - name: Tests
+        run: uv run --no-sync pytest tests/ -q -n 4 --dist loadgroup -p no:cacheprovider --durations=15 --ignore=tests/e2e --ignore=tests/gate --ignore=tests/unit/ui
+
+  # The gate tier, with the module runtime its sandbox tests run modules in.
+  gate:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      PYDANTIC_AI_NO_BANNER: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked --extra dev --extra accounts
+
+      # Unbuilt, every test that runs a module in its container fails.
+      - name: Build the module runtime
+        run: uv run --no-sync python -m core.sandbox build
+
+      - name: Tests
+        run: uv run --no-sync pytest tests/gate -q -n 4 --dist loadgroup -p no:cacheprovider --durations=15
+
+  # The app's screens, and the shell's own tests, against the app built as a
+  # developer builds it.
+  app:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      PYDANTIC_AI_NO_BANNER: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked --extra dev --extra accounts
+
       # The app, built as a developer builds it, so the tests that start it
-      # run instead of skipping. Cargo's cache keeps the build short.
+      # run instead of skipping.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: ui/package-lock.json
 
+      # One cache for every job that builds the app in debug, kept even when
+      # the job fails. By default each job had its own, saved only when the
+      # job passed: CI had never passed, so every run built every crate.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0  # v2.9.3
         with:
           workspaces: ui/src-tauri -> target
+          shared-key: app
+          cache-on-failure: true
 
       - name: Build the app
         shell: bash
@@ -83,19 +161,13 @@ jobs:
           Start-Process $setup -ArgumentList "/silent", "/install" -Wait
           (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
 
-      # Unbuilt, every test that runs a module in its container fails.
-      - name: Build the module runtime
-        run: uv run --no-sync python -m core.sandbox build
-
-      # loadgroup keeps each xdist_group (the screens, the supervisors, the
-      # end-to-end files) on one worker, as devtools.check does. The
-      # end-to-end tier and the walks run each night instead.
       - name: Tests
-        run: uv run --no-sync pytest tests/ -q -n 3 --dist loadgroup -p no:cacheprovider --ignore=tests/e2e --ignore=tests/unit/ui/test_app_walks.py --ignore=tests/unit/ui/test_exit_walk.py
+        run: uv run --no-sync pytest tests/unit/ui -q -n 4 --dist loadgroup -p no:cacheprovider --durations=15 --ignore=tests/unit/ui/test_app_walks.py --ignore=tests/unit/ui/test_exit_walk.py
 
   # The base install deliberately omits the large reflection/redaction
   # model. A separate job exercises it without enlarging every environment.
   reflection:
+    if: ${{ !inputs.tests }}
     runs-on: windows-latest
     timeout-minutes: 20
     env:
@@ -157,7 +229,7 @@ jobs:
   # the app's walks through its window: fakes only, never a real service
   # (tests/gate/fences.py).
   nightly:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && !inputs.tests
     runs-on: windows-latest
     timeout-minutes: 60
     env:
@@ -180,9 +252,12 @@ jobs:
           cache: npm
           cache-dependency-path: ui/package-lock.json
 
+      # The app job's cache.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0  # v2.9.3
         with:
           workspaces: ui/src-tauri -> target
+          shared-key: app
+          cache-on-failure: true
 
       - name: Build the app
         shell: bash
@@ -190,7 +265,7 @@ jobs:
           cd ui && npm ci && npm run build
           cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
 
-      # As in the check job above.
+      # As in the app job above.
       - name: Install the WebView2 Runtime
         shell: pwsh
         run: |
@@ -207,7 +282,76 @@ jobs:
         run: uv run --no-sync python -m core.sandbox build
 
       - name: The end-to-end tier and the walks
-        run: uv run --no-sync pytest tests/e2e tests/unit/ui/test_app_walks.py tests/unit/ui/test_exit_walk.py -q -n 3 --dist loadgroup -p no:cacheprovider
+        run: uv run --no-sync pytest tests/e2e tests/unit/ui/test_app_walks.py tests/unit/ui/test_exit_walk.py -q -n 4 --dist loadgroup -p no:cacheprovider --durations=15
+
+  # A fix's loop, by hand: `gh workflow run ci.yml -f tests="tests/gate/test_x.py"`
+  # runs only the tests named, with everything built that any test needs,
+  # instead of a push's whole run. The names reach pytest as its arguments
+  # through the environment, never pasted into the script.
+  focus:
+    if: github.event_name == 'workflow_dispatch' && inputs.tests != ''
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      PYDANTIC_AI_NO_BANNER: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --locked --extra dev --extra accounts
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      # The app job's cache.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0  # v2.9.3
+        with:
+          workspaces: ui/src-tauri -> target
+          shared-key: app
+          cache-on-failure: true
+
+      - name: Build the app
+        shell: bash
+        run: |
+          cd ui && npm ci && npm run build
+          cd src-tauri && cargo build -j 3 --features tauri/custom-protocol
+
+      # As in the app job above.
+      - name: Install the WebView2 Runtime
+        shell: pwsh
+        run: |
+          $setup = "$env:RUNNER_TEMP\MicrosoftEdgeWebview2Setup.exe"
+          Invoke-WebRequest "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile $setup
+          $signed = Get-AuthenticodeSignature $setup
+          if ($signed.Status -ne "Valid" -or $signed.SignerCertificate.Subject -notmatch "O=Microsoft Corporation") { throw "not signed by Microsoft: $($signed.Status) $($signed.SignerCertificate.Subject)" }
+          Start-Process $setup -ArgumentList "/silent", "/install" -Wait
+          (Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}").pv
+
+      - name: Build the module runtime
+        run: uv run --no-sync python -m core.sandbox build
+
+      # What a failure here may come from: the runner's Windows, and any
+      # policy set on Edge or its WebView2.
+      - name: The runner
+        shell: pwsh
+        run: |
+          Get-CimInstance Win32_OperatingSystem | Format-List Caption, Version, BuildNumber
+          Get-ChildItem "HKLM:\SOFTWARE\Policies\Microsoft\Edge*", "HKCU:\SOFTWARE\Policies\Microsoft\Edge*" -Recurse -ErrorAction SilentlyContinue | Format-List
+
+      - name: The tests named
+        shell: pwsh
+        env:
+          TESTS: ${{ inputs.tests }}
+        run: uv run --no-sync pytest @($env:TESTS -split '\s+' | Where-Object { $_ }) -q -n 4 --dist loadgroup -p no:cacheprovider --durations=15
 
   # The installer's run (devtools/sandbox_check.py), by hand: install,
   # start, update, downgrade refused, uninstall, and again over a running
@@ -216,7 +360,7 @@ jobs:
   # here for the run and its public half built into the app, so the
   # release key never leaves the maintainer's keychain.
   installer:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && !inputs.tests
     runs-on: windows-latest
     timeout-minutes: 90
     env:
@@ -238,6 +382,14 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: ui/package-lock.json
+
+      # The release build's crates, cached apart from the debug build's:
+      # building the two installers took 34 of the job's 56 minutes.
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0  # v2.9.3
+        with:
+          workspaces: ui/src-tauri -> target
+          shared-key: release
+          cache-on-failure: true
 
       # --ci with no password: the build signs with an empty one.
       - name: A key for this run

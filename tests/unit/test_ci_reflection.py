@@ -34,10 +34,12 @@ def _commands():
     return [step["run"] for step in _job()["steps"] if "run" in step]
 
 
-def test_reflection_has_its_own_locked_environment_on_every_ci_trigger():
-    """Installing the extra in this job keeps the default install small."""
+def test_reflection_has_its_own_locked_environment_on_every_run_but_a_focused_one():
+    """Installing the extra in this job keeps the default install small. It
+    runs on every trigger but a dispatch that names its tests, which runs
+    those alone (the focus job)."""
     job = _job()
-    assert "if" not in job
+    assert job["if"] == "${{ !inputs.tests }}"
     assert job["runs-on"] == "windows-latest"
     [sync] = [shlex.split(run) for run in _commands() if run.startswith("uv sync")]
     assert "--locked" in sync
