@@ -101,12 +101,15 @@ def test_a_stranger_goes_from_a_fresh_install_to_a_first_answer_and_a_first_yes(
         # A route's handler runs only while Playwright is called: the wait pumps it.
         until(lambda: held or page.wait_for_timeout(50), within=10,
               said=lambda: "the name step never asked for the profile")
-        page.unroute(profile)
         kept = held[0].fetch()
         said = kept.json()
         held[0].fulfill(response=kept,
                         json={**said, "profile": {**(said.get("profile") or {}),
                                                   "pronouns": "they/them"}})
+        # Unrouted only once answered: Playwright continues a request still
+        # held when its route goes, and the fulfil after it then failed as
+        # "already handled" (CI, 22 October 2026).
+        page.unroute(profile)
         expect(page.get_by_label("Pronouns (optional)")).to_have_value("they/them")
         expect(page.get_by_label("Your name")).to_have_value("Maya Lindqvist")
         page.get_by_role("button", name="Continue").click()
