@@ -112,6 +112,10 @@ def build_config() -> str:
 
 STARTS_WITHIN_S = 60  # the app: its webview, then its backend
 QUERYABLE_MS = 5_000  # Playwright's first look for an element in a page (`Desktop._queryable`)
+# The look again, after the reload that look calls for. A page that slow is
+# under load: on CI's nightly (22 October 2026) the reload took 15 s to ask
+# for the page, and a second 5 s ran out.
+RELOADED_MS = 30_000
 
 
 def forget_port(folder: Path) -> None:
@@ -654,7 +658,7 @@ class Desktop:
             # And on a run that passes, so how often it happens shows.
             warnings.warn(said, stacklevel=3)
             page.reload()
-            page.locator(":root").wait_for(state="attached", timeout=QUERYABLE_MS)
+            page.locator(":root").wait_for(state="attached", timeout=RELOADED_MS)
         return page
 
     def _wait(self, seconds: float) -> None:

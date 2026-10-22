@@ -405,6 +405,12 @@ def test_ending_the_server_ends_everything_it_started():
     child = ("import subprocess, sys, time; sys.stdin.readline(); "
              "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); "
              "time.sleep(60)")
+    def runners() -> list[psutil.Process]:
+        # A console program's conhost.exe is its child from the start. The
+        # wait took it for the runner, and checked the conhost's end instead;
+        # on CI (22 October 2026) the runner came as soon, and there were two.
+        return [p for p in psutil.Process(process.pid).children() if p.name() != "conhost.exe"]
+
     with subprocess.Popen([sys._base_executable, "-I", "-c", child], stdin=subprocess.PIPE,
                           creationflags=subprocess.CREATE_NO_WINDOW) as process:
         try:
@@ -412,9 +418,9 @@ def test_ending_the_server_ends_everything_it_started():
             process.stdin.write(b"started\n")
             process.stdin.flush()
             deadline = time.monotonic() + 20
-            while not psutil.Process(process.pid).children() and time.monotonic() < deadline:
+            while not runners() and time.monotonic() < deadline:
                 time.sleep(0.05)
-            [runner] = psutil.Process(process.pid).children()
+            [runner] = runners()
 
             end()
 
