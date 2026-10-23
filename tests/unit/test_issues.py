@@ -403,6 +403,30 @@ def test_a_condition_is_said_once_a_day_and_a_broken_check_skips_itself(store, m
     assert once[0].title == "Docker is not running"
 
 
+def test_failing_jobs_are_said_with_each_kinds_count_and_latest_error(store):
+    """The kinds alone left the user asking which jobs had failed and why,
+    and Steve, with no tool to read the queue, unable to say (22 October
+    2026). The latest error is what answers both."""
+    from agent import jobs
+    from agent.attention.sources import health
+
+    def failed(kind: str, error: str) -> None:
+        jobs.fail(store, jobs.enqueue(store, kind=kind, prompt="1"), error, retry=False)
+
+    failed("reflect", "ModuleNotFoundError: an older error")
+    failed("reflect", "ModuleNotFoundError: No module named 'presidio_analyzer'")
+    assert health._failing_jobs(store) is None, "two is below the day's threshold"
+    failed("build", "TimeoutError: " + "x" * 400)
+
+    _, title, detail = health._failing_jobs(store)
+
+    assert title == "3 background jobs failed in the last day"
+    assert detail.startswith("2 reflect, the last with: ModuleNotFoundError: No module named "
+                             "'presidio_analyzer'; 1 build, the last with: TimeoutError: ")
+    assert "an older error" not in detail
+    assert len(detail) < 400, "an error is cut to its head"
+
+
 def _missed(store, table: str, error: str, ago: str = "-5 minutes") -> None:
     """One ask of Jev, at the site that keeps `table`, with no answer."""
     at = f"datetime('now', '{ago}')"

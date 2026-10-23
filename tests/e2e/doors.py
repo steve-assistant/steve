@@ -172,6 +172,9 @@ ROUTES = {
     "worker POST /setup/key": ("controls", "secrets", "cap"),
     # Which keys the Credential Manager holds, never their values.
     "worker GET /setup/keys": ("controls", "secrets"),
+    # A `.env`'s keys are named, never shown, and kept as a typed one is.
+    "worker GET /setup/envfile": ("secrets",),
+    "worker POST /setup/envfile": ("controls", "secrets", "cap"),
     "worker POST /setup/preset": ("controls",),
     "worker GET /setup/drive": (),
     "worker GET /setup/docker": (),

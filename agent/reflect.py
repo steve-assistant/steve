@@ -29,7 +29,7 @@ from pydantic import BaseModel, Field
 
 from agent import jobs, offloop
 from agent.models import Role
-from agent.redact import Redacted, redact
+from agent.redact import Redacted, can_redact, redact
 from core import db
 from core.rubric import DIMENSIONS, KEYS, POOR, RUBRIC_VERSION, as_prompt
 
@@ -563,7 +563,12 @@ def _file_proposal(
 def unreflected(conn: sqlite3.Connection, limit: int = 10) -> list[int]:
     """Sessions that have ended and not yet been scored, and sessions the user
     came back to that have gone quiet again since they were last scored
-    (CONTEXT_LINES)."""
+    (CONTEXT_LINES).
+
+    Not a session whose reflection failed since its last message: the job
+    has had its tries, and the sweep would otherwise queue it again every
+    few minutes, and keep the oldest such sessions at the head of `limit`
+    ahead of every new one. A message after it makes it worth a try again."""
     rows = conn.execute(
         """
         SELECT s.id FROM sessions s
@@ -574,6 +579,11 @@ def unreflected(conn: sqlite3.Connection, limit: int = 10) -> list[int]:
                    -- quiet again: `close_idle` saw to that the first time
                    AND NOT EXISTS (SELECT 1 FROM messages q WHERE q.session_id = s.id
                                    AND q.created_at >= datetime('now', ?))))
+          AND NOT EXISTS (
+              SELECT 1 FROM jobs j
+              WHERE j.kind = 'reflect' AND j.session_id = s.id AND j.status = 'failed'
+                AND j.created_at >= COALESCE(
+                    (SELECT MAX(l.created_at) FROM messages l WHERE l.session_id = s.id), ''))
         ORDER BY COALESCE(s.reflected_at, s.ended_at) LIMIT ?
         """,
         (f"-{int(IDLE_MINUTES)} minutes", limit),
@@ -617,8 +627,16 @@ def sweep(conn: sqlite3.Connection, limit: int = 10) -> list[int]:
     Queued as jobs rather than run inline so reflection competes for the same
     worker as everything else: it is the lowest-priority thing the agent does,
     and it should never be the reason a real request waits.
+
+    Nothing is queued where nothing could be redacted (`can_redact`): an
+    install leaves out the `reflect` extra, and `redact` raises without it.
+    The first installed copy, on 22 October 2026, failed one conversation's
+    reflection fourteen times in a day, and its phone note said only that
+    background jobs had failed.
     """
     close_idle(conn)
+    if not can_redact():
+        return []
     queued = []
     for session_id in unreflected(conn, limit=limit):
         if _already_queued(conn, session_id):

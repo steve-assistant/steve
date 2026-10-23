@@ -22,6 +22,7 @@ errs hard in one direction.
 
 from __future__ import annotations
 
+import importlib.util
 import re
 import threading
 import time
@@ -169,6 +170,20 @@ def _offline_suffixes() -> None:
     import tldextract.tldextract as tld
 
     tld.TLD_EXTRACTOR = tld.TLDExtract(suffix_list_urls=(), cache_dir=None)
+
+
+# What `_get_analyzer` loads: the engine, and the spaCy model its default
+# configuration names. Both are the `reflect` extra, which an install leaves out.
+NEEDS = ("presidio_analyzer", "en_core_web_lg")
+
+
+def can_redact() -> bool:
+    """Whether this computer can redact at all, asked without loading the
+    pipeline. Without the model, presidio would try to download it."""
+    try:
+        return all(importlib.util.find_spec(name) is not None for name in NEEDS)
+    except (ImportError, ValueError):
+        return False
 
 
 def _get_analyzer():

@@ -1,6 +1,6 @@
 [project]
 name = "steve"
-version = "0.1.0"
+version = "0.1.1"
 description = "A personal assistant for Windows: mail, calendar, approvals and voice, on your own OpenAI key"
 requires-python = ">=3.13"
 license = "Apache-2.0"

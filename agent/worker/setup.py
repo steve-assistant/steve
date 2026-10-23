@@ -40,6 +40,10 @@ What it prevents:
   reads that without asking Docker anything (`docker`): asking wakes
   Docker Desktop from its resource saver, and Steve never installs Docker
   or changes its settings.
+- **Keys copied by hand out of a `.env` the user already keeps.** The key
+  page offers the keys such a file near Steve holds, by name
+  (agent/worker/envfile.py), and keeps each through `keep`, the paste's
+  own check.
 
 Every route is the app's, behind the local-only check and this start's
 token, like pairing.
@@ -64,7 +68,7 @@ from starlette.routing import Route
 from agent import facts, offloop, runtime, sqltime
 from agent.attention.sources import health
 from agent.cut import cut
-from agent.worker import bodies
+from agent.worker import bodies, envfile
 from core import endpoints, knobs, passphrase, paths, secrets, settingsfile
 
 log = logging.getLogger(__name__)
@@ -94,6 +98,7 @@ PRESETS: dict[str, dict[str, int | str | None]] = {
 # The services a key is checked with, and the secret each is kept under.
 KEYS = {"openai": ("OpenAI", "OPENAI_API_KEY"), "openrouter": ("OpenRouter", "OPENROUTER_API_KEY")}
 CHECK_SECONDS = 15
+SHAPE = "That doesn't look like a key: paste it whole, on its own."
 SAYS = {
     "wrong-key": "{service} did not accept this key. Check it was copied whole, with nothing"
                  " before or after it.",
@@ -279,23 +284,55 @@ async def check_key(service: str, key: str) -> dict:
         service=name, status=got.status_code, message=cut(str(error.get("message") or ""), 200))}
 
 
-async def set_key(request: Request) -> JSONResponse:
-    """`{"service": "openai" | "openrouter", "key": ...}`: checked, then kept."""
-    body = await bodies.body(request)
-    service, key = body.get("service"), body.get("key")
-    if service not in KEYS:
-        return bodies.bad(f"a key is for one of {', '.join(KEYS)}")
+async def keep(name: str, key: object) -> dict:
+    """A key, pasted or found in a `.env` (agent/worker/envfile.py), kept
+    the one way: its shape checked, then one request to its service, and
+    kept only if that worked. Brave's key has no check anywhere in Steve,
+    so it is kept on its shape, as `python -m core.secrets set` keeps it."""
     key = key.strip() if isinstance(key, str) else ""
     if not key or len(key) > 512 or any(c.isspace() or not c.isprintable() for c in key):
-        return bodies.bad("That doesn't look like a key: paste it whole, on its own.", why="shape")
-    checked = await check_key(service, key)
+        return {"ok": False, "why": "shape", "error": SHAPE}
+    service = next((s for s, (_, secret) in KEYS.items() if secret == name), None)
+    checked = await check_key(service, key) if service else {"ok": True}
     if not checked["ok"]:
-        return JSONResponse(checked, status_code=400)
-    await asyncio.to_thread(secrets.set_secret, KEYS[service][1], key)
+        return checked
+    await asyncio.to_thread(secrets.set_secret, name, key)
     if service == "openai":
         # Checked and kept on the page: the page is done.
         await offloop.with_own_conn(runtime.conn, _answer, "openai", "kept")
-    return JSONResponse({**checked, "says": f"{KEYS[service][0]} accepted the key."})
+    says = f"{KEYS[service][0]} accepted the key." if service else "Brave Search's key is kept."
+    return {**checked, "says": says}
+
+
+async def set_key(request: Request) -> JSONResponse:
+    """`{"service": "openai" | "openrouter", "key": ...}`: checked, then kept."""
+    body = await bodies.body(request)
+    service = body.get("service")
+    if service not in KEYS:
+        return bodies.bad(f"a key is for one of {', '.join(KEYS)}")
+    kept = await keep(KEYS[service][1], body.get("key"))
+    return JSONResponse(kept, status_code=200 if kept["ok"] else 400)
+
+
+async def get_envfile(_: Request) -> JSONResponse:
+    """The `.env` files near Steve that name a key it takes: paths and
+    names, never a value."""
+    return JSONResponse({"ok": True, "files": await asyncio.to_thread(envfile.found)})
+
+
+async def use_envfile(request: Request) -> JSONResponse:
+    """`{"file": ...}`, one of the files `get_envfile` offers: each key it
+    sets is kept as a pasted one is (`keep`), and each one's outcome said
+    by name. OpenAI's key goes first, so its page is done before the rest."""
+    file = (await bodies.body(request)).get("file")
+    found = await asyncio.to_thread(envfile.values, file) if isinstance(file, str) else None
+    if found is None:
+        return bodies.bad("That isn't a .env file Steve found. Look again, or enter the keys"
+                          " by hand.")
+    if not found:
+        return bodies.bad("That file sets none of the keys Steve takes.")
+    kept = {name: await keep(name, found[name]) for name in envfile.NAMES if name in found}
+    return JSONResponse({"ok": True, "keys": kept})
 
 
 async def set_preset(request: Request) -> JSONResponse:
@@ -440,6 +477,8 @@ ROUTES = [
     Route("/setup/answer", answer, methods=["POST"]),
     Route("/setup/key", set_key, methods=["POST"]),
     Route("/setup/keys", get_keys),
+    Route("/setup/envfile", get_envfile),
+    Route("/setup/envfile", use_envfile, methods=["POST"]),
     Route("/setup/preset", set_preset, methods=["POST"]),
     Route("/setup/drive", get_drive),
     Route("/setup/docker", get_docker),

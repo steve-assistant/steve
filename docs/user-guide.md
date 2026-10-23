@@ -64,7 +64,11 @@ The [module guide](modules.md) describes the sandbox and the grants. The
 ## Your keys
 
 Setup puts your keys in the Windows Credential Manager, under the service
-`steve`, and never in a file. **Accounts**, under **Your keys**, says which
+`steve`, and never in a file. If you keep your keys in a `.env` file, in
+Steve's folder (a clone's root, or the install's folder) or the folder
+above it, setup's key page names the keys it holds, never their values,
+and offers to use them: each is checked and kept as a typed key is, and the
+file is not read again. **Accounts**, under **Your keys**, says which
 are kept, and gives or replaces one: a new key is checked with its service
 before it is kept, and Steve's next request uses it. Without the app, use a
 terminal. Each `set` asks for the value without echoing it. From this

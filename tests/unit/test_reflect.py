@@ -492,7 +492,14 @@ def test_an_empty_session_still_ends_on_its_start_time(store):
 # --------------------------------------------------------------------------
 
 
-def test_the_sweep_ends_and_queues_in_one_pass(store):
+@pytest.fixture
+def redactor(monkeypatch):
+    """A computer that has the `reflect` extra, as far as the sweep asks:
+    CI's base job, and an install, do not."""
+    monkeypatch.setattr(reflect, "can_redact", lambda: True)
+
+
+def test_the_sweep_ends_and_queues_in_one_pass(store, redactor):
     session_id = _session(
         store, [("user", "what is the time"), ("assistant", "noon")], ended=False
     )
@@ -508,7 +515,7 @@ def test_the_sweep_ends_and_queues_in_one_pass(store):
     assert job.priority < -1
 
 
-def test_sweeping_twice_does_not_queue_the_same_session_again(store):
+def test_sweeping_twice_does_not_queue_the_same_session_again(store, redactor):
     """The sweep runs every few minutes; without this the queue fills with
     duplicate reflections of one conversation."""
     session_id = _session(
@@ -522,8 +529,61 @@ def test_sweeping_twice_does_not_queue_the_same_session_again(store):
     assert second == []
 
 
-def test_a_sweep_with_nothing_to_do_is_quiet(store):
+def test_a_sweep_with_nothing_to_do_is_quiet(store, redactor):
     assert reflect.sweep(store) == []
+
+
+def test_redacting_needs_the_language_model_as_well_as_the_engine(monkeypatch):
+    """presidio without its spaCy model would try to download it."""
+    import importlib.util
+
+    from agent import redact
+
+    have = {"presidio_analyzer"}
+    monkeypatch.setattr(importlib.util, "find_spec",
+                        lambda name: object() if name in have else None)
+    assert redact.can_redact() is False
+    have.add("en_core_web_lg")
+    assert redact.can_redact() is True
+
+
+def test_where_nothing_can_be_redacted_the_sweep_ends_sessions_and_queues_no_reflection(
+        store, monkeypatch):
+    """An install leaves out the redactor, and every reflection queued there
+    could only fail: the first installed copy failed one conversation's
+    fourteen times in a day. Ending a quiet session is still the sweep's."""
+    monkeypatch.setattr(reflect, "can_redact", lambda: False)
+    session_id = _session(
+        store, [("user", "what is the time"), ("assistant", "noon")], ended=False
+    )
+    _age_messages(store, session_id, reflect.IDLE_MINUTES + 5)
+
+    assert reflect.sweep(store) == []
+    ended = store.execute("SELECT ended_at FROM sessions WHERE id = ?", (session_id,)).fetchone()
+    assert ended[0] is not None
+    assert store.execute("SELECT COUNT(*) FROM jobs WHERE kind = 'reflect'").fetchone()[0] == 0
+
+
+def test_a_reflection_that_failed_is_not_queued_again_until_the_conversation_goes_on(
+        store, redactor):
+    """A failed job has had its tries. Queued again, it fails again at every
+    sweep, and the oldest failed sessions fill the sweep's limit ahead of
+    every new one."""
+    failed = _session(store, [("user", "hi there"), ("assistant", "hello")])
+    [job_id] = reflect.sweep(store)
+    assert jobs.fail(store, job_id, "ModuleNotFoundError: no redactor", retry=False) == "failed"
+    newer = _session(store, [("user", "and now?"), ("assistant", "now this")])
+
+    assert reflect.unreflected(store, limit=1) == [newer]
+    assert jobs.get(store, reflect.sweep(store)[0]).session_id == newer
+
+    # The user came back to it after the failure: worth a try again.
+    with store:
+        store.execute("UPDATE jobs SET created_at = datetime('now', '-1 hour') WHERE id = ?",
+                      (job_id,))
+        store.execute("INSERT INTO messages (session_id, role, content) VALUES (?, 'user', ?)",
+                      (failed, "one more thing"))
+    assert failed in reflect.unreflected(store)
 
 
 # --------------------------------------------------------------------------

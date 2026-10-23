@@ -140,7 +140,7 @@ def git_identity(role: str) -> tuple[str, str]:
 # this" are two answers to "is this older". tests/unit/test_one_version.py
 # holds the other files to this one, and the build refuses to run when they
 # differ. The worker reports it as `agent.version.STEVE_VERSION`.
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 
 def version() -> str:

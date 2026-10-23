@@ -336,6 +336,73 @@ const KEY_PAGES = {
   },
 } as const;
 
+/** A `.env` near Steve that names keys it takes: its path and the names,
+ *  never a value (agent/worker/envfile.py). */
+interface EnvFile {
+  file: string;
+  keys: string[];
+  empty: string[];
+}
+
+const ENV_LABELS: Record<string, string> = {
+  OPENAI_API_KEY: "OpenAI", OPENROUTER_API_KEY: "OpenRouter", BRAVE_API_KEY: "Brave Search",  // pragma: allowlist secret
+};
+
+/** The keys a `.env` holds, offered by name: use them, or enter them by
+ *  hand. Each one used is checked as a pasted key is, and kept only if its
+ *  service accepts it. */
+function EnvOffer({ files, onUsed, onByHand }: {
+  files: EnvFile[];
+  /** What each key's service said, one line each, and whether OpenAI's was kept. */
+  onUsed: (lines: string[], openai: Said | undefined) => void;
+  onByHand: () => void;
+}) {
+  const [chosen, setChosen] = useState(files[0].file);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const names = (file: EnvFile) => file.keys.join(", ") || "no key filled in";
+
+  const use = async () => {
+    setBusy(true);
+    setError(null);
+    const said = await send<{ keys: Record<string, Said> }>("/setup/envfile", { file: chosen });
+    setBusy(false);
+    if (!said.ok || !said.keys) {
+      setError(said.error ?? "The keys weren't kept.");
+      return;
+    }
+    onUsed(Object.entries(said.keys).map(([name, kept]) =>
+      `${ENV_LABELS[name] ?? name}: ${kept.ok ? kept.says : kept.error}`), said.keys.OPENAI_API_KEY);
+  };
+
+  return (
+    <div className="setup-envfile">
+      {files.length === 1 ? (
+        <p>
+          A <code>.env</code> file at <code>{files[0].file}</code> holds {names(files[0])}.
+          {files[0].empty.length > 0 && ` ${files[0].empty.join(", ")} empty, skipped.`} Use
+          these keys, or enter them by hand.
+        </p>
+      ) : (
+        <fieldset>
+          <legend>Steve found keys in more than one <code>.env</code> file. Which should it use?</legend>
+          {files.map((file) => (
+            <label key={file.file} className="setup-envfile-choice">
+              <input type="radio" name="envfile" value={file.file} checked={chosen === file.file}
+                     onChange={() => setChosen(file.file)} />
+              <code>{file.file}</code>: {names(file)}
+              {file.empty.length > 0 && ` (${file.empty.join(", ")} empty, skipped)`}
+            </label>
+          ))}
+        </fieldset>
+      )}
+      <ErrorLine text={error} />
+      <Actions label="Use these keys" busy={busy} ready={files.some((f) => f.file === chosen && f.keys.length > 0)}
+               onContinue={() => void use()} onSkip={onByHand} skipLabel="Enter keys by hand" />
+    </div>
+  );
+}
+
 function KeyPage({ service, kept, go, skip, before = false, keep }: {
   service: keyof typeof KEY_PAGES;
   kept: boolean;
@@ -352,6 +419,30 @@ function KeyPage({ service, kept, go, skip, before = false, keep }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [works, setWorks] = useState<string | null>(null);
+  // A `.env` near Steve, offered on the first key page while its key
+  // isn't kept; null until asked, or once set aside.
+  const [files, setFiles] = useState<EnvFile[] | null>(null);
+  const [fromFile, setFromFile] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (service !== "openai" || kept) return;
+    let live = true;
+    request("/setup/envfile").then((r) => r.json() as Promise<{ ok: boolean; files?: EnvFile[] }>)
+      .then((said) => { if (live && said.ok && said.files?.length) setFiles(said.files); })
+      .catch(() => undefined);
+    return () => { live = false; };
+  }, [service, kept]);
+
+  const used = (lines: string[], openai: Said | undefined) => {
+    setFiles(null);
+    setFromFile(lines);
+    if (openai?.ok) {
+      setReplacing(false);
+      setWorks(null);
+    } else {
+      setError(openai?.error ?? null);
+    }
+  };
 
   const check = async () => {
     setBusy(true);
@@ -379,9 +470,22 @@ function KeyPage({ service, kept, go, skip, before = false, keep }: {
     setBusy(false);
   };
 
+  if (files) {
+    return (
+      <Question title={words.title} why={words.why}>
+        <EnvOffer files={files} onUsed={used} onByHand={() => setFiles(null)} />
+      </Question>
+    );
+  }
+
   return (
     <Question title={words.title} why={words.why}>
-      {before && !works && (
+      {fromFile.length > 0 && (
+        <ul className="setup-envfile-kept" role="status">
+          {fromFile.map((line) => <li key={line}>{line}</li>)}
+        </ul>
+      )}
+      {before && !works && fromFile.length === 0 && (
         <p className="setup-kept-before">
           A key is already kept for Steve in Windows' Credential Manager. Keep it, or paste a
           new one.

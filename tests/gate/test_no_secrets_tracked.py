@@ -55,18 +55,31 @@ SELF_REFERENTIAL = {
     "core/secrets.py",
 }
 
+# The one credential-shaped name allowed, by its whole path: the template a
+# clone copies to `.env` (README, "Run from a clone"). Held empty below.
+ALLOWED_PATHS = {".env.example"}
+
+
+def _credential_shaped(rel: str) -> bool:
+    if rel in ALLOWED_PATHS:
+        return False
+    name = Path(rel).name
+    return any(re.match(pattern, name, re.IGNORECASE) for pattern in FORBIDDEN_NAME_PATTERNS)
+
 
 def test_git_tracks_no_credential_filenames():
     # New files too, which the next `git add` takes: this read what git
     # tracked alone, so a key file made before a commit passed the suite.
-    offenders = []
-    for rel in repo_files.listed():
-        name = Path(rel).name
-        for pattern in FORBIDDEN_NAME_PATTERNS:
-            if re.match(pattern, name, re.IGNORECASE):
-                offenders.append(rel)
-                break
+    offenders = [rel for rel in repo_files.listed() if _credential_shaped(rel)]
     assert not offenders, f"credential-shaped files are tracked: {offenders}"
+
+
+def test_only_the_root_env_example_is_allowed_among_env_files():
+    """The allowance is one path, not a name: a `.env.example` elsewhere,
+    or any other `.env.*`, is as likely to hold a key as before."""
+    assert not _credential_shaped(".env.example")
+    for rel in (".env", ".env.local", ".ENV.EXAMPLE", "ui/.env.example", "x/.env.example"):
+        assert _credential_shaped(rel), rel
 
 
 def test_no_tracked_file_contains_a_live_credential():
@@ -116,3 +129,21 @@ def test_content_patterns_discriminate(sample, should_match):
     """The scanner must not fire on key names, or it will be disabled."""
     hit = any(re.search(p, sample) for p, _ in SECRET_CONTENT_PATTERNS)
     assert hit is should_match, f"{sample!r} -> {hit}, expected {should_match}"
+
+
+def test_the_env_example_names_known_keys_and_holds_no_value():
+    """The template is copied to `.env` and filled in, beside it. Filled in
+    by mistake instead, it would be committed: so every line is a comment
+    or a known key's name with nothing after the `=`, whatever the value
+    looks like (the content patterns above know only some providers)."""
+    from core.secrets import KNOWN_KEYS
+
+    text = (REPO_ROOT / ".env.example").read_text(encoding="utf-8")
+    names = []
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        name, eq, value = line.partition("=")
+        assert eq and not value.strip(), f".env.example holds a value: {name.strip()}"
+        names.append(name.strip())
+    assert names and set(names) <= set(KNOWN_KEYS), names

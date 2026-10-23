@@ -153,11 +153,19 @@ def _disk(conn) -> tuple[str, str, str] | None:
 
 
 def _failing_jobs(conn) -> tuple[str, str, str] | None:
-    row = conn.execute(
-        "SELECT COUNT(*), GROUP_CONCAT(DISTINCT kind) FROM jobs"
-        " WHERE status = 'failed' AND created_at >= datetime('now', '-1 day')"
-    ).fetchone()
-    if not row or row[0] < FAILED_JOBS_A_DAY:
+    """Each kind with its latest error. The kinds alone, on 22 October 2026,
+    left the user asking which jobs had failed and why, and Steve, which has
+    no tool to read the queue, unable to say."""
+    rows = conn.execute(
+        "SELECT kind, COUNT(*),"
+        " (SELECT l.error FROM jobs l WHERE l.kind = j.kind AND l.status = 'failed'"
+        "  ORDER BY l.id DESC LIMIT 1)"
+        " FROM jobs j WHERE status = 'failed' AND created_at >= datetime('now', '-1 day')"
+        " GROUP BY kind ORDER BY COUNT(*) DESC, kind"
+    ).fetchall()
+    failed = sum(n for _, n, _ in rows)
+    if failed < FAILED_JOBS_A_DAY:
         return None
-    return ("jobs", f"{row[0]} background jobs failed in the last day",
-            f"Kinds: {row[1]}.")
+    said = "; ".join(f"{n} {kind}, the last with: {cut(error or 'no error kept', 160)}"
+                     for kind, n, error in rows)
+    return ("jobs", f"{failed} background jobs failed in the last day", f"{said}.")

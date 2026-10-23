@@ -280,6 +280,31 @@
   color: var(--ink);
   margin: 0 0 var(--space-3);
 }
+
+/* A .env's keys, offered by name: a path can be long, so it wraps. */
+.setup-envfile {
+  max-width: var(--measure);
+  overflow-wrap: anywhere;
+}
+.setup-envfile fieldset {
+  border: 0;
+  margin: 0 0 var(--space-5);
+  padding: 0;
+}
+.setup-envfile legend {
+  margin-bottom: var(--space-3);
+}
+.setup-envfile-choice {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  margin-bottom: var(--space-3);
+}
+.setup-envfile-kept {
+  color: var(--ink);
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}
 .setup-drive {
   color: var(--ink);
 }

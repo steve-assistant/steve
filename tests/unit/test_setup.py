@@ -19,7 +19,7 @@ from starlette.applications import Starlette
 
 from agent import facts, runtime
 from agent.attention import settings
-from agent.worker import control, setup
+from agent.worker import control, envfile, setup
 from core import db, knobs, passphrase, secrets
 from tests.fakes import jev
 from tests.fakes.jev import FakeJev
@@ -371,3 +371,113 @@ def test_the_drives_state_is_read_from_the_shell_without_administrator_rights():
     """The spike's way (docs/plan/spikes/s9-app.md): a count Windows gives
     any user, or nothing; never an error that stops the page."""
     assert setup.bitlocker("C:") in (None, 0, 1, 2, 3, 4, 5, 6, 7, 8)
+
+
+# ---------------------------------------------------------------------------
+# A .env near Steve (agent/worker/envfile.py)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def near(tmp_path, monkeypatch):
+    """Steve's own folder, the test's own, so no real `.env` is read."""
+    own = tmp_path / "above" / "steve"
+    own.mkdir(parents=True)
+    monkeypatch.setattr(envfile, "own_folder", lambda: own)
+    return own
+
+
+def _env(folder: Path, text: str) -> str:
+    (folder / ".env").write_text(text, encoding="utf-8", newline="\n")
+    return str(folder / ".env")
+
+
+def test_keys_from_a_env_are_checked_and_kept_as_typed_ones_are(client, keychain, openai, near):
+    """A file is not a way round the check: each key goes to its service
+    first, and the OpenAI page is done as if it had been pasted."""
+    file = _env(near, f"OPENAI_API_KEY={GOOD}\nOPENROUTER_API_KEY={jev.GOOD}\n"
+                      "BRAVE_API_KEY=bsa-x\n")
+    assert client.get("/setup/envfile")["files"] == [
+        {"file": file, "keys": ["OPENAI_API_KEY", "OPENROUTER_API_KEY", "BRAVE_API_KEY"],
+         "empty": []}]
+    said = client.post("/setup/envfile", json={"file": file}).json()
+    assert said["ok"] and all(k["ok"] for k in said["keys"].values())
+    assert said["keys"]["OPENROUTER_API_KEY"]["credit"] == 7.5
+    assert openai.asked == [("/v1/models", GOOD)]
+    assert keychain.held == {"OPENAI_API_KEY": GOOD, "OPENROUTER_API_KEY": jev.GOOD,
+                             "BRAVE_API_KEY": "bsa-x"}  # pragma: allowlist secret
+    assert _done(client)["openai"] and _done(client)["jev"]
+
+
+def test_a_refused_key_from_a_env_is_not_kept_and_its_page_is_not_done(
+        client, keychain, openai, near):
+    """The file's key is refused in the paste's words, so the page can
+    say why and ask for one by hand."""
+    file = _env(near, f"OPENAI_API_KEY=sk-proj-filed-wrong\nOPENROUTER_API_KEY={jev.GOOD}\n")
+    said = client.post("/setup/envfile", json={"file": file}).json()
+    assert said["keys"]["OPENAI_API_KEY"]["why"] == "wrong-key"
+    assert "copied whole" in said["keys"]["OPENAI_API_KEY"]["error"]
+    assert said["keys"]["OPENROUTER_API_KEY"]["ok"]
+    assert keychain.held == {"OPENROUTER_API_KEY": jev.GOOD} and not _done(client)["openai"]
+
+
+def test_with_two_files_the_one_chosen_is_the_one_read(client, keychain, openai, near):
+    """Two `.env` files may hold different keys; the user picks, and only
+    the picked one's keys are kept."""
+    _env(near, "OPENAI_API_KEY=sk-proj-the-nearer-one\n")
+    above = _env(near.parent, f"OPENAI_API_KEY={GOOD}\n")
+    files = client.get("/setup/envfile")["files"]
+    assert [f["file"] for f in files] == [str(near / ".env"), above]
+    assert client.post("/setup/envfile", json={"file": above}).json()["keys"][
+        "OPENAI_API_KEY"]["ok"]
+    assert keychain.held == {"OPENAI_API_KEY": GOOD}
+
+
+def test_unknown_and_empty_names_in_a_env_are_never_kept_or_checked(
+        client, keychain, openai, near):
+    """Another program's key is not Steve's, and an empty one is not a key."""
+    file = _env(near, "PORTKEY_API_KEY=pk-not-steves\nOPENAI_API_KEY=\nBRAVE_API_KEY=bsa-x\n")
+    said = client.post("/setup/envfile", json={"file": file}).json()
+    assert list(said["keys"]) == ["BRAVE_API_KEY"]
+    assert openai.asked == []
+    assert keychain.held == {"BRAVE_API_KEY": "bsa-x"}  # pragma: allowlist secret
+    empty = _env(near, "OPENAI_API_KEY=\n")
+    refused = client.post("/setup/envfile", json={"file": empty})
+    assert refused.status_code == 400
+    assert keychain.held == {"BRAVE_API_KEY": "bsa-x"}  # pragma: allowlist secret
+
+
+def test_a_path_steve_did_not_offer_is_refused_and_nothing_kept(
+        client, keychain, openai, near, tmp_path):
+    """The app sends a path; any path but one offered is refused unread."""
+    (tmp_path / "elsewhere").mkdir()
+    elsewhere = _env(tmp_path / "elsewhere", f"OPENAI_API_KEY={GOOD}\n")
+    for given in (elsewhere, str(near / ".env"), 7, None):
+        said = client.post("/setup/envfile", json={"file": given})
+        assert said.status_code == 400, given
+    assert keychain.held == {} and openai.asked == []
+
+
+def test_a_value_from_a_env_is_never_in_a_response_or_the_log(
+        client, keychain, openai, near, caplog):
+    """The page shows names; a value echoed back, even refused, would sit
+    in the webview's memory and any log a user shares."""
+    caplog.set_level("DEBUG")
+    wrong = "sk-proj-filed-wrong-and-secret"
+    file = _env(near, f"OPENAI_API_KEY={wrong}\nOPENROUTER_API_KEY={jev.GOOD}\n"
+                      "BRAVE_API_KEY=bsa-also-secret\n")
+    texts = [str(client.get("/setup/envfile")),
+             client.post("/setup/envfile", json={"file": file}).text]
+    for value in (wrong, jev.GOOD, "bsa-also-secret"):
+        assert not any(value in text for text in texts), value
+        assert value not in caplog.text, value
+    assert "OPENAI_API_KEY" in texts[0]
+
+
+def test_entering_keys_by_hand_still_works_with_a_env_beside_steve(client, keychain, openai, near):
+    """Declining the file leaves the paste as it was: the typed key is
+    kept, and nothing is taken from the file."""
+    _env(near, f"OPENROUTER_API_KEY={jev.GOOD}\nBRAVE_API_KEY=bsa-x\n")
+    said = client.post("/setup/key", json={"service": "openai", "key": GOOD})
+    assert said.status_code == 200 and keychain.held == {"OPENAI_API_KEY": GOOD}
+    assert _done(client)["openai"] and not _done(client)["jev"]

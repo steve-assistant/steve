@@ -25,8 +25,9 @@ from starlette.routing import Route, WebSocketRoute
 
 from agent import appsettings, facts, runtime
 from agent.attention import settings
-from agent.worker import approvers, control, setup, signin
+from agent.worker import approvers, control, envfile, setup, signin
 from core import db, hello, knobs, localapi, passphrase, secrets
+from tests.fakes import jev
 from tests.fakes.jev import FakeJev
 from tests.fakes.openai import GOOD, FakeOpenAI
 
@@ -47,9 +48,12 @@ class _Keychain:
 
 
 @pytest.fixture
-def worker(monkeypatch):
+def worker(monkeypatch, tmp_path):
     """The worker's state for one test: its database, the attention
-    settings a preset moves, a keychain, and the fake OpenAI."""
+    settings a preset moves, a keychain, the fake OpenAI, and Steve's own
+    folder, the test's, so a real `.env` beside the checkout is never read."""
+    (tmp_path / "steve").mkdir()
+    monkeypatch.setattr(envfile, "own_folder", lambda: tmp_path / "steve")
     # The worker opens its connection on the thread that serves; here the
     # server has a thread of its own, and the test reads the same database
     # between pages, never while a page writes.
@@ -300,6 +304,60 @@ def test_a_refused_key_says_why_and_setup_closed_halfway_resumes_where_it_was(sc
     page.get_by_role("button", name="Continue").click()
     _on(page, "Jev's key")
     assert knobs.read()["MONTH_USD"] == 20
+
+
+def test_a_env_beside_steve_is_offered_by_name_and_its_keys_kept_with_one_press(
+        screen, worker, tmp_path):
+    """A user who keeps their keys in a `.env` is not made to copy each one
+    out of it: the page names the keys, never their values, and keeps the
+    ones their services accept."""
+    _, held = worker
+    (tmp_path / "steve" / ".env").write_text(
+        f"OPENAI_API_KEY={GOOD}\nOPENROUTER_API_KEY={jev.GOOD}\nBRAVE_API_KEY=\n",
+        encoding="utf-8", newline="\n")
+    page = screen(_backend())
+    _on(page, "I'm Steve. Let's get me working.")
+    page.get_by_role("button", name="Begin").click()
+
+    _on(page, "Your OpenAI key")
+    page.get_by_role("button", name="Use these keys").wait_for()
+    shown = page.inner_text(".setup-page")
+    assert "OPENAI_API_KEY, OPENROUTER_API_KEY" in shown and "BRAVE_API_KEY empty" in shown
+    assert GOOD not in page.content() and jev.GOOD not in page.content()
+    page.get_by_role("button", name="Use these keys").click()
+    page.get_by_text("OpenAI: OpenAI accepted the key.").wait_for()
+    assert jev.GOOD not in page.content()
+    page.get_by_role("button", name="Continue").click()
+    _on(page, "How much may Steve spend a month?")
+    assert held.held == {"OPENAI_API_KEY": GOOD, "OPENROUTER_API_KEY": jev.GOOD}
+
+
+def test_with_two_env_files_the_user_picks_one_or_enters_the_keys_by_hand(
+        screen, worker, tmp_path):
+    """Two files may hold different keys: the page asks which, nearest
+    first; and entering by hand takes nothing from either."""
+    _, held = worker
+    (tmp_path / "steve" / ".env").write_text("OPENAI_API_KEY=sk-proj-the-nearer\n",
+                                             encoding="utf-8", newline="\n")
+    (tmp_path / ".env").write_text(f"OPENAI_API_KEY={GOOD}\n", encoding="utf-8", newline="\n")
+    page = screen(_backend())
+    _on(page, "I'm Steve. Let's get me working.")
+    page.get_by_role("button", name="Begin").click()
+
+    _on(page, "Your OpenAI key")
+    choices = page.get_by_role("radio")
+    choices.first.wait_for()
+    assert choices.count() == 2 and choices.first.is_checked()
+    page.get_by_role("button", name="Enter keys by hand").click()
+    page.get_by_label("OpenAI key").wait_for()
+    assert held.held == {}
+
+    page.reload()
+    _on(page, "Your OpenAI key")
+    page.get_by_role("radio").nth(1).check()
+    page.get_by_role("button", name="Use these keys").click()
+    page.get_by_text("OpenAI: OpenAI accepted the key.").wait_for()
+    assert held.held == {"OPENAI_API_KEY": GOOD}
 
 
 def _up_to_the_docker_page(conn, held) -> None:

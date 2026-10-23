@@ -7,7 +7,8 @@ There is no Steve server between you and your accounts or model providers.
 
 **Status: early beta.** Download the installer from the
 [latest release](https://github.com/steve-assistant/steve/releases/latest),
-or build it yourself with [the contributing guide](CONTRIBUTING.md).
+build it yourself with [the contributing guide](CONTRIBUTING.md), or
+[run from a clone](#run-from-a-clone) of this repository.
 
 ## What you need
 
@@ -35,6 +36,45 @@ protected your PC": choose **More info**, check that the installer came
 from this project's releases, then **Run anyway**. Smart App Control, where
 enabled, blocks unsigned programs, including Steve's Python; Steve cannot
 run there yet.
+
+## Run from a clone
+
+To run Steve from its source instead of the installer, build the app from
+a clone. You need Python 3.13, uv, Node.js, Rust and the Windows tools
+Tauri requires. In PowerShell:
+
+1. Clone the repository and go into it:
+
+   ```powershell
+   git clone https://github.com/steve-assistant/steve.git; cd steve
+   ```
+
+2. Install the backend's packages:
+
+   ```powershell
+   uv sync --extra dev --extra accounts
+   ```
+
+3. Install the app's packages, then build the app, pointed at this folder
+   ([more on this build](CONTRIBUTING.md#the-desktop-app)):
+
+   ```powershell
+   cd ui; npm install
+   ```
+
+   ```powershell
+   $env:STEVE_ROOT = (Resolve-Path ..).Path; npm run tauri build -- --no-bundle
+   ```
+
+4. Put your keys in a file named `.env`, in the repository's folder or the
+   folder above it. Copy `.env.example`, which lists the keys Steve takes,
+   and fill in the values. Git ignores `.env`.
+5. Start `ui\src-tauri\target\release\Steve.exe`.
+6. On setup's key page, Steve names the keys it found in the file, never
+   their values. Choose **Use these keys**: each is checked with its
+   service, and kept in Windows' Credential Manager like a key typed in.
+   Steve does not read the file again. Then go on from step 2 of
+   [Your first answer](#your-first-answer).
 
 ## Your first answer
 
